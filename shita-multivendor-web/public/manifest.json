@@ -1,8 +1,8 @@
 {
-  "name": "Shita MultiVendor",
+  "name": "طلبات بلبيس",
   "id":"/",
-  "short_name": "Shita",
-  "description": "A Progressive Web App built with Next.js",
+  "short_name": "طلبات بلبيس",
+  "description": "طلبات بلبيس - اطلب الطعام من مطاعم بلبيس.",
   "start_url": "/",
   "background_color": "#000",
   "theme_color": "#94e469",

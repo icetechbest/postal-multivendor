@@ -18,7 +18,7 @@ export const nl = {
     getStarted: 'Begin nu!',
     welcome:
       'Welkom bij Yalla, soms heb je alleen liefde nodig. Maar een beetje eten op zijn tijd doet ook geen kwaad.',
-    welcomeScreen: 'Welkom bij Shita',
+    welcomeScreen: 'Welkom bij طلبات بلبيس',
     loginBtn: 'Inloggen',
     registerBtn: 'Registreren',
     name: 'Naam',
@@ -575,8 +575,8 @@ export const nl = {
     none: 'geen',
     yourEmail: 'Log eenvoudig in door je e-mail in te voeren!',
     yourEmailPassword: 'Voer nu je wachtwoorden in voor toegang!',
-    brandName: 'Shita',
-    welcomeText: 'Welkom bij Shita',
+    brandName: 'طلبات بلبيس',
+    welcomeText: 'Welkom bij طلبات بلبيس',
     createAccountDesc:
       'Geniet van de beste restaurants of haal wat je nodig hebt uit nabijgelegen winkels, bezorgd',
     phoneNumber: 'Telefoonnummer',
@@ -636,7 +636,7 @@ export const nl = {
     Done: 'Klaar',
     addMessage: 'Bericht Toevoegen',
     kindlyBeAdvisedText: 'Houd er rekening mee dat je bericht ook zichtbaar kan zijn voor de koerierpartner die verantwoordelijk is voor het bezorgen van je bestelling op de locatie.',
-    exploreYallaCities: 'Ontdek Shita Steden',
+    exploreYallaCities: 'Ontdek طلبات بلبيس Steden',
     Card: 'Kaart',
     lebelAlreadyExist: "Het label '{{selectedLabel}}' bestaat al. Kies een andere.",
     UpdateAvailable: 'Update Beschikbaar',

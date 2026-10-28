@@ -7,7 +7,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import Script from "next/script";
 
 export const metadata = {
-  title: "Shita Multivendor",
+  title: "طلبات بلبيس",
   manifest: "/manifest.json",
 };
 

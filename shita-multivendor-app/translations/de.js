@@ -18,7 +18,7 @@ export const de = {
   getStarted: "Los geht's!",
   welcome:
     'Willkommen bei Yalla, manchmal braucht man nur Liebe. Aber ab und zu schadet etwas Essen nicht.',
-  welcomeScreen: 'Willkommen bei Yalla',
+  welcomeScreen: 'Willkommen bei طلبات بلبيس',
   loginBtn: 'Anmelden',
   registerBtn: 'Registrieren',
   name: 'Name',
@@ -589,8 +589,8 @@ secureAccountWithPhone: 'Wir verwenden Ihre Nummer nur, wenn wir Sie bezüglich 
     'Melden Sie sich einfach an, indem Sie Ihre E-Mail-Adresse eingeben!',
   yourEmailPassword:
     'Bitte geben Sie jetzt Ihr Passwort ein, um Zugriff zu erhalten!',
-    brandName: 'Shita',
-    welcomeText: 'Willkommen bei Shita',
+    brandName: 'طلبات بلبيس',
+    welcomeText: 'Willkommen bei طلبات بلبيس',
   createAccountDesc:
     'Genießen Sie die besten Restaurants oder erhalten Sie, was Sie von nahegelegenen Geschäften benötigen, geliefert!',
     phoneNumber: 'Telefonnummer',
@@ -652,7 +652,7 @@ loginRequired: 'Anmeldung erforderlich',
   "Done": "Fertig",
   "addMessage": "Nachricht hinzufügen",
   "kindlyBeAdvisedText": "Bitte beachten Sie, dass Ihre Nachricht auch für den Kurierpartner sichtbar sein könnte, der für die Lieferung Ihrer Bestellung an den Ort verantwortlich ist.",
-  exploreYallaCities: 'Entdecke Yalla Städte',
+  exploreYallaCities: 'Entdecke طلبات بلبيس Städte',
   Card: 'Karte',
   OrderPriceValidation:"Ihr Bestellbetrag liegt unter dem Mindestbestellwert des Restaurants. Bitte fügen Sie weitere Artikel zu Ihrem Warenkorb hinzu.",
   "Sorry! we can't deliver to your address.": "Entschuldigung! Wir können nicht an Ihre Adresse liefern.",

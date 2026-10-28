@@ -18,7 +18,7 @@ export const tr = {
     getStarted: 'Başla!',
     welcome:
       "Yalla'ya hoş geldiniz, bazen tek ihtiyacınız olan sevgidir. Ama arada bir yemek de zarar vermez.",
-    welcomeScreen: 'Shita’ya Hoş Geldiniz',
+    welcomeScreen: 'طلبات بلبيس’ya Hoş Geldiniz',
     loginBtn: 'Giriş Yap',
     registerBtn: 'Kayıt Ol',
     name: 'İsim',
@@ -574,8 +574,8 @@ export const tr = {
     none: 'yok',
     yourEmail: 'E-postanızı girerek kolayca giriş yapın!',
     yourEmailPassword: 'Erişim için şimdi şifrelerinizi girin!',
-    brandName: 'Shita',
-    welcomeText: 'Shita’ya Hoş Geldiniz',
+    brandName: 'طلبات بلبيس',
+    welcomeText: 'طلبات بلبيس’ya Hoş Geldiniz',
     createAccountDesc:
       'En iyi restoranların keyfini çıkarın veya yakınınızdaki mağazalardan ihtiyacınız olanı teslim alın',
     phoneNumber: 'Telefon Numarası',
@@ -634,7 +634,7 @@ export const tr = {
     Done: 'Tamam',
     addMessage: 'Mesaj Ekle',
     kindlyBeAdvisedText: 'Mesajınızın, siparişinizi mekana teslim edecek kurye ortağına da göründüğünü lütfen unutmayın.',
-    exploreYallaCities: 'Shita Şehirlerini Keşfet',
+    exploreYallaCities: 'طلبات بلبيس Şehirlerini Keşfet',
     Card: 'Kart',
     lebelAlreadyExist: "'{{selectedLabel}}' etiketi zaten mevcut. Lütfen farklı bir tane seçin.",
     UpdateAvailable: 'Güncelleme Mevcut',

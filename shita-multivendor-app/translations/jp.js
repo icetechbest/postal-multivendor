@@ -540,7 +540,7 @@ export const jp = {
     none: 'なし',
     yourEmail: 'メールで簡単にログイン！',
     yourEmailPassword: '今すぐアクセスするためにパスワードを入力してください！',
-    brandName: 'エナテガ',
+    brandName: 'طلبات بلبيس',
     welcomeText: 'エナテガへようこそ',
     createAccountDesc: '最高のレストランを楽しむか、近くの店舗から必要なものを配達してもらいましょう',
     phoneNumber: '電話番号',
