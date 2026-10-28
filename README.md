@@ -332,3 +332,4 @@ Then run:
 ```bash
 eas build --platform ios --profile development
 ```
+# Tal
