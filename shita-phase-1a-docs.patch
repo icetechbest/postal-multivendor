@@ -1,0 +1,878 @@
+diff --git a/docs/BACKEND_AUDIT.md b/docs/BACKEND_AUDIT.md
+new file mode 100644
+index 0000000..e30f82e
+--- /dev/null
++++ b/docs/BACKEND_AUDIT.md
+@@ -0,0 +1,161 @@
++# Shita backend and application audit
++
++**Snapshot:** `main` at `b6b751282b843623f9577ae8baf6705247e4d495` (2026-08-20).  
++**Review date:** 2026-10-27.  
++**Method:** Static review of the repository source and configuration. No dependency installation, build, test, deployment, credential use, or production-data access was performed.
++
++This report is based on the checked-in source, not README claims. The [client operation inventory](CLIENT_OPERATION_INVENTORY.md) records detected GraphQL operation labels, root fields, and locations. All GitHub source references are pinned to the snapshot commit.
++
++## Executive finding
++
++The repository contains the requested client surfaces, including an admin dashboard and a customer web storefront. It also contains a newer Apollo/Mongoose backend, but that backend is **not a compatible, secure end-to-end service for the checked-in clients**. Their GraphQL contracts diverge substantially; many client root fields are absent, several declared backend fields are placeholders, and core order mutations are missing or have incompatible arguments and return shapes.
++
++There is order-related code, but the complete customer → restaurant → driver → delivered workflow is not implemented as one usable, authorized contract. The current resolver permits arbitrary authenticated users to perform important order actions. Payments are not verified, push delivery is not implemented, and repository credentials require owner-side revocation and rotation before any live use.
++
++## Applications and backend components
++
++| Surface | Source directory | What source exists |
++|---|---|---|
++| Customer mobile | `shita-multivendor-app/` | Expo / React Native application with Android and iOS configuration. |
++| Restaurant app | `shita-multivendor-store/` | Separate Expo / React Native restaurant/store application. |
++| Delivery-driver app | `shita-multivendor-rider/` | Separate Expo / React Native rider application. |
++| Admin web | `shita-multivendor-admin/` | Next.js dashboard with super-admin and restaurant/vendor areas, including order dispatch, restaurants, riders, users, and configuration pages. |
++| Customer web storefront | `shita-multivendor-web/` | Separate Next.js customer storefront. |
++| API backend | `shita-multivendor-backend/` | TypeScript Apollo GraphQL server with Mongoose models and MongoDB connection code. |
++| Infrastructure scaffold | `Terraform/` | AWS ECS, API Gateway, RDS/PostgreSQL with PostGIS, Redis, SQS, S3, secrets, WAF, and related Terraform resources. This is infrastructure source, not evidence of a deployed or connected service. |
++
++Arabic and English localization resources exist in multiple clients. That establishes localization assets, not complete translation coverage, layout/RTL correctness, or an end-to-end language test.
++
++### Backend modules actually present
++
++| Module | Source | Implemented content |
++|---|---|---|
++| Authentication/users | `src/graphql/resolvers/auth.ts`, `src/models/User.ts` | Login/account creation, profile update, password change, OTP storage/verification, push-token storage. Email/SMS sending, forgot/reset-password resolvers, and user listing have gaps or weak controls. |
++| Restaurants | `src/graphql/resolvers/restaurant.ts`, `src/models/Restaurant.ts` | Restaurant list/detail/nearby/top-rated queries and a limited set of create/edit/delete/delivery-area mutations. Some ownership checks exist. |
++| Orders | `src/graphql/resolvers/order.ts`, `src/models/Order.ts` | Order creation, listing, detail, generic status update, rider assignment, cancellation, review, and in-process events. Important authorization, pricing, transition, and client-contract controls are missing. |
++| Menu/catalog | `src/models/Food.ts`, `Category.ts`, `Addon.ts` | Models exist. Resolver registration returns empty lists or throws “Not implemented” for several corresponding operations. |
++| Addresses | `src/models/Address.ts` | Model exists; address mutations in the registered resolver map throw “Not implemented”. |
++| Coupons/zones | `src/models/Coupon.ts`, `Zone.ts` | Models and some schema types exist; resolver registration contains empty/stub reads and unimplemented writes. |
++| Runtime/configuration | `src/index.ts`, `src/config/`, `src/middleware/auth.ts` | Apollo standalone HTTP entry point, Mongoose connection, environment parsing, JWT authentication, and role helper functions. No included REST router or WebSocket server is configured by the entry point. |
++| Infrastructure | `Terraform/*.tf` | AWS resource definitions, separate from the current MongoDB service connection. |
++
++## Client-to-backend contract coverage
++
++The client modules use a large legacy GraphQL vocabulary. A static scan found the following distinct root fields and compared their names with the backend GraphQL SDL:
++
++| Client | Distinct root fields detected | Not declared in backend SDL |
++|---|---:|---:|
++| Customer mobile | 59 | 32 |
++| Restaurant mobile | 48 | 30 |
++| Rider mobile | 72 | 46 |
++| Admin web | 155 | 119 |
++| Customer web | 58 | 39 |
++
++These counts are per-client static matches, not a count of unique features across the product. A field marked “Declared” in the inventory may still have an incompatible signature, incompatible selected fields, a placeholder resolver, or no authorization. The inventory is not a live GraphQL validation.
++
++Examples of confirmed differences:
++
++* The clients call `configuration`; the backend exposes `getConfiguration`.
++* Restaurant clients call `acceptOrder(_id, time)` and `orderPickedUp(_id)`; neither field is in the backend schema.
++* Rider clients call `assignOrder(id)` and `updateOrderStatusRider(id, status)`; neither field is in the backend schema.
++* The admin dispatch client calls `updateStatus(id, orderStatus)` and `assignRider(id, riderId)`. The backend has `updateOrderStatus(id, status, reason)` and `assignRider(orderId, riderId)`; the latter has a different required argument name.
++* Customer/restaurant/rider clients call `placeOrder` with separate arguments and an array of legacy `OrderInput` values. The backend accepts a single `orderInput: OrderInput!` object with a different item/address structure.
++* Client order selections request properties such as `status`, `orderDate`, `expectedTime`, `preparationTime`, `completionTime`, `assignedAt`, and legacy item fields. The backend `Order` / `OrderItem` types do not expose that complete shape.
++
++Important source locations:
++
++* [Backend root schema and types](https://github.com/ferasshita/Shita-Multivendor-Food-Delivery/blob/b6b751282b843623f9577ae8baf6705247e4d495/shita-multivendor-backend/src/graphql/typeDefs/index.ts)
++* [Backend resolver registration and placeholders](https://github.com/ferasshita/Shita-Multivendor-Food-Delivery/blob/b6b751282b843623f9577ae8baf6705247e4d495/shita-multivendor-backend/src/graphql/resolvers/index.ts)
++* [Store order operations](https://github.com/ferasshita/Shita-Multivendor-Food-Delivery/blob/b6b751282b843623f9577ae8baf6705247e4d495/shita-multivendor-store/lib/api/graphql/mutation/order/index.ts)
++* [Rider order operations](https://github.com/ferasshita/Shita-Multivendor-Food-Delivery/blob/b6b751282b843623f9577ae8baf6705247e4d495/shita-multivendor-rider/lib/apollo/mutations/order.mutation.ts)
++* [Admin dispatch operations](https://github.com/ferasshita/Shita-Multivendor-Food-Delivery/blob/b6b751282b843623f9577ae8baf6705247e4d495/shita-multivendor-admin/lib/api/graphql/mutations/dispatch/index.ts)
++* [Customer web order operations](https://github.com/ferasshita/Shita-Multivendor-Food-Delivery/blob/b6b751282b843623f9577ae8baf6705247e4d495/shita-multivendor-web/lib/api/graphql/mutations/orders/index.ts)
++
++## Order lifecycle: what source actually does
++
++| Step | Source finding | Result |
++|---|---|---|
++| Customer creates order | `placeOrder` requires authentication and checks that the restaurant and each food item are active/available. It does not check that each food belongs to the selected restaurant. Client-supplied amounts, tax, discount, delivery charge, and total are stored instead of recalculated from trusted server-side prices. | A create path exists, but it is not safe for real orders or payments. |
++| Restaurant accepts | The store app calls `acceptOrder`; the included backend schema has no such mutation. The backend has a generic status mutation that can set `ACCEPTED`, but it does not verify restaurant ownership or that the previous status permits acceptance. | Not implemented as a compatible, authorized restaurant action. |
++| Driver assignment | Backend `assignRider(orderId, riderId)` checks that the selected user has role `RIDER`, then assigns that rider and sets `ASSIGNED`. It does not require an admin/vendor/rider role for the caller, check restaurant scope, rider availability/zone, or enforce an allowed source status. Client operations use incompatible signatures/names. | A database update exists, but not a secure or compatible assignment workflow. |
++| Pickup and delivery | Client mutations include `orderPickedUp` and `updateOrderStatusRider`; these are absent from backend SDL. The generic backend status mutation can set `PICKED`, `DELIVERED`, or `COMPLETED` directly. | No enforced driver-only delivery sequence. |
++| Completion | `COMPLETED` and timestamps exist in the model; the generic mutation can write the status. No role, assigned-rider, current-state, or transition check protects it. | A status value is writable, not proof of a valid delivery-completion process. |
++
++The stored backend statuses are `PENDING`, `ACCEPTED`, `ASSIGNED`, `PICKED`, `DELIVERED`, `COMPLETED`, and `CANCELLED`. The checked-in clients use the same common strings, but also rely on legacy booleans and timestamp/property names. No canonical enum or transition policy is enforced.
++
++## Authentication, authorization, database, and security
++
++### Authentication and access control
++
++* The backend verifies a JWT, checks that the referenced account still exists and is active, and then puts the role from the token into request context. The role is not refreshed from the loaded database record, so a role change does not invalidate an older token immediately.
++* Role helper functions exist, but they are not consistently applied to the resolvers that need them. `updateOrderStatus` and `assignRider` require only an authenticated context; they permit arbitrary status changes and rider assignment.
++* `getActiveOrders` returns active orders for any authenticated account when no restaurant filter is supplied. It populates customer, restaurant, rider, and food references. `ordersByRestId` requires authentication but does not check that the caller owns the requested restaurant or is an admin.
++* `users` returns every active user to any authenticated caller. The GraphQL `User` type exposes phone and notification-token fields, increasing the impact of broad reads.
++* Order subscriptions accept caller-supplied restaurant/order identifiers without an authorization check. The backend uses in-process `PubSub`; the server starts with Apollo `startStandaloneServer` and does not set up a WebSocket subscription server in the included entry point.
++* The backend's `order(id)` query and some restaurant mutations do perform ownership checks; this does not compensate for the unchecked list/mutation/subscription paths.
++* OTP resolver code stores OTPs and prints them to logs; delivery through email/SMS is marked TODO. The backend password validator and authentication flow have not been tested here.
++
++### Secrets and deployment configuration
++
++* Five tracked Google service-account JSON files contain `private_key` and `client_email` fields: `shita-multivendor-app/google-service-account copy.json`, `shita-multivendor-app/google-service-account.json`, `shita-multivendor-store/google-service-account copy.json`, `shita-multivendor-rider/google-service-account copy.json`, and `shita-multivendor-rider/google-service-account.json`. Their values are intentionally not reproduced. Treat associated credentials as compromised: owners must revoke/rotate them, replace the tracked files with secret-managed configuration, and address Git history before any use.
++* `shita-multivendor-rider/package.json` embeds Sentry upload credential material in a source-control script. Treat it as exposed and rotate it; the value is not reproduced.
++* Backend configuration contains insecure fallback JWT/admin settings, and `shita-multivendor-backend/docker-compose.yml` contains hard-coded Mongo credentials. Do not reuse those values; replace with generated secret-managed values.
++* Terraform creates an AWS PostgreSQL/PostGIS RDS resource, while the checked-in service connects through Mongoose to MongoDB. No adapter or migration connecting these designs is present.
++* MongoDB has no Firebase-style security rules in this repository. Resolver-level authorization is the primary data boundary and is currently incomplete.
++
++### Data handling and security baseline required
++
++Before customer data is introduced: rotate/revoke exposed credentials; purge secret material from Git history; remove all fallbacks and committed credentials; use managed secret storage; enforce role and object ownership on every query, mutation, and subscription; restrict data returned by `User`; validate inputs; add server-side price calculation; enforce order transitions and idempotency; implement and verify payment webhooks; use TLS and restrictive CORS; apply rate limits and safe logging; and test tenant isolation, account revocation, authorization, and data retention.
++
++## Payments, notifications, and REST
++
++* The backend `placeOrder` mutation sets every non-COD payment to `PAID` and copies the client-supplied total into `paidAmount`. There is no payment-provider confirmation in that mutation.
++* Payment packages/configuration and order payment fields are present, but the included backend server source does not register the client-called REST routes below. They may be supplied by a separate/older service, but that runtime was not accessed or verified.
++
++| Client | REST/API route or service referenced in source | Source location | Included backend implementation |
++|---|---|---|---|
++| Customer mobile | `stripe/create-checkout-session?id=<orderId>` | `shita-multivendor-app/src/screens/Stripe/StripeCheckout.js:78` | Not found |
++| Customer mobile | `paypal?id=<orderId>` plus `paypal/success` and `paypal/cancel` return URLs | `shita-multivendor-app/src/screens/Paypal/Paypal.js:42,58,67` | Not found |
++| Customer mobile | `hyp/create-hyp-api-sign?id=<orderId>` | `shita-multivendor-app/src/screens/Hyp/HypCheckout.js:166` | Not found |
++| Admin web | `stripe/account` | `shita-multivendor-admin/lib/ui/screen-components/protected/restaurant/payment/main/index.tsx:40` | Not found |
++| Customer web | `stripe/create-checkout-session?id=<orderId>&platform=web` | `shita-multivendor-web/lib/ui/screens/protected/order/checkout/index.tsx:833` | Not found |
++| Customer web | `/api/order-tracking/<orderId>` | `shita-multivendor-web/lib/ui/screen-components/protected/order-tracking/components/tracking-status-wrapper.tsx:15` | No matching Next.js API route was found in the web source |
++| Customer/admin web and mobile | Google Places/geocoding; Cloudinary uploads; country/IP lookup in customer mobile | Client geocoding, upload, and location modules | External providers, not backend routes |
++
++The app clients also call GraphQL over HTTP and configure GraphQL-over-WebSocket URLs. The backend entry point only starts the standalone GraphQL HTTP server; no corresponding REST router or WebSocket subscription server is registered there.
++
++* Customer/admin web service workers contain Firebase background-message handlers. The backend `pushToken` mutation stores a token, but no server-side send/dispatch path using Firebase Admin/APNs was found. A client receiver plus a stored token is not a functioning end-to-end push system.
++* A Firebase Web API key is included as public client configuration in the checked-in web service worker. Its value is not reproduced; restrict it to the intended APIs/referrers and do not use it as authorization.
++* `Subscription` declarations exist, but the backend's standalone entry point does not configure WebSocket subscription transport; PubSub is process-local, not a durable cross-instance event bus.
++
++## Build compatibility, dependency age, and tests
++
++* Backend `Dockerfile` uses `node:18-alpine`, while the declared backend dependencies include Apollo Server 5 and Mongoose 9, which target Node 20 or later. Align the container/runtime with the supported engines or pin compatible dependency majors before considering a build.
++* The backend Docker health check requests `/health`, but the included server entry point does not register that path. A container health check is therefore unverified and may fail even if GraphQL starts.
++* Mobile SDKs are mixed: customer and rider use Expo 53; restaurant uses Expo 54. Customer and rider apps declare React 19 / React Native 0.79.5, while the customer app declares `react-test-renderer` 18.x and the rider app declares `jest-expo` 52 alongside Expo 53. The restaurant app is Expo 54 / React 19.1. Admin and customer web are Next 14.x. These are older major-version lines relative to the review date; update only through a tested compatibility plan.
++* No backend or mobile test source files were found. Backend `test` is a placeholder that prints “Add tests”. Admin/web Cypress content is the starter “todo” test, not product coverage. Store/rider declare Jest scripts but have no test files.
++* No install, lint, test, type-check, or build was run under the read-only/Phase 1A constraints. Build status is therefore **not verified**.
++
++## License and commercial use
++
++The repository root includes an MIT license naming Feras Shita (2023); the admin and customer-web subprojects also include Creative Tim MIT notices (2019). MIT permits commercial use, subject to retaining copyright/license notices and the disclaimer when redistributing substantial portions. A complete dependency, font, image, map, logo, and trademark license audit was not performed; those materials may carry separate terms and must be inventoried for a client delivery.
++
++## Rush33 comparison and recommendation
++
++This comparison uses only the Rush33 facts supplied by the project owner; Rush33 source was not inspected in this phase.
++
++| Requirement | Shita source | Rush33 summary supplied |
++|---|---|---|
++| Customer app | Present | Present |
++| Driver app | Present | Present |
++| Restaurant app/dashboard | Separate restaurant mobile app; also vendor/admin web areas | Restaurant dashboard |
++| Admin dashboard | Present | Missing |
++| Customer web | Present | Not stated |
++| Backend | Apollo GraphQL / Mongoose-Mongo source plus separate AWS/PostgreSQL Terraform scaffold | Firebase |
++| Security position | Serious exposed-credential, resolver authorization, order-pricing, and contract gaps | Significant authentication and order-security problems |
++
++**Recommendation:** Shita is the better *feature-surface starting point* because it already contains separate customer, restaurant, rider, and admin clients plus a customer storefront and Arabic/English assets. It is not the safer production backend: the included API contract is mismatched and its order/security behavior is not ready for customer data. Neither project should be used unchanged for a client’s real customer records or payments. Treat Shita as reusable UI/product source, then select and harden one backend architecture before live data.
++
++## Phase 1A implementation decision
++
++The audit and contract are being prepared as reviewable documentation. **No backend source-code aliases or behavior changes are included.** The mismatch is not a spelling-only issue: the clients disagree on operation names, arguments, order/item/address shapes, and the meaning of `assignOrder`; exposing aliases to the current generic order mutations would preserve or expand unsafe state changes. The smallest safe implementation boundary is to review/approve the canonical contract first, then implement authenticated adapters and transition checks with tests. No deployment or production changes were made.
+diff --git a/docs/API_CONTRACT.md b/docs/API_CONTRACT.md
+new file mode 100644
+index 0000000..87c2134
+--- /dev/null
++++ b/docs/API_CONTRACT.md
+@@ -0,0 +1,195 @@
++# Proposed canonical API contract
++
++**Status: proposal only.** This document defines one contract for the existing customer mobile, restaurant mobile, rider mobile, admin web, and customer web clients. It is not an implemented or runtime-validated schema. It deliberately keeps the current Apollo GraphQL + Mongoose/MongoDB architecture as the target for this phase; the separate Terraform PostgreSQL stack must not become a second application database without an approved architecture change.
++
++## Contract principles
++
++1. Use one canonical GraphQL endpoint and one set of object/input types for every client.
++2. Derive identity and role from the authenticated account on the server. Clients never submit a trusted `userId`, role, total, paid amount, or order status.
++3. Price orders on the server using current menu, variation, add-on, zone, tax, delivery, and coupon records.
++4. Enforce role, ownership, and state-transition rules in resolvers/services; MongoDB is not protected by Firebase rules.
++5. Return the minimum personal data a caller needs. Never expose password hashes, OTPs, notification tokens, provider secrets, or internal auth/session data through GraphQL.
++6. Keep backward compatibility in explicit adapters while clients are migrated. Do not expose unsafe generic aliases to the current arbitrary-status mutation.
++
++## Canonical roles and enums
++
++```graphql
++enum UserRole {
++  CUSTOMER
++  VENDOR
++  RIDER
++  ADMIN
++}
++
++enum OrderStatus {
++  PENDING
++  ACCEPTED
++  ASSIGNED
++  PICKED_UP
++  DELIVERED
++  COMPLETED
++  CANCELLED
++}
++
++enum PaymentMethod {
++  COD
++  CARD
++  PAYPAL
++  STRIPE
++}
++
++enum PaymentStatus {
++  PENDING
++  AUTHORIZED
++  PAID
++  FAILED
++  REFUNDED
++}
++
++type Money {
++  amountMinor: Int!
++  currency: String!
++}
++```
++
++Use integer minor units (for example, cents/piastres) or a rigorously specified decimal scalar for money; do not accept client-calculated totals as authoritative. `USER` in existing data maps to `CUSTOMER`; existing `PICKED` maps to `PICKED_UP`. Perform that mapping in an explicit compatibility layer and migration plan, not by silently changing stored records.
++
++## Required operation surface
++
++The exact naming can be adjusted before implementation, but clients should converge on this semantic contract:
++
++```graphql
++type Query {
++  currentUser: User
++  restaurants(page: Int, limit: Int, search: String, zoneId: ID): RestaurantConnection!
++  restaurant(id: ID!): Restaurant
++  zones: [Zone!]!
++  food(restaurantId: ID!, categoryId: ID): [Food!]!
++  myAddresses: [Address!]!
++  myOrders(page: Int, limit: Int, status: OrderStatus): OrderConnection!
++  order(id: ID!): Order
++  restaurantOrders(restaurantId: ID!, page: Int, limit: Int, status: OrderStatus): OrderConnection!
++  availableOrders(page: Int, limit: Int): OrderConnection!
++  adminUsers(page: Int, limit: Int, search: String): UserConnection!
++  adminRestaurants(page: Int, limit: Int, search: String): RestaurantConnection!
++  adminRiders(page: Int, limit: Int, search: String, zoneId: ID): UserConnection!
++  adminOrders(page: Int, limit: Int, status: OrderStatus): OrderConnection!
++}
++
++type Mutation {
++  registerCustomer(input: RegisterCustomerInput!): AuthPayload!
++  login(input: LoginInput!): AuthPayload!
++  updateProfile(input: UpdateProfileInput!): User!
++  changePassword(input: ChangePasswordInput!): SuccessMessage!
++  requestPasswordReset(email: String!): SuccessMessage!
++  confirmPasswordReset(input: ConfirmPasswordResetInput!): SuccessMessage!
++
++  createAddress(input: AddressInput!): Address!
++  updateAddress(id: ID!, input: AddressInput!): Address!
++  deleteAddress(id: ID!): SuccessMessage!
++
++  createOrder(input: CreateOrderInput!): Order!
++  acceptOrder(orderId: ID!, preparationMinutes: Int!): Order!
++  rejectOrder(orderId: ID!, reason: String!): Order!
++  cancelOrder(orderId: ID!, reason: String!): Order!
++  assignRider(orderId: ID!, riderId: ID!): Order!
++  claimOrder(orderId: ID!): Order!
++  markOrderPickedUp(orderId: ID!): Order!
++  markOrderDelivered(orderId: ID!): Order!
++  completeOrder(orderId: ID!): Order!
++  setRiderAvailability(available: Boolean!): User!
++  updateRiderLocation(latitude: Float!, longitude: Float!): SuccessMessage!
++
++  createPaymentCheckout(orderId: ID!, provider: PaymentMethod!): PaymentCheckout!
++  adminCreateRestaurant(input: RestaurantInput!): Restaurant!
++  adminUpdateRestaurant(id: ID!, input: RestaurantUpdateInput!): Restaurant!
++  adminCreateRider(input: RiderInput!): User!
++  adminUpdateUserStatus(userId: ID!, active: Boolean!): User!
++}
++
++type Subscription {
++  orderUpdated(orderId: ID!): Order!
++  riderLocationUpdated(orderId: ID!): RiderLocation!
++}
++```
++
++`Connection`, `User`, `Restaurant`, `Food`, `Address`, `Order`, `PaymentCheckout`, and input definitions should be finalized from the actual client fields before schema implementation. The snippet is an operation-surface outline, not a complete executable SDL.
++
++### Order input and server-owned totals
++
++```graphql
++input CreateOrderInput {
++  restaurantId: ID!
++  items: [OrderLineInput!]!
++  addressId: ID
++  deliveryAddress: DeliveryAddressInput
++  couponCode: String
++  paymentMethod: PaymentMethod!
++  tipAmountMinor: Int
++  instructions: String
++}
++
++input OrderLineInput {
++  foodId: ID!
++  variationId: ID
++  optionIds: [ID!]
++  quantity: Int!
++  specialInstructions: String
++}
++```
++
++Exactly one of `addressId` or `deliveryAddress` must be supplied. The server loads the restaurant, menu items, variations, add-on options, zone, current tax/fees, and coupon; it verifies availability and that all items belong to the selected restaurant; then it computes and persists an immutable price snapshot. Creation must be idempotent for a client retry and must not create a duplicate order.
++
++### Order lifecycle and allowed actors
++
++| Current state | Next state | Authorized actor / condition |
++|---|---|---|
++| `PENDING` | `ACCEPTED` | The owner of the order’s restaurant. |
++| `PENDING` | `CANCELLED` | Customer who placed the order, restaurant owner, or admin, subject to cancellation policy. |
++| `ACCEPTED` | `ASSIGNED` | Admin/authorized dispatcher assigns a valid, available rider in the delivery zone; alternatively, an explicitly designed rider claim service assigns the authenticated rider atomically. |
++| `ACCEPTED` | `CANCELLED` | Restaurant owner or admin; customer cancellation only if policy allows. |
++| `ASSIGNED` | `PICKED_UP` | The rider assigned to this order. |
++| `ASSIGNED` | `CANCELLED` | Admin/dispatcher before pickup, with reason and any payment action. |
++| `PICKED_UP` | `DELIVERED` | The rider assigned to this order, with delivery evidence/policy as required. |
++| `DELIVERED` | `COMPLETED` | Customer confirmation or a defined server/admin completion rule. |
++
++`COMPLETED` and `CANCELLED` are terminal. A post-pickup cancellation, reassignment, refund, or correction must be an explicit audited admin workflow, not an arbitrary status write. Every transition should be atomic, timestamped, evented, and rejected when the stored current state does not match the transition’s required state.
++
++### Authorization matrix
++
++| Operation family | Customer | Restaurant owner | Assigned rider | Admin |
++|---|---|---|---|---|
++| Public restaurant/menu browsing | Read active public records | Read active public records | Read active public records | Read |
++| Profile/address | Own record only | Own account only | Own account only | Managed, audited support path |
++| Order detail/history | Own orders only | Own restaurant’s orders | Assigned orders only | Any order, audited |
++| Accept/reject | No | Own restaurant, valid state | No | Override with audit |
++| Rider assignment | No | Only if an approved dispatch policy allows it | Claim only if eligible and unassigned | Assign/reassign |
++| Pickup/delivery status | No | No | Assigned order only, valid next state | Audited override |
++| User/store/rider administration | No | Own store profile only | Own rider profile only | Admin role only |
++| Order/location subscriptions | Own order only | Own restaurant’s orders | Assigned orders only | Admin role only |
++
++Authorization must include both the role check and object-ownership check. A valid JWT alone is not sufficient.
++
++## Payments, notifications, and subscriptions
++
++* `createPaymentCheckout` creates a provider-side checkout/session and returns a redirect/client secret appropriate to the provider. It does not mark the order paid.
++* A signed, idempotent provider webhook is the authority for `AUTHORIZED`, `PAID`, `FAILED`, and `REFUNDED`. The webhook verifies amount, currency, order identity, and provider event replay; the client cannot set these fields.
++* COD remains `PENDING` until the defined cash-collection step is recorded.
++* Push-token registration only stores a token. A separate server-side dispatcher must send notifications, handle provider errors/token expiry, avoid sending sensitive order data, and be covered by tests.
++* Subscriptions require authentication and an ownership filter at subscription setup and event delivery. Use a cross-instance event transport for multi-replica operation; in-memory PubSub is not sufficient.
++
++## Client migration and compatibility
++
++1. Keep the current schema stable while the canonical API is added behind secure services.
++2. Build explicit adapters for old names/arguments only where semantics and ownership can be preserved. Do not map restaurant and rider `assignOrder(id)` to one ambiguous operation.
++3. Migrate each client in this order: customer mobile/web, restaurant, rider, admin; validate each operation against generated schema/types.
++4. Map legacy `orderInput` arrays and status/timestamp names to the canonical order model. Do not accept legacy client totals or payment state.
++5. Remove old compatibility operations only after telemetry confirms no supported client uses them and the data impact has been documented.
++
++## Acceptance checks before implementation is considered complete
++
++* Schema validation succeeds for every operation in `CLIENT_OPERATION_INVENTORY.md`, with each client on the same documented contract.
++* Resolver tests prove customer/vendor/rider/admin isolation for reads, writes, and subscriptions.
++* Order tests cover every allowed and rejected transition, concurrency, retries, item/restaurant membership, pricing, cancellation, and rider reassignment.
++* Payment tests cover success/failure, webhook signature checks, duplicate events, refunds, COD, and client tampering.
++* Build/type-check and end-to-end tests run on the supported Node/Expo toolchains without installing dependencies during this audit phase.
+diff --git a/docs/CLIENT_OPERATION_INVENTORY.md b/docs/CLIENT_OPERATION_INVENTORY.md
+new file mode 100644
+index 0000000..55bee22
+--- /dev/null
++++ b/docs/CLIENT_OPERATION_INVENTORY.md
+@@ -0,0 +1,450 @@
++# Client GraphQL operation and root-field inventory
++
++Repository snapshot: `b6b751282b843623f9577ae8baf6705247e4d495` (main, 2026-08-20). The scan covers JavaScript/TypeScript source under all five app directories and extracts named operations from GraphQL-tagged templates, `#graphql` templates, and templates beginning with an operation keyword. Each operation root field is compared with the backend SDL declaration. This is static source matching—not GraphQL schema validation, resolver/runtime testing, or proof that a declared field works. Dynamic documents and unusual template interpolation may be missed.
++
++## Customer mobile
++
++| Source location | Operation label | Root field | Backend SDL |
++|---|---|---|---|
++| `shita-multivendor-app/src/apollo/mutations.js:3` | `mutation SendChatMessage` | `sendChatMessage` | **Missing** |
++| `shita-multivendor-app/src/apollo/mutations.js:21` | `mutation PlaceOrder` | `placeOrder` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:97` | `mutation PushToken` | `pushToken` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:104` | `mutation ForgotPassword` | `forgotPassword` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:110` | `mutation ResetPassword` | `resetPassword` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:116` | `mutation Coupon` | `coupon` | **Missing** |
++| `shita-multivendor-app/src/apollo/mutations.js:129` | `mutation DeleteAddress` | `deleteAddress` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:142` | `mutation DeleteBulkAddresses` | `deleteBulkAddresses` | **Missing** |
++| `shita-multivendor-app/src/apollo/mutations.js:155` | `mutation CreateAddress` | `createAddress` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:169` | `mutation EditAddress` | `editAddress` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:183` | `mutation ChangePassword` | `changePassword` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:187` | `mutation SelectAddress` | `selectAddress` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:201` | `mutation ReviewOrder` | `reviewOrder` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:284` | `mutation AddFavourite` | `addFavourite` | **Missing** |
++| `shita-multivendor-app/src/apollo/mutations.js:299` | `mutation EmailExist` | `emailExist` | **Missing** |
++| `shita-multivendor-app/src/apollo/mutations.js:308` | `mutation PhoneExist` | `phoneExist` | **Missing** |
++| `shita-multivendor-app/src/apollo/mutations.js:317` | `mutation SendOtpToEmail` | `sendOtpToEmail` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:324` | `mutation SendOtpToPhoneNumber` | `sendOtpToPhoneNumber` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:331` | `mutation deactivated` | `Deactivate` | **Missing** |
++| `shita-multivendor-app/src/apollo/mutations.js:338` | `mutation Login` | `login` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:352` | `mutation CreateUser` | `createUser` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:373` | `mutation UpdateUser` | `updateUser` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:384` | `mutation UpdateNotificationStatus` | `updateNotificationStatus` | Declared |
++| `shita-multivendor-app/src/apollo/mutations.js:402` | `mutation createActivity` | `createActivity` | **Missing** |
++| `shita-multivendor-app/src/apollo/mutations.js:420` | `mutation VerifyOtp` | `verifyOtp` | Declared |
++| `shita-multivendor-app/src/apollo/queries.js:4` | `query Users` | `users` | Declared |
++| `shita-multivendor-app/src/apollo/queries.js:12` | `query GetReviewsByRestaurant` | `reviewsByRestaurant` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:351` | `query GetCountryByIso` | `getCountryByIso` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:362` | `query Order` | `order` | Declared |
++| `shita-multivendor-app/src/apollo/queries.js:420` | `query Orders` | `orders` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:506` | `query Configuration` | `configuration` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:528` | `query Restaurants` | `nearByRestaurants` | Declared |
++| `shita-multivendor-app/src/apollo/queries.js:619` | `query Restaurants` | `nearByRestaurantsPreview` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:675` | `query TopRatedVendors` | `topRatedVendorsPreview` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:682` | `query TopRatedVendors` | `topRatedVendors` | Declared |
++| `shita-multivendor-app/src/apollo/queries.js:705` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-app/src/apollo/queries.js:779` | `query Cuisines` | `cuisines` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:789` | `query Rider` | `rider` | Declared |
++| `shita-multivendor-app/src/apollo/queries.js:796` | `query Taxes` | `taxes` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:804` | `query Tips` | `tips` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:812` | `query UserFavourite` | `userFavourite` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:946` | `query fetchCategoryDetailsByStoreIdForMobile` | `fetchCategoryDetailsByStoreIdForMobile` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:955` | `query popularFoodItems` | `popularFoodItems` | Declared |
++| `shita-multivendor-app/src/apollo/queries.js:976` | `query Chat` | `chat` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:990` | `query GetRecentOrderRestaurants` | `recentOrderRestaurantsPreview` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:998` | `query GetRecentOrderRestaurants` | `recentOrderRestaurants` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:1024` | `query GetMostOrderedRestaurants` | `mostOrderedRestaurantsPreview` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:1032` | `query GetMostOrderedRestaurants` | `mostOrderedRestaurants` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:1056` | `query RelatedItems` | `relatedItems` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:1077` | `query PopularItems` | `popularItems` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:1085` | `query Banners` | `banners` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:1097` | `query Zones` | `zones` | Declared |
++| `shita-multivendor-app/src/apollo/queries.js:1117` | `query GetVersions` | `getVersions` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:1128` | `query subCategories` | `subCategories` | **Missing** |
++| `shita-multivendor-app/src/apollo/queries.js:1138` | `query subCategoriesByParentId` | `subCategoriesByParentId` | **Missing** |
++| `shita-multivendor-app/src/apollo/subscriptions.js:1` | `subscription SubscriptionOrder` | `subscriptionOrder` | Declared |
++| `shita-multivendor-app/src/apollo/subscriptions.js:13` | `subscription SubscriptionRiderLocation` | `subscriptionRiderLocation` | **Missing** |
++| `shita-multivendor-app/src/apollo/subscriptions.js:20` | `subscription OrderStatusChanged` | `orderStatusChanged` | Declared |
++| `shita-multivendor-app/src/apollo/subscriptions.js:100` | `subscription SubscriptionNewMessage` | `subscriptionNewMessage` | **Missing** |
++
++## Restaurant mobile
++
++| Source location | Operation label | Root field | Backend SDL |
++|---|---|---|---|
++| `shita-multivendor-store/lib/api/graphql/mutation/login/index.ts:4` | `mutation RestaurantLogin` | `restaurantLogin` | **Missing** |
++| `shita-multivendor-store/lib/api/graphql/mutation/login/index.ts:21` | `query LastOrderCreds` | `lastOrderCreds` | **Missing** |
++| `shita-multivendor-store/lib/api/graphql/mutation/notification/index.ts:4` | `mutation saveRestaurantToken` | `saveRestaurantToken` | **Missing** |
++| `shita-multivendor-store/lib/api/graphql/mutation/order/index.ts:4` | `mutation AcceptOrder` | `acceptOrder` | **Missing** |
++| `shita-multivendor-store/lib/api/graphql/mutation/order/index.ts:14` | `mutation CancelOrder` | `cancelOrder` | Declared |
++| `shita-multivendor-store/lib/api/graphql/mutation/order/index.ts:23` | `mutation muteRing` | `muteRing` | **Missing** |
++| `shita-multivendor-store/lib/api/graphql/mutation/order/index.ts:29` | `mutation OrderPickedUp` | `orderPickedUp` | **Missing** |
++| `shita-multivendor-store/lib/api/graphql/mutation/restaurant/index.ts:4` | `mutation ToggleAvailability` | `toggleAvailability` | **Missing** |
++| `shita-multivendor-store/lib/api/graphql/query/configuration/index.ts:4` | `query Configuration` | `configuration` | **Missing** |
++| `shita-multivendor-store/lib/api/graphql/query/restaurant/index.ts:4` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/activity.mutation.ts:1` | `mutation createActivity` | `createActivity` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/address.mutation.ts:1` | `mutation DeleteAddress` | `deleteAddress` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/address.mutation.ts:15` | `mutation DeleteBulkAddresses` | `deleteBulkAddresses` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/address.mutation.ts:29` | `mutation CreateAddress` | `createAddress` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/address.mutation.ts:44` | `mutation EditAddress` | `editAddress` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/address.mutation.ts:59` | `mutation SelectAddress` | `selectAddress` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/authentication.mutation.ts:1` | `mutation EmailExist` | `emailExist` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/authentication.mutation.ts:10` | `mutation PhoneExist` | `phoneExist` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/authentication.mutation.ts:19` | `mutation SendOtpToEmail` | `sendOtpToEmail` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/authentication.mutation.ts:26` | `mutation SendOtpToPhoneNumber` | `sendOtpToPhoneNumber` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/authentication.mutation.ts:33` | `mutation deactivated` | `Deactivate` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/authentication.mutation.ts:40` | `mutation Login` | `login` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/authentication.mutation.ts:54` | `mutation ForgotPassword` | `forgotPassword` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/authentication.mutation.ts:64` | `mutation ResetPassword` | `resetPassword` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/chat.mutation.ts:4` | `mutation SendChatMessage` | `sendChatMessage` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/notification.mutation.ts:2` | `mutation UpdateNotificationStatus` | `updateNotificationStatus` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/order.mutation.ts:4` | `mutation AssignOrder` | `assignOrder` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/order.mutation.ts:18` | `mutation UpdateOrderStatusRider` | `updateOrderStatusRider` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/order.mutation.ts:35` | `mutation ReviewOrder` | `reviewOrder` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/order.mutation.ts:117` | `mutation PlaceOrder` | `placeOrder` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/push-token.mutation.ts:1` | `mutation PushToken` | `pushToken` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/restaurant.mutation.ts:1` | `mutation AddFavourite` | `addFavourite` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/rider.mutation.ts:4` | `mutation UpdateRiderLocation` | `updateRiderLocation` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/rider.mutation.ts:12` | `mutation ToggleStore` | `toggleStoreAvailability` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/rider.mutation.ts:21` | `mutation UpdateRiderLicenseDetails` | `updateRiderLicenseDetails` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/rider.mutation.ts:34` | `mutation UpdateRiderVehicleDetails` | `updateRiderVehicleDetails` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/rider.mutation.ts:47` | `mutation UpdateRestaurantBussinessDetails` | `updateRestaurantBussinessDetails` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/user.mutation.ts:1` | `mutation CreateUser` | `createUser` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/user.mutation.ts:20` | `mutation UpdateUser` | `updateUser` | Declared |
++| `shita-multivendor-store/lib/apollo/mutations/withdraw-request.mutation.ts:4` | `mutation Mutation` | `createWithdrawRequest` | **Missing** |
++| `shita-multivendor-store/lib/apollo/mutations/work-schedule.ts:4` | `mutation UpdateTimings` | `updateTimings` | **Missing** |
++| `shita-multivendor-store/lib/apollo/queries/configuration.query.ts:1` | `query Configuration` | `configuration` | **Missing** |
++| `shita-multivendor-store/lib/apollo/queries/earnings.query.ts:4` | `query StoreEarningsGraph` | `storeEarningsGraph` | **Missing** |
++| `shita-multivendor-store/lib/apollo/queries/earnings.query.ts:38` | `query Earnings` | `earnings` | **Missing** |
++| `shita-multivendor-store/lib/apollo/queries/orders.ts:4` | `query Orders` | `restaurantOrders` | **Missing** |
++| `shita-multivendor-store/lib/apollo/queries/store.query.ts:4` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-store/lib/apollo/queries/store.query.ts:26` | `query StoreEarnings` | `earnings` | **Missing** |
++| `shita-multivendor-store/lib/apollo/queries/store.query.ts:43` | `query TransactionHistory` | `transactionHistory` | **Missing** |
++| `shita-multivendor-store/lib/apollo/queries/store.query.ts:55` | `query StoreCurrentWithdrawRequest` | `storeCurrentWithdrawRequest` | **Missing** |
++| `shita-multivendor-store/lib/apollo/queries/store.query.ts:66` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-store/lib/apollo/queries/store.query.ts:109` | `query Orders` | `restaurantOrders` | **Missing** |
++| `shita-multivendor-store/lib/apollo/queries/version.query.ts:10` | `query GetVersions` | `getVersions` | **Missing** |
++| `shita-multivendor-store/lib/apollo/subscriptions.ts:4` | `subscription SubscribePlaceOrder` | `subscribePlaceOrder` | Declared |
++
++## Rider mobile
++
++| Source location | Operation label | Root field | Backend SDL |
++|---|---|---|---|
++| `shita-multivendor-rider/lib/api/graphql/mutation/login/index.ts:4` | `mutation RiderLogin` | `riderLogin` | **Missing** |
++| `shita-multivendor-rider/lib/api/graphql/mutation/login/index.ts:23` | `query LastOrderCreds` | `lastOrderCreds` | **Missing** |
++| `shita-multivendor-rider/lib/api/graphql/query/configuration/index.ts:4` | `query Configuration` | `configuration` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/activity.mutation.ts:1` | `mutation createActivity` | `createActivity` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/address.mutation.ts:1` | `mutation DeleteAddress` | `deleteAddress` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/address.mutation.ts:15` | `mutation DeleteBulkAddresses` | `deleteBulkAddresses` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/address.mutation.ts:29` | `mutation CreateAddress` | `createAddress` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/address.mutation.ts:44` | `mutation EditAddress` | `editAddress` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/address.mutation.ts:59` | `mutation SelectAddress` | `selectAddress` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/authentication.mutation.ts:1` | `mutation EmailExist` | `emailExist` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/authentication.mutation.ts:10` | `mutation PhoneExist` | `phoneExist` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/authentication.mutation.ts:19` | `mutation SendOtpToEmail` | `sendOtpToEmail` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/authentication.mutation.ts:26` | `mutation SendOtpToPhoneNumber` | `sendOtpToPhoneNumber` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/authentication.mutation.ts:33` | `mutation deactivated` | `Deactivate` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/authentication.mutation.ts:40` | `mutation Login` | `login` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/authentication.mutation.ts:54` | `mutation ForgotPassword` | `forgotPassword` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/authentication.mutation.ts:64` | `mutation ResetPassword` | `resetPassword` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/chat.mutation.ts:4` | `mutation SendChatMessage` | `sendChatMessage` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/notification.mutation.ts:2` | `mutation UpdateNotificationStatus` | `updateNotificationStatus` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/order.mutation.ts:4` | `mutation AssignOrder` | `assignOrder` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/order.mutation.ts:18` | `mutation UpdateOrderStatusRider` | `updateOrderStatusRider` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/order.mutation.ts:35` | `mutation ReviewOrder` | `reviewOrder` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/order.mutation.ts:117` | `mutation PlaceOrder` | `placeOrder` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/push-token.mutation.ts:1` | `mutation PushToken` | `pushToken` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/restaurant.mutation.ts:1` | `mutation AddFavourite` | `addFavourite` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/rider.mutation.ts:4` | `mutation EditRider` | `editRider` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/rider.mutation.ts:20` | `mutation UpdateRiderLocation` | `updateRiderLocation` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/rider.mutation.ts:28` | `mutation ToggleRider` | `toggleAvailablity` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/rider.mutation.ts:36` | `mutation UpdateRiderLicenseDetails` | `updateRiderLicenseDetails` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/rider.mutation.ts:49` | `mutation UpdateRiderVehicleDetails` | `updateRiderVehicleDetails` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/rider.mutation.ts:62` | `mutation UpdateRiderBussinessDetails` | `updateRiderBussinessDetails` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/rider.mutation.ts:76` | `mutation UpdateWorkSchedule` | `updateWorkSchedule` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/rider.mutation.ts:101` | `mutation UploadImageToS3` | `uploadImageToS3` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/mutations/user.mutation.ts:1` | `mutation CreateUser` | `createUser` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/user.mutation.ts:20` | `mutation UpdateUser` | `updateUser` | Declared |
++| `shita-multivendor-rider/lib/apollo/mutations/withdraw-request.mutation.ts:4` | `mutation Mutation` | `createWithdrawRequest` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/banner.query.ts:1` | `query Banners` | `banners` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/category.query.ts:1` | `query subCategoriesByParentId` | `subCategoriesByParentId` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/chat.query.ts:4` | `query Chat` | `chat` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/cities.query.ts:1` | `query GetCountryByIso` | `getCountryByIso` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/coupon.query.ts:1` | `mutation Coupon` | `coupon` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/cuisine.query.ts:1` | `query Cuisines` | `cuisines` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/earnings.query.ts:4` | `query RiderEarningsGraph` | `riderEarningsGraph` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/earnings.query.ts:43` | `query Earnings` | `earnings` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/food.query.ts:1` | `query RelatedItems` | `relatedItems` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/food.query.ts:23` | `query PopularItems` | `popularItems` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/order/order-1.query.ts:1` | `query Order` | `order` | Declared |
++| `shita-multivendor-rider/lib/apollo/queries/order/order-1.query.ts:60` | `query Orders` | `orders` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/order/order-2.query.ts:79` | `query GetRecentOrderRestaurants` | `recentOrderRestaurantsPreview` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/order/order-2.query.ts:87` | `query GetRecentOrderRestaurants` | `recentOrderRestaurants` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/resturant/configuration.query.ts:1` | `query Configuration` | `configuration` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/resturant/restaurant-3.query.ts:1` | `query UserFavourite` | `userFavourite` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/resturant/restaurant-3.query.ts:76` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-rider/lib/apollo/queries/resturant/resturant-2.query.ts:42` | `query Restaurants` | `nearByRestaurants` | Declared |
++| `shita-multivendor-rider/lib/apollo/queries/resturant/resturant-2.query.ts:134` | `query Restaurants` | `nearByRestaurantsPreview` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/rider.query.ts:4` | `query Rider` | `rider` | Declared |
++| `shita-multivendor-rider/lib/apollo/queries/rider.query.ts:21` | `query RiderEarnings` | `earnings` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/rider.query.ts:40` | `query TransactionHistory` | `transactionHistory` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/rider.query.ts:52` | `query RiderCurrentWithdrawRequest` | `riderCurrentWithdrawRequest` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/rider.query.ts:63` | `query rider` | `rider` | Declared |
++| `shita-multivendor-rider/lib/apollo/queries/rider.query.ts:121` | `query Rider` | `rider` | Declared |
++| `shita-multivendor-rider/lib/apollo/queries/rider.query.ts:132` | `query RiderOrders` | `riderOrders` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/sub-category.query.ts:1` | `query subCategories` | `subCategories` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/taxation.query.ts:1` | `query Taxes` | `taxes` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/tipping.query.ts:1` | `query Tips` | `tips` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/user.query.ts:1` | `query Users` | `users` | Declared |
++| `shita-multivendor-rider/lib/apollo/queries/vendor.query.ts:5` | `query TopRatedVendors` | `topRatedVendorsPreview` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/vendor.query.ts:13` | `query TopRatedVendors` | `topRatedVendors` | Declared |
++| `shita-multivendor-rider/lib/apollo/queries/version.query.ts:10` | `query GetVersions` | `getVersions` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/queries/zone.query.ts:1` | `query Zones` | `zones` | Declared |
++| `shita-multivendor-rider/lib/apollo/subscriptions.ts:4` | `subscription SubscriptionRiderLocation` | `subscriptionRiderLocation` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/subscriptions.ts:15` | `subscription OrderStatusChanged` | `orderStatusChanged` | Declared |
++| `shita-multivendor-rider/lib/apollo/subscriptions.ts:101` | `subscription SubscriptionNewMessage` | `subscriptionNewMessage` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/subscriptions.ts:115` | `subscription SubscriptionZoneOrders` | `subscriptionZoneOrders` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/subscriptions.ts:198` | `subscription SubscriptionAssignRider` | `subscriptionAssignRider` | **Missing** |
++| `shita-multivendor-rider/lib/apollo/subscriptions.ts:280` | `subscription SubscriptionOrder` | `subscriptionOrder` | Declared |
++
++## Admin web
++
++| Source location | Operation label | Root field | Backend SDL |
++|---|---|---|---|
++| `shita-multivendor-admin/lib/api/graphql/mutations/addons/index.ts:4` | `mutation CreateAddons` | `createAddons` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/addons/index.ts:19` | `mutation editAddon` | `editAddon` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/addons/index.ts:35` | `mutation DeleteAddon` | `deleteAddon` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/app-versions/index.ts:4` | `mutation SetVersions` | `setVersions` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/authentication/index.ts:4` | `mutation ownerLogin` | `ownerLogin` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/banners/index.ts:4` | `mutation CreateBanner` | `createBanner` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/banners/index.ts:18` | `mutation editBanner` | `editBanner` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/banners/index.ts:32` | `mutation DeleteBanner` | `deleteBanner` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/category/index.ts:4` | `mutation CreateCategory` | `createCategory` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/category/index.ts:34` | `mutation EditCategory` | `editCategory` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/category/index.ts:64` | `mutation DeleteCategory` | `deleteCategory` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/commission-rate/index.ts:3` | `mutation UpdateCommission` | `updateCommission` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:4` | `mutation SAVE_EMAIL_CONFIGURATION` | `saveEmailConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:18` | `mutation SAVE_FORM_EMAIL_CONFIGURATION` | `saveFormEmailConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:29` | `mutation SAVE_SENDGRID_API_KEY` | `saveSendGridConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:44` | `mutation SAVE_FIREBASE_CONFIGURATION` | `saveFirebaseConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:62` | `mutation SAVE_SENTRY_CONFIGURATION` | `saveSentryConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:78` | `mutation SAVE_GOOGLE_API_KEY_CONFIGURATION` | `saveGoogleApiKeyConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:89` | `mutation SAVE_CLOUDINARY_CONFIGURATION` | `saveCloudinaryConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:101` | `mutation SAVE_AMPLITUDE_API_KEY_CONFIGURATION` | `saveAmplitudeApiKeyConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:113` | `mutation SAVE_GOOGLE_CLIENT_ID_CONFIGURATION` | `saveGoogleClientIDConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:127` | `mutation SAVE_WEB_CONFIGURATION` | `saveWebConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:137` | `mutation SAVE_APP_CONFIGURATION` | `saveAppConfigurations` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:150` | `mutation SAVE_DELIVERY_RATE_CONFIGURATION` | `saveDeliveryRateConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:162` | `mutation SAVE_PAYPAL_CONFIGURATION` | `savePaypalConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:175` | `mutation SAVE_STRIPE_CONFIGURATION` | `saveStripeConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:187` | `mutation SAVE_TWILIO_CONFIGURATION` | `saveTwilioConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:203` | `mutation SAVE_VERIFICATIONS_TOGGLE` | `saveVerificationsToggle` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/configuration/index.ts:215` | `mutation SAVE_CURRENCY_CONFIGURATION` | `saveCurrencyConfiguration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/coupons/index.ts:4` | `mutation CreateCoupon` | `createCoupon` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/coupons/index.ts:17` | `mutation editCoupon` | `editCoupon` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/coupons/index.ts:30` | `mutation DeleteCoupon` | `deleteCoupon` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/coupons-restaurant/index.tsx:4` | `mutation createRestaurantCoupon` | `createRestaurantCoupon` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/coupons-restaurant/index.tsx:21` | `mutation EditRestaurantCoupon` | `editRestaurantCoupon` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/coupons-restaurant/index.tsx:38` | `mutation DeleteRestaurantCoupon` | `deleteRestaurantCoupon` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/cuisines/index.ts:4` | `mutation CreateCuisine` | `createCuisine` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/cuisines/index.ts:15` | `mutation editCuisine` | `editCuisine` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/cuisines/index.ts:26` | `mutation DeleteCuisine` | `deleteCuisine` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/deliveryOptions/index.tsx:4` | `mutation UpdateDeliveryOptions` | `updateDeliveryOptions` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/dispatch/index.ts:4` | `mutation UpdateStatus` | `updateStatus` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/dispatch/index.ts:12` | `mutation AssignRider` | `assignRider` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/food/index.ts:4` | `mutation CreateFood` | `createFood` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/food/index.ts:34` | `mutation EditFood` | `editFood` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/food/index.ts:64` | `mutation DeleteFood` | `deleteFood` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/notifications/index.ts:4` | `mutation SendNotificationUser` | `sendNotificationUser` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/notifications/index.ts:16` | `mutation MarkWebNotificationsAsRead` | `markWebNotificationsAsRead` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/options/index.ts:4` | `mutation CreateOptions` | `createOptions` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/options/index.ts:18` | `mutation DeleteOption` | `deleteOption` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/options/index.ts:32` | `mutation EditOption` | `editOption` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/restaurant/index.ts:4` | `mutation CreateRestaurant` | `createRestaurant` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/restaurant/index.ts:38` | `mutation DeleteRestaurant` | `deleteRestaurant` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/restaurant/index.ts:47` | `mutation HardDeleteRestaurant` | `hardDeleteRestaurant` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/restaurant/index.ts:53` | `mutation updateDeliveryBoundsAndLocation` | `updateDeliveryBoundsAndLocation` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/restaurant/index.ts:89` | `mutation EditRestaurant` | `editRestaurant` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/restaurant/index.ts:121` | `mutation DuplicateRestaurant` | `duplicateRestaurant` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/restaurant/index.ts:153` | `mutation UpdateFoodOutOfStock` | `updateFoodOutOfStock` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/restaurant/index.ts:167` | `mutation updateRestaurantDelivery` | `updateRestaurantDelivery` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/restaurant/index.ts:189` | `mutation updateRestaurantBussinessDetails` | `updateRestaurantBussinessDetails` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/riders/index.tsx:4` | `mutation CreateRider` | `createRider` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/riders/index.tsx:21` | `mutation EditRider` | `editRider` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/riders/index.tsx:37` | `mutation DeleteRider` | `deleteRider` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/riders/index.tsx:45` | `mutation ToggleRider` | `toggleAvailablity` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/shop-type/index.ts:4` | `mutation CreateShopType` | `createShopType` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/shop-type/index.ts:14` | `mutation UpdateShopType` | `updateShopType` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/shop-type/index.ts:24` | `mutation DeleteShopType` | `deleteShopType` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/staff/index.ts:4` | `mutation CreateStaff` | `createStaff` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/staff/index.ts:19` | `mutation EditStaff` | `editStaff` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/staff/index.ts:34` | `mutation DeleteStaff` | `deleteStaff` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/sub-category/index.ts:4` | `mutation createSubCategories` | `createSubCategories` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/sub-category/index.ts:10` | `mutation deleteSubCtg` | `deleteSubCategory` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/supportTickets/index.ts:4` | `mutation CreateSupportTicket` | `createSupportTicket` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/supportTickets/index.ts:25` | `mutation CreateMessage` | `createMessage` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/supportTickets/index.ts:39` | `mutation UpdateSupportTicketStatus` | `updateSupportTicketStatus` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/taxations/index.ts:1` | `mutation CreateTaxation` | `createTaxation` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/taxations/index.ts:8` | `mutation editTaxation` | `editTaxation` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/timing/index.tsx:4` | `mutation UpdateTimings` | `updateTimings` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/tippings/index.ts:4` | `mutation CreateTipping` | `createTipping` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/tippings/index.ts:14` | `mutation editTipping` | `editTipping` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/upload/index.ts:4` | `mutation UploadImageToS3` | `uploadImageToS3` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/user.ts:4` | `mutation updateUserStatus` | `updateUserStatus` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/user.ts:13` | `mutation updateUserNotes` | `updateUserNotes` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/user.ts:22` | `mutation deleteUser` | `deleteUser` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/user.ts:30` | `mutation resetUserSession` | `resetUserSession` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/vendor/index.ts:4` | `mutation CreateVendor` | `createVendor` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/vendor/index.ts:19` | `mutation EditVendor` | `editVendor` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/vendor/index.ts:34` | `mutation DeleteVendor` | `deleteVendor` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/withdraw-requests/index.ts:4` | `mutation UpdateWithdrawRequest` | `updateWithdrawReqStatus` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/withdraw-requests/index.ts:73` | `mutation CreateWithdrawRequest` | `createWithdrawRequest` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/mutations/zone/index.ts:4` | `mutation CreateZone` | `createZone` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/zone/index.ts:18` | `mutation EditZone` | `editZone` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/mutations/zone/index.ts:32` | `mutation DeleteZone` | `deleteZone` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/addon/index.ts:4` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/app-versions/index.ts:4` | `query GetVersions` | `getVersions` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/audit.ts:4` | `query AuditLogs` | `auditLogs` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/banners/index.tsx:4` | `query Banners` | `banners` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/category/index.ts:4` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/concurrent/index.tsx:4` | `query FetchStoresAndRidersL` | `riders` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/configuration/index.ts:4` | `query getConfiguration` | `configuration` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/coupons/index.ts:4` | `query Coupons` | `coupons` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/coupons-restaurant/index.tsx:4` | `query GetRestaurantCoupons` | `restaurantCoupons` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/cuisines/index.ts:4` | `query Cuisines` | `cuisines` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:5` | `query GetDashboardUsers` | `getDashboardUsers` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:18` | `query GetDashboardUsersByYear` | `getDashboardUsersByYear` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:35` | `query GetDashboardOrdersByType` | `getDashboardOrdersByType` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:44` | `query GetDashboardSalesByType` | `getDashboardSalesByType` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:54` | `query GetRestaurantDashboardOrdersSalesStats` | `getRestaurantDashboardOrdersSalesStats` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:75` | `query GetRestaurantDashboardSalesOrderCountDetailsByYear` | `getRestaurantDashboardSalesOrderCountDetailsByYear` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:90` | `query GetDashboardOrderSalesDetailsByPaymentMethod` | `getDashboardOrderSalesDetailsByPaymentMethod` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:134` | `query GetStoreDetailsByVendorId` | `getStoreDetailsByVendorId` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:157` | `query GetVendorDashboardStatsCardDetails` | `getVendorDashboardStatsCardDetails` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:178` | `query GetVendorLiveMonitorData` | `getLiveMonitorData` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/dashboard/index.ts:199` | `query GetVendorDashboardGrowthDetailsByYear` | `getVendorDashboardGrowthDetailsByYear` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/earnings/index.ts:4` | `query GetEarning` | `earnings` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/earnings/index.ts:75` | `query GetEarning` | `earnings` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/food/index.ts:4` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/notifications/index.ts:4` | `query GetNotifications` | `notifications` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/notifications/index.ts:15` | `query GetWebNotifications` | `webNotifications` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/options/index.ts:4` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/order.ts:5` | `query OrdersByUser` | `ordersByUser` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/orders/index.ts:4` | `query GetActiveOrders` | `getActiveOrders` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/orders/index.ts:62` | `query ordersByRestId` | `ordersByRestId` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/orders/index.ts:152` | `query ordersByRestIdWithoutPagination` | `ordersByRestIdWithoutPagination` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/orders/index.ts:217` | `query Orders` | `allOrders` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/orders/index.ts:297` | `query allOrdersPaginated` | `allOrdersPaginated` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/orders/index.ts:405` | `query OrdersWithoutPagination` | `allOrdersWithoutPagination` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/ratings/index.tsx:3` | `query Reviews` | `reviews` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:4` | `query restaurants` | `restaurants` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:12` | `query restaurants` | `restaurants` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:28` | `query CommissionRate` | `commissionRate` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:48` | `query restaurants` | `restaurants` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:74` | `query restaurantsPaginated` | `restaurantsPaginated` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:106` | `query getClonedRestaurants` | `getClonedRestaurants` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:133` | `query RestaurantByOwner` | `restaurantByOwner` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:174` | `query RestaurantDeliveryZoneInfo` | `getRestaurantDeliveryZoneInfo` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:196` | `query Restaurant` | `restaurant` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/restaurants/index.ts:259` | `query getClonedRestaurantsPaginated` | `getClonedRestaurantsPaginated` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/riders/index.ts:4` | `query riders` | `riders` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/riders/index.ts:23` | `query Rider` | `rider` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/riders/index.ts:74` | `query RidersByZone` | `ridersByZone` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/shop-types/index.ts:4` | `query FetchShopTypes` | `fetchShopTypes` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/shop-types/index.ts:22` | `query FetchUniqueShopType` | `fetchShopTypeByUnique` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/staff/index.ts:4` | `query staffs` | `staffs` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/sub-categories/index.ts:4` | `query subCategories` | `subCategories` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/sub-categories/index.ts:13` | `query SubCategory` | `subCategory` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/sub-categories/index.ts:22` | `query GetSubCategoriesByParentId` | `subCategoriesByParentId` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/supportTickets/index.ts:7` | `query GetTicketUsersWithLatest` | `getTicketUsersWithLatest` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/supportTickets/index.ts:37` | `query GetTicketUsers` | `getTicketUsers` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/supportTickets/index.ts:55` | `query GetSingleUserSupportTickets` | `getSingleUserSupportTickets` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/supportTickets/index.ts:81` | `query GetSingleSupportTicket` | `getSingleSupportTicket` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/supportTickets/index.ts:103` | `query GetTicketMessages` | `getTicketMessages` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/tippings/index.ts:4` | `query Tips` | `tips` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/token/index.ts:4` | `mutation UploadToken` | `uploadToken` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/transaction-history/index.ts:4` | `query TransactionHistory` | `transactionHistory` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/user/index.ts:4` | `query users` | `users` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/user/index.ts:25` | `query users` | `users` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/queries/user/index.ts:33` | `query GetUser` | `user` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/vendors/index.ts:4` | `query vendors` | `vendors` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/vendors/index.ts:22` | `query vendors` | `vendors` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/vendors/index.ts:30` | `query GetVendor` | `getVendor` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/vendors/index.ts:46` | `query GetVendor` | `getVendor` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/withdraw-requests/index.ts:4` | `query WithdrawRequests` | `withdrawRequests` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/queries/zone/index.ts:4` | `query Zones` | `zones` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/subscription/order-subscription/index.ts:4` | `subscription SubscribePlaceOrder` | `subscribePlaceOrder` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/subscription/order-subscription/index.ts:86` | `subscription SubscriptionDispatcher` | `subscriptionDispatcher` | **Missing** |
++| `shita-multivendor-admin/lib/api/graphql/subscription/order-subscription/index.ts:133` | `subscription SubscriptionOrder` | `subscriptionOrder` | Declared |
++| `shita-multivendor-admin/lib/api/graphql/subscription/rider-subscription/index.ts:4` | `subscription RiderUpdated` | `riderUpdated` | **Missing** |
++
++## Customer web
++
++| Source location | Operation label | Root field | Backend SDL |
++|---|---|---|---|
++| `shita-multivendor-web/lib/api/graphql/mutations/Notification/index.ts:3` | `mutation SaveNotificationTokenWeb` | `saveNotificationTokenWeb` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/Notification/index.ts:9` | `mutation updateNotificationStatus` | `updateNotificationStatus` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/SupportTickets/index.ts:4` | `mutation CreateSupportTicket` | `createSupportTicket` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/SupportTickets/index.ts:25` | `mutation CreateMessage` | `createMessage` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/SupportTickets/index.ts:39` | `mutation UpdateSupportTicketStatus` | `updateSupportTicketStatus` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/addresses/index.ts:4` | `mutation SelectAddress` | `selectAddress` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/addresses/index.ts:22` | `mutation CreateAddress` | `createAddress` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/addresses/index.ts:40` | `mutation EditAddress` | `editAddress` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/addresses/index.ts:58` | `mutation DeleteAddress` | `deleteAddress` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:4` | `mutation Login` | `login` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:43` | `mutation EmailExist` | `emailExist` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:52` | `mutation PhoneExist` | `phoneExist` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:60` | `mutation SendOtpToEmail` | `sendOtpToEmail` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:67` | `mutation SendOtpToPhoneNumber` | `sendOtpToPhoneNumber` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:74` | `mutation ResetPassword` | `resetPassword` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:81` | `mutation CreateUser` | `createUser` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:120` | `mutation UpdateUser` | `updateUser` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:144` | `mutation DeactivateUser` | `Deactivate` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/auth/index.ts:155` | `mutation VerifyOtp` | `verifyOtp` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/chatWithRider/index.ts:4` | `mutation SendChatMessage` | `sendChatMessage` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/coupon/index.ts:4` | `mutation Coupon` | `coupon` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/orders/index.ts:4` | `mutation PlaceOrder` | `placeOrder` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/orders/index.ts:104` | `mutation ReviewOrder` | `reviewOrder` | Declared |
++| `shita-multivendor-web/lib/api/graphql/mutations/orders/index.ts:199` | `mutation AbortOrder` | `abortOrder` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/mutations/restaurant/index.ts:3` | `mutation AddFavourite` | `addFavourite` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/Countries/index.ts:4` | `query getCountries` | `getCountries` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/Countries/index.ts:14` | `query getCitiesByCountry` | `getCitiesByCountry` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/SupportTickets/index.ts:4` | `query GetSingleUserSupportTickets` | `getSingleUserSupportTickets` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/SupportTickets/index.ts:30` | `query GetSingleSupportTicket` | `getSingleSupportTicket` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/SupportTickets/index.ts:52` | `query GetTicketMessages` | `getTicketMessages` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/banner/index.ts:4` | `query Banners` | `banners` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/chatWithRider/index.tsx:4` | `query Chat` | `chat` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/config.ts:4` | `query Configuration` | `configuration` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/cuisines/index.ts:4` | `query Cuisines` | `attachedCuisines` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/cuisines/index.ts:16` | `query RestaurantCuisines` | `nearByRestaurantsCuisines` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/order-tracking/index.ts:3` | `query OrderDetails` | `orderDetails` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/orders/index.ts:4` | `query Orders` | `orders` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/orders/index.ts:98` | `query GetUsersPastOrders` | `getUsersPastOrders` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/orders/index.ts:191` | `query GetUsersActiveOrders` | `getUsersActiveOrders` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/profile/index.ts:28` | `query UserFavourite` | `userFavourite` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/restaurants/index.ts:4` | `query RelatedItems` | `relatedItems` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/restaurants/index.ts:56` | `query GetRecentOrderRestaurants` | `recentOrderRestaurantsPreview` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/restaurants/index.ts:65` | `query GetMostOrderedRestaurants` | `mostOrderedRestaurantsPreview` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/restaurants/index.ts:86` | `query Restaurants` | `nearByRestaurantsPreview` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/restaurants/index.ts:108` | `query RestaurantByIdAndSlug` | `restaurant` | Declared |
++| `shita-multivendor-web/lib/api/graphql/queries/restaurants/index.ts:200` | `query GetReviewsByRestaurant` | `reviewsByRestaurant` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/restaurants/index.ts:230` | `query FetchCategoryDetailsByStoreId` | `fetchCategoryDetailsByStoreId` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/restaurants/index.ts:247` | `query PopularItems` | `popularItems` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/restaurants/index.ts:256` | `query subCategories` | `subCategories` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/rider/index.ts:4` | `query Rider` | `rider` | Declared |
++| `shita-multivendor-web/lib/api/graphql/queries/shop-type/index.ts:3` | `query FetchAllShopTypes` | `fetchAllShopTypes` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/tipping/index.ts:4` | `query Tips` | `tips` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/vendors/index.ts:6` | `query TopRatedVendors` | `topRatedVendorsPreview` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/queries/zone/index.ts:4` | `query Zones` | `zones` | Declared |
++| `shita-multivendor-web/lib/api/graphql/subscription/ChatWithRider/index.tsx:5` | `subscription SubscriptionNewMessage` | `subscriptionNewMessage` | **Missing** |
++| `shita-multivendor-web/lib/api/graphql/subscription/orders/index.ts:3` | `subscription OrderStatusChanged` | `orderStatusChanged` | Declared |
++| `shita-multivendor-web/lib/api/graphql/subscription/orders/index.ts:80` | `subscription SubscriptionOrder` | `subscriptionOrder` | Declared |
++| `shita-multivendor-web/lib/api/graphql/subscription/riderLocation/index.ts:4` | `subscription SubscriptionRiderLocation` | `subscriptionRiderLocation` | **Missing** |
++
++## Distinct root-field counts
++
++| Client | Distinct root fields | Not declared in backend SDL |
++|---|---:|---:|
++| Customer mobile | 59 | 32 |
++| Restaurant mobile | 48 | 30 |
++| Rider mobile | 72 | 46 |
++| Admin web | 155 | 119 |
++| Customer web | 58 | 39 |
+diff --git a/docs/PROJECT_STATUS.md b/docs/PROJECT_STATUS.md
+new file mode 100644
+index 0000000..bfa4c79
+--- /dev/null
++++ b/docs/PROJECT_STATUS.md
+@@ -0,0 +1,48 @@
++# Shita project status — Phase 1A
++
++**Reviewed snapshot:** `b6b751282b843623f9577ae8baf6705247e4d495` (`main`, 2026-08-20).  
++**Review date:** 2026-10-27.  
++**Scope:** Source audit and proposed shared GraphQL contract for the five existing clients.
++
++## Status at the end of Phase 1A
++
++| Area | Status | Evidence / remaining work |
++|---|---|---|
++| Customer Android/iOS app | Exists | Expo/React Native source. Backend contract compatibility is incomplete. |
++| Restaurant app | Exists | Separate Expo/React Native source. Its order acceptance/pickup operations are absent from the included backend SDL. |
++| Rider app | Exists | Separate Expo/React Native source. Its rider login, assignment, and rider-status operations do not match the included backend. |
++| Admin web dashboard | Exists | Next.js source with super-admin/vendor areas. Most admin operations are absent from the included backend. |
++| Customer web storefront | Exists | Next.js source with checkout/tracking flows. Its API operations are not covered by the included backend. |
++| GraphQL backend | Exists, incomplete | Apollo Server + TypeScript + Mongoose/MongoDB. Many declared fields are placeholders; client schemas diverge. |
++| AWS infrastructure | Scaffold only | Terraform describes an AWS/PostgreSQL/PostGIS stack that is not connected to the Mongoose/MongoDB application code. No deployment was inspected. |
++| Order workflow | Partial and unsafe | Order creation and status/assignment writes exist, but store acceptance and rider delivery operations are missing/incompatible and authorization/state transitions are not enforced. |
++| Payments | Not production-functional in included backend | Non-COD orders are marked paid without provider confirmation; client REST routes are absent from this backend source. |
++| Push notifications | Not implemented end-to-end | Token storage exists; no sender/dispatcher path was found. |
++| Arabic/English | Partial source assets | Localization resources exist, but full coverage, RTL behavior, and language QA are unverified. |
++| Commercial license | MIT source license | Commercial use is allowed subject to preserving notices/disclaimer; third-party assets/dependencies require separate review. |
++| Production-data readiness | **Blocked** | Exposed credential material, insecure resolver authorization, client-trusted order prices, contract mismatch, payment/push gaps, and absent tests. |
++
++## Deliverables and changes
++
++* `docs/BACKEND_AUDIT.md` — source findings, security blockers, commercial-use notes, and Rush33 comparison.
++* `docs/API_CONTRACT.md` — proposed canonical GraphQL surface, order lifecycle, authorization matrix, and acceptance checks.
++* `docs/CLIENT_OPERATION_INVENTORY.md` — detected client operation labels, root fields, source locations, and whether each root field is declared in the backend SDL.
++* **No backend source-code changes were made.** The contract mismatch is semantic, not a safe rename-only task. Adding aliases to the current generic status/assignment mutations would not make the clients compatible and could expand access to unsafe order changes. The source repository was not connected to this Replit session; these docs are prepared as reviewable deliverables and were not pushed to GitHub.
++* No dependencies were installed. No credentials were used. No build, test, lint, deployment, production-data operation, or database migration was run.
++
++## Immediate blockers before real customer data
++
++1. Revoke/rotate all committed Google service-account keys and the rider Sentry upload credential. Remove credentials from tracked files and remediate Git history; no revocation or history rewrite has been performed in this phase.
++2. Replace fallback/committed secrets with secret-managed configuration and remove hard-coded deployment credentials.
++3. Choose one database architecture: the included backend uses MongoDB/Mongoose; the Terraform scaffold provisions PostgreSQL/PostGIS.
++4. Enforce current-role checks, least-privilege access, object ownership, and authorized subscriptions throughout every API path.
++5. Make order totals server-owned and implement validated, idempotent order creation and permitted state transitions.
++6. Implement provider-verified payment state and the missing payment routes/webhooks; implement push delivery rather than token storage alone.
++7. Align all five clients with one schema, fix runtime/dependency compatibility, and add tests for authorization, order lifecycle, pricing, concurrency, payment, and notifications.
++8. Complete the third-party asset/license inventory and client-facing privacy/data-retention requirements.
++
++## Comparison and recommended next phase
++
++Using only the Rush33 summary supplied by the project owner, Shita is the better starting point for the requested product surface: it includes customer and driver apps, a separate restaurant app, an admin dashboard, a customer web storefront, and localization assets. Rush33’s supplied report says it has no admin dashboard. Both projects have serious authentication/order-security concerns; the existence of a newer Mongo backend in Shita does not make that backend safe or compatible.
++
++**Recommended direction:** retain Shita as a potential front-end/product-surface base, but do not onboard real data or payments. First approve the canonical contract and chosen database/deployment architecture; then implement the secured backend workflow and adapters in a separate, reviewable phase. Do not continue to Phase 1B until the owner has reviewed and approved this Phase 1A result.
