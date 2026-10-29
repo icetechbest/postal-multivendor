@@ -20,14 +20,6 @@
     "plugins": [
     "expo-router",
       [
-        "@sentry/react-native/expo",
-        {
-          "organization": "ninjas-code",
-          "project": "postal-rider-app",
-          "url": "https://sentry.io/"
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "The app accesses your photos for license, vehicle plate and profile image. Please allow these to continue using the app."

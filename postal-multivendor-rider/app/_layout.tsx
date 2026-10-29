@@ -3,14 +3,11 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
-// import * as Sentry from "sentry-expo";
-import * as Sentry from "@sentry/react-native";
 
 import FlashMessage from "react-native-flash-message";
 
 // Service
 import setupApollo from "@/lib/apollo";
-import { initSentry } from "@/lib/utils/service";
 
 // Providers
 import { AuthProvider } from "@/lib/context/global/auth.context";
@@ -34,8 +31,6 @@ import { requestMediaLibraryPermissionsAsync } from "expo-image-picker";
 import { useEffect } from "react";
 
 import "../global.css";
-
-initSentry();
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen?.preventAutoHideAsync();
@@ -99,4 +94,4 @@ function RootLayout() {
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default RootLayout;

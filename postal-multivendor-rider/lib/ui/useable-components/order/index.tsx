@@ -374,11 +374,33 @@ const Order = ({
                     className="h-14 rounded-3xl py-3 mt-10 w-full"
                     disabled={loadingAssignOrder}
                     style={{ backgroundColor: appTheme.primary }}
-                    onPress={() =>
-                      mutateAssignOrder({
+                    onPress={async () => {
+                      const res = await mutateAssignOrder({
                         variables: { id: _id },
-                      })
-                    }
+                      });
+                      // After accepting, open the map screen with the customer's pinned location
+                      if (res?.data?.assignOrder) {
+                        router.push({
+                          pathname: "/order-detail",
+                          params: {
+                            itemId: _id,
+                            order: JSON.stringify({
+                              _id,
+                              orderStatus:
+                                res.data.assignOrder.orderStatus ?? orderStatus,
+                              restaurant,
+                              deliveryAddress,
+                              paymentMethod,
+                              orderAmount,
+                              paymentStatus,
+                              acceptedAt,
+                              user,
+                            }),
+                            tab: "processing",
+                          },
+                        });
+                      }
+                    }}
                   >
                     {loadingAssignOrder ? (
                       <SpinnerComponent />

@@ -15,9 +15,6 @@ const getEnvVars = (env = Updates.channel) => {
       // WS_GRAPHQL_URL: "wss://YOUR-BACKEND.up.railway.app/graphql",
       GRAPHQL_URL: "https://YOUR-BACKEND.up.railway.app/graphql",
       WS_GRAPHQL_URL: "wss://YOUR-BACKEND.up.railway.app/graphql",
-      SENTRY_DSN:
-        configuration?.riderAppSentryUrl ??
-        "https://e963731ba0f84e5d823a2bbe2968ea4d@o1103026.ingest.sentry.io/6135261",
       // GOOGLE_MAPS_KEY: 'AIzaSyBk4tvTtPaSEAVSvaao2yISz4m8Q-BeE1M',
       GOOGLE_MAPS_KEY:configuration?.googleApiKey,
       ENVIRONMENT: "production",
@@ -27,9 +24,6 @@ const getEnvVars = (env = Updates.channel) => {
   return {
       GRAPHQL_URL: "https://YOUR-BACKEND.up.railway.app/graphql",
       WS_GRAPHQL_URL: "wss://YOUR-BACKEND.up.railway.app/graphql",
-    SENTRY_DSN:
-      configuration?.riderAppSentryUrl ??
-      "https://e963731ba0f84e5d823a2bbe2968ea4d@o1103026.ingest.sentry.io/6135261",
     // GOOGLE_MAPS_KEY: 'AIzaSyBk4tvTtPaSEAVSvaao2yISz4m8Q-BeE1M',
     GOOGLE_MAPS_KEY:configuration?.googleApiKey,
     ENVIRONMENT: "development",

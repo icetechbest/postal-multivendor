@@ -14,8 +14,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "npx eslint && prettier --write .",
-    "upload-sourcemaps": "SENTRY_AUTH_TOKEN=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 npx sentry-expo upload-sourcemaps"
+    "lint": "npx eslint && prettier --write ."
   },
   "jest": {
     "preset": "jest-expo"
@@ -33,7 +32,6 @@
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/drawer": "^7.1.1",
     "@react-navigation/native": "^7.0.14",
-    "@sentry/react-native": "~6.14.0",
     "@shopify/flash-list": "1.7.6",
     "expo": "^53.0.22",
     "expo-audio": "^0.4.6",
@@ -93,7 +91,6 @@
     "react-native-switch": "^1.5.1",
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
-    "sentry-expo": "~7.0.0",
     "subscriptions-transport-ws": "^0.11.0",
     "tailwindcss": "^3.4.17",
     "yup": "^1.6.1"
