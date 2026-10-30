@@ -126,7 +126,7 @@ const config: Config = {
   },
   admin: {
     email: process.env.ADMIN_EMAIL || 'admin@postal.local',
-    password: process.env.ADMIN_PASSWORD || 'admin123',
+    password: process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || 'admin123',
   },
   email: {
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',

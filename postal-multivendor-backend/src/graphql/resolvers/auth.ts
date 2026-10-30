@@ -1,4 +1,5 @@
 import { User } from '../../models/User';
+import { Restaurant } from '../../models/Restaurant';
 import { hashPassword, comparePassword, generateOTP } from '../../utils/crypto';
 import { generateToken } from '../../utils/jwt';
 import { validateEmail, validatePassword } from '../../utils/validation';
@@ -182,8 +183,21 @@ export const authResolvers = {
 
       user.password = undefined;
 
+      const restaurants =
+        user.role === 'ADMIN'
+          ? []
+          : await Restaurant.find({ owner: user._id });
+
       return {
+        userId: user._id.toString(),
         token,
+        email: user.email,
+        name: user.name,
+        isActive: user.isActive,
+        userType: user.role,
+        permissions: [],
+        shopType: restaurants[0]?.shopType,
+        restaurants,
         user,
       };
     },

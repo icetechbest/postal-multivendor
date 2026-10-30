@@ -660,6 +660,11 @@ export const typeDefs = `#graphql
     email: String
     phone: String
     isNewUser: Boolean
+    userType: String
+    image: String
+    shopType: String
+    permissions: [String!]
+    restaurants: [Restaurant!]
     user: User
   }
 
