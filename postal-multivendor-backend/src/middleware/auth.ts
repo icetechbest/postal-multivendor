@@ -33,8 +33,10 @@ export const authenticate = async (token: string | undefined): Promise<AuthConte
         role: decoded.role,
       },
     };
-  } catch (error) {
-    throw new AuthenticationError('Invalid authentication token');
+  } catch {
+    // Public operations remain available with missing, expired, or malformed tokens.
+    // Protected resolvers still enforce authentication through requireAuth().
+    return {};
   }
 };
 

@@ -26,8 +26,8 @@ import { Subscription } from "zen-observable-ts";
 
 export const useSetupApollo = (): ApolloClient<NormalizedCacheObject> => {
   // const { SERVER_URL, WS_SERVER_URL } = getEnv(ENV);
-  const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
-  const WS_SERVER_URL = process.env.NEXT_PUBLIC_WS_SERVER_URL;
+  const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8001/";
+  const WS_SERVER_URL = process.env.NEXT_PUBLIC_WS_SERVER_URL || "ws://localhost:8001/";
 
   const cache = new InMemoryCache({
     typePolicies: {
@@ -60,6 +60,10 @@ export const useSetupApollo = (): ApolloClient<NormalizedCacheObject> => {
       reconnect: true,
       timeout: 30000,
       lazy: true,
+      connectionParams: () => {
+        const token = localStorage.getItem("token");
+        return { authorization: token ? `Bearer ${token}` : "" };
+      },
     }),
   );
 

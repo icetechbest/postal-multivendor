@@ -34,6 +34,11 @@ export const useSetupApollo = (): ApolloClient<NormalizedCacheObject> => {
       reconnect: true,
       timeout: 30000,
       lazy: true,
+      connectionParams: () => {
+        const data = localStorage.getItem(`user-${APP_NAME}`);
+        const token = data ? JSON.parse(data).token : '';
+        return { authorization: token ? `Bearer ${token}` : '' };
+      },
     })
   );
 

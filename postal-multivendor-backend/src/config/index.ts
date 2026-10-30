@@ -1,4 +1,3 @@
-// TODO(rebrand): replace placeholder(s): YOUR-DOMAIN.com
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -126,7 +125,7 @@ const config: Config = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
   },
   admin: {
-    email: process.env.ADMIN_EMAIL || 'admin@YOUR-DOMAIN.com',
+    email: process.env.ADMIN_EMAIL || 'admin@postal.local',
     password: process.env.ADMIN_PASSWORD || 'admin123',
   },
   email: {
@@ -134,7 +133,7 @@ const config: Config = {
     port: parseInt(process.env.EMAIL_PORT || '587', 10),
     user: process.env.EMAIL_USER || '',
     password: process.env.EMAIL_PASSWORD || '',
-    from: process.env.EMAIL_FROM || 'noreply@YOUR-DOMAIN.com',
+    from: process.env.EMAIL_FROM || 'noreply@postal.local',
   },
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID || '',

@@ -39,11 +39,6 @@ class Database {
         console.log('⚠️  MongoDB disconnected');
       });
 
-      process.on('SIGINT', async () => {
-        await mongoose.connection.close();
-        console.log('MongoDB connection closed due to app termination');
-        process.exit(0);
-      });
     } catch (error) {
       console.error('Failed to connect to MongoDB:', error);
       throw error;

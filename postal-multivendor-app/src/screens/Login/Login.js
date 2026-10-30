@@ -1,4 +1,3 @@
-// TODO(rebrand): replace placeholder(s): YOUR-DOMAIN.com
 import React, { useLayoutEffect } from 'react'
 import { View, TouchableOpacity, KeyboardAvoidingView, ScrollView, Platform, Image, TextInput, StatusBar } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -72,7 +71,6 @@ function Login(props) {
                         style={[styles(currentTheme).textField, emailError !== null ? styles(currentTheme).errorInput : {}]}
                         placeholderTextColor={currentTheme.fontSecondColor}
                         // value={setEmail}
-                        // defaultValue='demo-customer@YOUR-DOMAIN.com'
                         defaultValue=''
                         onChangeText={(e) => handleSetEmail(e.toLowerCase().trim())}
                       />

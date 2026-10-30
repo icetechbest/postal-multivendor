@@ -24,6 +24,10 @@ const setupApollo = () => {
   const wsLink = new GraphQLWsLink(
     createClient({
       url: WS_GRAPHQL_URL,
+      connectionParams: async () => {
+        const token = await SecureStore.getItemAsync(STORE_TOKEN);
+        return { authorization: token ? `Bearer ${token}` : "" };
+      },
     })
   );
   const cache = new InMemoryCache();

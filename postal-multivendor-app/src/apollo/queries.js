@@ -518,6 +518,8 @@ export const getConfiguration = `query Configuration{
     customerAppSentryUrl 
     termsAndConditions 
     privacyPolicy
+    appleStoreUrl
+    playStoreUrl
     testOtp 
     skipMobileVerification
     skipEmailVerification
@@ -551,8 +553,8 @@ export const restaurantList = `query Restaurants($latitude:Float,$longitude:Floa
       tax
       shopType
       distanceWithCurrentLocation @client
-      freeDelivery @client
-      acceptVouchers @client
+      freeDelivery
+      acceptVouchers
       cuisines
       reviewData{
           total
@@ -657,8 +659,8 @@ export const restaurantListPreview = `query Restaurants($latitude:Float,$longitu
       reviewCount
       reviewAverage
       distanceWithCurrentLocation @client
-      freeDelivery @client
-      acceptVouchers @client
+      freeDelivery
+      acceptVouchers
       location{coordinates}
       openingTimes{
         day
@@ -1104,11 +1106,12 @@ export const getZones = `query Zones{
   }
 }`
 
+// Keep this legacy export compatible with the active ForceUpdate version shape.
 export const versions = `query {
   getVersions {
-    customerAppVersion
-    riderAppVersion
-    restaurantAppVersion
+    customerAppVersion { android ios }
+    riderAppVersion { android ios }
+    restaurantAppVersion { android ios }
   }
 }`
 

@@ -8,6 +8,7 @@ interface ICoordinates {
 export interface IZone extends Document {
   title: string;
   description?: string;
+  tax: number;
   location: ICoordinates;
   isActive: boolean;
   createdAt: Date;
@@ -26,6 +27,7 @@ const zoneSchema = new Schema<IZone>(
       type: String,
       trim: true,
     },
+    tax: { type: Number, default: 0, min: 0 },
     location: {
       type: {
         type: String,
@@ -50,7 +52,6 @@ const zoneSchema = new Schema<IZone>(
 
 // Indexes
 zoneSchema.index({ location: '2dsphere' });
-zoneSchema.index({ title: 1 });
 zoneSchema.index({ isActive: 1 });
 
 export const Zone = mongoose.model<IZone>('Zone', zoneSchema);

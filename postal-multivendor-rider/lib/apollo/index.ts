@@ -99,7 +99,11 @@ const setupApollo = () => {
     uri: WS_GRAPHQL_URL,
     options: {
       reconnect: true,
-      timeout:30000
+      timeout: 30000,
+      connectionParams: async () => {
+        const token = await AsyncStorage.getItem(RIDER_TOKEN);
+        return { authorization: token ? `Bearer ${token}` : "" };
+      },
     },
   });
 

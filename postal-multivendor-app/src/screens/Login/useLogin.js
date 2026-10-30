@@ -1,4 +1,3 @@
-// TODO(rebrand): replace placeholder(s): YOUR-DOMAIN.com
 import { useState, useContext, useRef, useEffect } from 'react'
 import { Alert } from 'react-native'
 import _ from 'lodash' // Import lodash
@@ -60,13 +59,7 @@ export const useLogin = () => {
 
   // Reset password when registeredEmail becomes true
   useEffect(() => {
-    if (registeredEmail) {
-      if (emailRef.current === 'demo-customer@YOUR-DOMAIN.com') {
-        setPassword('123123')
-      } else {
-        setPassword('')
-      }
-    }
+    if (registeredEmail) setPassword('')
   }, [registeredEmail])
   function validateCredentials() {
     let result = true

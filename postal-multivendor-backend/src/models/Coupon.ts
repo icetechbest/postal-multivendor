@@ -2,7 +2,9 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICoupon extends Document {
   code: string;
+  title?: string;
   discount: number;
+  expiresAt?: Date;
   isActive: boolean;
   isEnabled: boolean;
   restaurant?: mongoose.Types.ObjectId;
@@ -19,6 +21,8 @@ const couponSchema = new Schema<ICoupon>(
       uppercase: true,
       trim: true,
     },
+    title: String,
+    expiresAt: Date,
     discount: {
       type: Number,
       required: true,
@@ -44,7 +48,6 @@ const couponSchema = new Schema<ICoupon>(
 );
 
 // Indexes
-couponSchema.index({ code: 1 });
 couponSchema.index({ restaurant: 1 });
 couponSchema.index({ isActive: 1, isEnabled: 1 });
 

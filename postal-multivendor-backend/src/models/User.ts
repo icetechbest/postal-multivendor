@@ -7,9 +7,21 @@ export interface IUser extends Document {
   phone?: string;
   phoneVerified: boolean;
   emailVerified: boolean;
+  phoneIsVerified: boolean;
+  emailIsVerified: boolean;
   role: 'USER' | 'VENDOR' | 'RIDER' | 'ADMIN';
   isActive: boolean;
   isOrderNotification: boolean;
+  isOfferNotification: boolean;
+  isAvailable: boolean;
+  zone?: mongoose.Types.ObjectId;
+  location?: { type: string; coordinates: number[] };
+  username?: string;
+  image?: string;
+  accountNumber?: string;
+  currentWalletAmount: number;
+  totalWalletAmount: number;
+  withdrawnWalletAmount: number;
   notificationToken?: string;
   addresses: mongoose.Types.ObjectId[];
   favouriteRestaurants: mongoose.Types.ObjectId[];
@@ -18,6 +30,10 @@ export interface IUser extends Document {
   avatar?: string;
   otp?: string;
   otpExpiry?: Date;
+  otpAttempts: number;
+  otpRequestedAt?: Date;
+  resetPasswordVerifiedAt?: Date;
+  refreshTokenHash?: string;
   resetPasswordToken?: string;
   resetPasswordExpiry?: Date;
   createdAt: Date;
@@ -58,6 +74,14 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    phoneIsVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailIsVerified: {
+      type: Boolean,
+      default: false,
+    },
     role: {
       type: String,
       enum: ['USER', 'VENDOR', 'RIDER', 'ADMIN'],
@@ -70,6 +94,28 @@ const userSchema = new Schema<IUser>(
     isOrderNotification: {
       type: Boolean,
       default: true,
+    },
+    isOfferNotification: {
+      type: Boolean,
+      default: true,
+    },
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
+    location: {
+      type: { type: String, enum: ['Point'], default: 'Point' },
+      coordinates: { type: [Number], default: [0, 0] },
+    },
+    username: String,
+    image: String,
+    accountNumber: String,
+    currentWalletAmount: { type: Number, default: 0 },
+    totalWalletAmount: { type: Number, default: 0 },
+    withdrawnWalletAmount: { type: Number, default: 0 },
+    zone: {
+      type: Schema.Types.ObjectId,
+      ref: 'Zone',
     },
     notificationToken: String,
     addresses: [
@@ -98,6 +144,10 @@ const userSchema = new Schema<IUser>(
       type: Date,
       select: false,
     },
+    otpAttempts: { type: Number, default: 0, select: false },
+    otpRequestedAt: { type: Date, select: false },
+    resetPasswordVerifiedAt: { type: Date, select: false },
+    refreshTokenHash: { type: String, select: false },
     resetPasswordToken: {
       type: String,
       select: false,
@@ -115,9 +165,8 @@ const userSchema = new Schema<IUser>(
 );
 
 // Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ phone: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ socialId: 1, socialProvider: 1 });
+userSchema.index({ location: '2dsphere' });
 
 export const User = mongoose.model<IUser>('User', userSchema);

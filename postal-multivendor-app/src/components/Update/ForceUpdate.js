@@ -1,4 +1,3 @@
-// TODO(rebrand): replace placeholder(s): idYOUR_APP_ID
 import React, { useEffect, useState, useContext } from 'react'
 import {
   View,
@@ -17,6 +16,7 @@ import ThemeContext from '../../ui/ThemeContext/ThemeContext'
 import { theme } from '../../utils/themeColors'
 import styles from './styles'
 import TextDefault from '../Text/TextDefault/TextDefault'
+import useEnvVars from '../../../environment'
 
 const VERSIONS = gql`
   ${getVersions}
@@ -42,6 +42,7 @@ const ForceUpdate = () => {
   const [currentVersion, setCurrentVersion] = useState(null)
   const { loading, error, data } = useQuery(VERSIONS)
   const { t } = useTranslation()
+  const { IOS_STORE_URL, ANDROID_STORE_URL } = useEnvVars()
   const themeContext = useContext(ThemeContext)
   const currentTheme = theme[themeContext.ThemeValue]
 
@@ -76,12 +77,8 @@ const ForceUpdate = () => {
 
   const handleUpdate = async () => {
     try {
-      let storeUrl =
-        Platform.OS === 'ios'
-          ? 'https://apps.apple.com/app/idYOUR_APP_ID'
-          : 'https://play.google.com/store/apps/details?id=com.postal.customer&pli=1'
-
-      await Linking.openURL(storeUrl)
+      const storeUrl = Platform.OS === 'ios' ? IOS_STORE_URL : ANDROID_STORE_URL
+      if (storeUrl) await Linking.openURL(storeUrl)
     } catch (err) {
       console.error('Error opening store URL:', err)
     }

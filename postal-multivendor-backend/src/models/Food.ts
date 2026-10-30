@@ -12,8 +12,10 @@ export interface IFood extends Document {
   title: string;
   description: string;
   image: string;
+  subCategory?: string;
   isActive: boolean;
   isAvailable: boolean;
+  isOutOfStock: boolean;
   restaurant: mongoose.Types.ObjectId;
   category: mongoose.Types.ObjectId;
   variations: IVariation[];
@@ -39,10 +41,12 @@ const foodSchema = new Schema<IFood>(
       type: String,
       required: [true, 'Food image is required'],
     },
+    subCategory: String,
     isActive: {
       type: Boolean,
       default: true,
     },
+    isOutOfStock: { type: Boolean, default: false },
     isAvailable: {
       type: Boolean,
       default: true,

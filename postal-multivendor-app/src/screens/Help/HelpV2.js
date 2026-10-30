@@ -1,4 +1,3 @@
-// TODO(rebrand): replace placeholder(s): YOUR-DOMAIN.com
 import React, { useContext, useEffect, useState } from 'react'
 import { View, TouchableOpacity, StatusBar } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -13,6 +12,9 @@ import navigationService from '../../routes/navigationService'
 import { scale } from '../../utils/scaling'
 import { useTranslation } from 'react-i18next'
 
+// Help links come from env (EXPO_PUBLIC_HELP_PRODUCT_URL / _DOCS_URL / _BLOG_URL); unset ones are hidden.
+const helpUrl = key => process.env[`EXPO_PUBLIC_HELP_${key.toUpperCase()}_URL`] || ''
+
 const Help = props => {
   const { t } = useTranslation()
   const themeContext = useContext(ThemeContext)
@@ -21,15 +23,15 @@ const Help = props => {
   const [links, setLinks] = useState([
     {
       title: t('titleProductPage'),
-      url: 'https://YOUR-DOMAIN.com/postal-multi-vendor/'
+      url: helpUrl('product')
     },
     {
       title: t('titleDocs'),
-      url: 'https://YOUR-DOMAIN.com/multi-vendor-doc/'
+      url: helpUrl('docs')
     },
     {
       title: t('titleBlog'),
-      url: 'https://YOUR-DOMAIN.com/blog/'
+      url: helpUrl('blog')
     },
     {
       title: t('titleAboutUs'),
@@ -50,16 +52,16 @@ const Help = props => {
       {
         title: t('titleProductPage'),
         url:
-          'https://YOUR-DOMAIN.com/postal-multivendor-open-source-food-delivery-solution/'
+          helpUrl('product')
       },
       {
         title: t('titleDocs'),
-        url: 'https://YOUR-DOMAIN.com/multivendor-documentation/'
+        url: helpUrl('docs')
       },
       {
         title: t('titleBlog'),
         url:
-          'https://YOUR-DOMAIN.com/blogs-postal-open-source-food-delivery-solutions/'
+          helpUrl('blog')
       },
       {
         title: t('titleAboutUs'),
@@ -112,7 +114,7 @@ const Help = props => {
       />
       <View style={styles(currentTheme).flex}>
         <View style={styles(currentTheme).mainContainer}>
-          {links.map(({ title, url }, index) => (
+          {links.filter(l => l.url).map(({ title, url }, index) => (
             <TouchableOpacity
               style={styles(currentTheme).itemContainer}
               onPress={() =>

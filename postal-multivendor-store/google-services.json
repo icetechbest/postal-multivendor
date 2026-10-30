@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1077629325742:android:d844bf6103c1e8acf5383f",
+        "mobilesdk_app_id": "1:1077629325742:android:49d33f5a88ef48f1f5383f",
         "android_client_info": {
-          "package_name": "com.shita.multivendor"
+          "package_name": "com.postal.customer"
         }
       },
       "oauth_client": [],
@@ -26,9 +26,28 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1077629325742:android:41963578c7b4df40f5383f",
+        "mobilesdk_app_id": "1:1077629325742:android:a77229496ce75c4ef5383f",
         "android_client_info": {
-          "package_name": "multivendor.shita.restaurant"
+          "package_name": "com.postal.restaurant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlZz-wHJbP1NwrrcqvkdzhP9sd6BF46k8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1077629325742:android:69acfedad308dcd4f5383f",
+        "android_client_info": {
+          "package_name": "com.postal.rider"
         }
       },
       "oauth_client": [],

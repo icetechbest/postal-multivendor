@@ -41,7 +41,7 @@ This is a **production-ready GraphQL API backend** for the Postal Multi-vendor F
    npm run dev
    ```
 
-   The server will start at `http://localhost:4000`
+   The server will start at `http://localhost:8001`
 
 ## Using Docker (Recommended)
 
@@ -69,14 +69,14 @@ docker-compose up -d
 
 This will start:
 - MongoDB on port 27017
-- Backend API on port 4000
+- Backend API on port 8001
 
 ## Testing the API
 
 Once the server is running, you can access:
 
-- **GraphQL Playground**: `http://localhost:4000/graphql`
-- **API Endpoint**: `http://localhost:4000`
+- **GraphQL Playground**: `http://localhost:8001/graphql`
+- **API Endpoint**: `http://localhost:8001`
 
 ### Example Query (User Registration)
 
@@ -210,7 +210,7 @@ postal-multivendor-backend/
 Key environment variables (see `.env.example` for complete list):
 
 - `NODE_ENV`: development | production
-- `PORT`: Server port (default: 4000)
+- `PORT`: Server port (default: 8001)
 - `MONGODB_URI`: MongoDB connection string
 - `JWT_SECRET`: Secret for JWT tokens
 - `CORS_ORIGIN`: Allowed CORS origins
@@ -231,16 +231,11 @@ Key environment variables (see `.env.example` for complete list):
 7. ✅ Basic subscription support
 
 ### What's Pending
-1. ⏳ Food/Menu management resolvers
-2. ⏳ Category and Addon CRUD
-3. ⏳ Coupon system
-4. ⏳ Payment gateway integration (Stripe, PayPal)
-5. ⏳ Email service (OTP sending)
-6. ⏳ SMS service (Twilio for OTP)
-7. ⏳ Push notifications (Firebase)
-8. ⏳ File upload for images
-9. ⏳ Analytics and reporting
-10. ⏳ Rider management and assignment algorithm
+1. ⏳ Payment gateway integration (Stripe, PayPal)
+2. ⏳ Push notifications (Firebase)
+3. ⏳ File upload for images
+4. ⏳ Analytics and reporting
+5. ⏳ Extended legacy modules used by some screens (chat, support tickets, banners, cuisines and withdrawals)
 
 ## Connecting Frontend Applications
 
@@ -248,16 +243,16 @@ Update the frontend applications to point to your backend:
 
 ### Admin Dashboard (`postal-multivendor-admin/.env.dev`)
 ```env
-NEXT_PUBLIC_SERVER_URL=http://localhost:4000/
-NEXT_PUBLIC_WS_SERVER_URL=ws://localhost:4000/
+NEXT_PUBLIC_SERVER_URL=http://localhost:8001/
+NEXT_PUBLIC_WS_SERVER_URL=ws://localhost:8001/
 ```
 
 ### Customer App (`postal-multivendor-app/app.json`)
 ```json
 {
   "extra": {
-    "GRAPHQL_URL": "http://localhost:4000/graphql",
-    "WS_GRAPHQL_URL": "ws://localhost:4000/graphql"
+    "GRAPHQL_URL": "http://localhost:8001/graphql",
+    "WS_GRAPHQL_URL": "ws://localhost:8001/graphql"
   }
 }
 ```
@@ -278,8 +273,8 @@ docker-compose -f docker-compose.dev.yml restart mongodb
 
 ### Port Already in Use
 ```bash
-# Find process using port 4000
-lsof -i :4000
+# Find process using port 8001
+lsof -i :8001
 
 # Kill the process
 kill -9 <PID>

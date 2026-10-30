@@ -15,7 +15,7 @@ export interface IAddress extends Document {
   updatedAt: Date;
 }
 
-const addressSchema = new Schema<IAddress>(
+const addressSchema = new Schema(
   {
     label: {
       type: String,
@@ -47,6 +47,10 @@ const addressSchema = new Schema<IAddress>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    isSelected: {
+      type: Boolean,
+      default: false,
     },
   },
   {

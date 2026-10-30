@@ -8,7 +8,9 @@ import {
   ConflictError,
   NotFoundError,
 } from '../../utils/errors';
-import { AuthContext, requireAuth } from '../../middleware/auth';
+import { AuthContext, requireAdmin, requireAuth } from '../../middleware/auth';
+import config from '../../config';
+import { sendEmail, sendSms } from '../../services/notifications';
 
 export interface UserInput {
   name: string;
@@ -36,7 +38,7 @@ export const authResolvers = {
     },
 
     users: async (_: any, __: any, context: AuthContext) => {
-      requireAuth(context);
+      requireAdmin(context);
       return await User.find({ isActive: true });
     },
   },
@@ -251,16 +253,15 @@ export const authResolvers = {
       }
 
       // Generate OTP
-      const otp = generateOTP(6);
-      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const otp = generateOTP(config.otp.length);
+      const otpExpiry = new Date(Date.now() + config.otp.expiryMinutes * 60 * 1000);
 
       // Save OTP
       user.otp = otp;
       user.otpExpiry = otpExpiry;
       await user.save();
 
-      // TODO: Send OTP via email service
-      console.log(`OTP for ${email}: ${otp}`);
+      await sendEmail(email, 'Your verification code', `Your verification code is ${otp}. It expires in ${config.otp.expiryMinutes} minutes.`);
 
       return {
         message: 'OTP sent to email successfully',
@@ -274,16 +275,15 @@ export const authResolvers = {
       }
 
       // Generate OTP
-      const otp = generateOTP(6);
-      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const otp = generateOTP(config.otp.length);
+      const otpExpiry = new Date(Date.now() + config.otp.expiryMinutes * 60 * 1000);
 
       // Save OTP
       user.otp = otp;
       user.otpExpiry = otpExpiry;
       await user.save();
 
-      // TODO: Send OTP via SMS service
-      console.log(`OTP for ${phone}: ${otp}`);
+      await sendSms(phone, `Your verification code is ${otp}. It expires in ${config.otp.expiryMinutes} minutes.`);
 
       return {
         message: 'OTP sent to phone successfully',

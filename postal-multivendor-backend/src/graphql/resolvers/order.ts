@@ -1,6 +1,7 @@
 import { Order } from '../../models/Order';
 import { Restaurant } from '../../models/Restaurant';
 import { Food } from '../../models/Food';
+import { Addon } from '../../models/Addon';
 import { User } from '../../models/User';
 import { AuthContext, requireAuth } from '../../middleware/auth';
 import { ValidationError, NotFoundError, AuthorizationError } from '../../utils/errors';
@@ -9,10 +10,34 @@ import { PubSub } from 'graphql-subscriptions';
 
 const pubsub = new PubSub();
 
+const publishOrderUpdate = (order: any) => {
+  pubsub.publish('ORDER_STATUS_' + order._id, { subscriptionOrder: order });
+  const userId = order.user?._id || order.user;
+  pubsub.publish('ORDER_STATUS_USER_' + userId, { orderStatusChanged: order });
+};
+
+const populateOrder = (id: any) =>
+  Order.findById(id)
+    .populate('restaurant')
+    .populate('user')
+    .populate('rider')
+    .populate({ path: 'items.food', model: 'Food' });
+
+const ensureOrderManagementAccess = async (order: any, context: AuthContext) => {
+  requireAuth(context);
+  if (context.user!.role === 'ADMIN') return;
+  if (context.user!.role === 'RIDER' && order.rider?.toString() === context.user!.userId) return;
+  if (context.user!.role === 'VENDOR') {
+    const restaurant = await Restaurant.findById(order.restaurant);
+    if (restaurant?.owner.toString() === context.user!.userId) return;
+  }
+  throw new AuthorizationError();
+};
+
 export interface OrderItemInput {
   food: string;
   variation: string;
-  addons: Array<{ _id: string; options: string[] }>;
+  addons?: Array<{ _id: string; options: string[] }>;
   quantity: number;
   specialInstructions?: string;
 }
@@ -117,8 +142,14 @@ export const orderResolvers = {
       const query: any = {
         orderStatus: { $nin: ['COMPLETED', 'CANCELLED'] },
       };
-
-      if (restaurantId) {
+      if (context.user!.role === 'USER') throw new AuthorizationError();
+      if (context.user!.role === 'RIDER') query.rider = context.user!.userId;
+      if (context.user!.role === 'VENDOR') {
+        const stores = await Restaurant.find({ owner: context.user!.userId, isActive: true }).select('_id');
+        const storeIds = stores.map((store) => store._id.toString());
+        if (restaurantId && !storeIds.includes(restaurantId)) throw new AuthorizationError();
+        query.restaurant = restaurantId || { $in: storeIds };
+      } else if (restaurantId) {
         query.restaurant = restaurantId;
       }
 
@@ -164,6 +195,11 @@ export const orderResolvers = {
       const skip = (page - 1) * limit;
 
       const query: any = { restaurant };
+      if (!['VENDOR', 'ADMIN'].includes(context.user!.role)) throw new AuthorizationError();
+      if (context.user!.role === 'VENDOR') {
+        const store = await Restaurant.findOne({ _id: restaurant, owner: context.user!.userId });
+        if (!store) throw new AuthorizationError();
+      }
       if (status) {
         query.orderStatus = status;
       }
@@ -206,52 +242,87 @@ export const orderResolvers = {
         throw new ValidationError('Restaurant is not available');
       }
 
-      // Validate items
+      if (!orderInput.items.length) throw new ValidationError('Order must contain at least one item');
+
+      const items: any[] = [];
+      let orderAmount = 0;
       for (const item of orderInput.items) {
-        const food = await Food.findById(item.food);
-        if (!food || !food.isActive || !food.isAvailable) {
-          throw new ValidationError(`Food item ${item.food} is not available`);
+        if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+          throw new ValidationError('Item quantity must be a positive integer');
         }
+        const food = await Food.findById(item.food).populate('variations.addons');
+        if (!food || !food.isActive || !food.isAvailable || food.restaurant.toString() !== orderInput.restaurant) {
+          throw new ValidationError(`Food item ${item.food} is not available at this restaurant`);
+        }
+        const variation = food.variations.find((entry) => entry._id?.toString() === item.variation);
+        if (!variation) throw new ValidationError(`Invalid variation for ${food.title}`);
+
+        const addons: any[] = [];
+        let addonsPrice = 0;
+        for (const requestedAddon of item.addons || []) {
+          const allowed = variation.addons?.some((addon: any) => addon._id.toString() === requestedAddon._id);
+          const addon: any = allowed ? await Addon.findOne({ _id: requestedAddon._id, isActive: true }) : null;
+          if (!addon) throw new ValidationError(`Invalid addon for ${food.title}`);
+          const options = addon.options.filter((option: any) => requestedAddon.options.includes(option._id.toString()));
+          if (options.length !== new Set(requestedAddon.options).size) {
+            throw new ValidationError(`Invalid addon option for ${food.title}`);
+          }
+          if (options.length < addon.quantityMinimum || options.length > addon.quantityMaximum) {
+            throw new ValidationError(`Invalid number of options for ${addon.title}`);
+          }
+          addonsPrice += options.reduce((sum: number, option: any) => sum + option.price, 0);
+          addons.push({ _id: addon._id, title: addon.title, options });
+        }
+
+        const unitPrice = (variation.discounted > 0 ? variation.discounted : variation.price) + addonsPrice;
+        orderAmount += unitPrice * item.quantity;
+        items.push({
+          food: food._id,
+          variation: { _id: variation._id, title: variation.title, price: unitPrice - addonsPrice },
+          addons,
+          quantity: item.quantity,
+          specialInstructions: item.specialInstructions,
+        });
       }
 
-      // Generate order ID
+      if (orderAmount < restaurant.minimumOrder) {
+        throw new ValidationError(`Minimum order amount is ${restaurant.minimumOrder}`);
+      }
+      const deliveryCharges = restaurant.deliveryFee;
+      const tipping = Math.max(0, orderInput.tipping || 0);
+      const taxationAmount = (orderAmount * restaurant.salesTax) / 100;
+      const discount = Math.min(Math.max(0, orderInput.discount || 0), orderAmount);
+      const total = Math.max(0, orderAmount + deliveryCharges + tipping + taxationAmount - discount);
       const orderId = generateOrderId(restaurant.orderPrefix);
 
-      // Create order
       const order: any = await Order.create({
         orderId,
         restaurant: orderInput.restaurant,
         user: context.user!.userId,
-        items: orderInput.items as any,
+        items,
         deliveryAddress: {
           label: orderInput.deliveryAddress.label,
           deliveryAddress: orderInput.deliveryAddress.deliveryAddress,
-          details: orderInput.deliveryAddress.details,
+          details: orderInput.deliveryAddress.details || '',
           location: {
             latitude: orderInput.deliveryAddress.latitude,
             longitude: orderInput.deliveryAddress.longitude,
           },
         },
-        orderAmount: orderInput.orderAmount,
-        deliveryCharges: orderInput.deliveryCharges,
-        tipping: orderInput.tipping || 0,
-        taxationAmount: orderInput.taxationAmount || 0,
-        discount: orderInput.discount || 0,
-        total: orderInput.total,
-        paymentMethod: orderInput.paymentMethod,
+        orderAmount,
+        deliveryCharges,
+        tipping,
+        taxationAmount,
+        discount,
+        total,
+        paymentMethod: orderInput.paymentMethod.toUpperCase(),
         orderStatus: 'PENDING',
-        paymentStatus: orderInput.paymentMethod === 'COD' ? 'PENDING' : 'PAID',
-        paidAmount: orderInput.paymentMethod === 'COD' ? 0 : orderInput.total,
-      });
+        paymentStatus: 'PENDING',
+        paidAmount: 0,
+        estimatedDeliveryTime: new Date(Date.now() + restaurant.deliveryTime * 60 * 1000),
+      } as any);
 
-      // Populate order
-      const populatedOrder = await Order.findById(order._id)
-        .populate('restaurant')
-        .populate('user')
-        .populate({
-          path: 'items.food',
-          model: 'Food',
-        });
+      const populatedOrder = await populateOrder(order._id);
 
       // Publish order event
       pubsub.publish('ORDER_PLACED_' + orderInput.restaurant, {
@@ -267,11 +338,13 @@ export const orderResolvers = {
       context: AuthContext
     ) => {
       requireAuth(context);
+      status = status.toUpperCase();
 
       const order = await Order.findById(id);
       if (!order) {
         throw new NotFoundError('Order');
       }
+      await ensureOrderManagementAccess(order, context);
 
       // Update status and relevant timestamps
       order.orderStatus = status as any;
@@ -283,22 +356,15 @@ export const orderResolvers = {
       if (status === 'DELIVERED') order.deliveredAt = now;
       if (status === 'COMPLETED') order.completedAt = now;
       if (status === 'CANCELLED') order.cancelledAt = now;
+      if ((status === 'DELIVERED' || status === 'COMPLETED') && order.paymentMethod === 'COD') {
+        order.paymentStatus = 'PAID';
+        order.paidAmount = order.total;
+      }
 
       await order.save();
 
-      const populatedOrder = await Order.findById(order._id)
-        .populate('restaurant')
-        .populate('user')
-        .populate('rider')
-        .populate({
-          path: 'items.food',
-          model: 'Food',
-        });
-
-      // Publish status change event
-      pubsub.publish('ORDER_STATUS_' + id, {
-        subscriptionOrder: populatedOrder,
-      });
+      const populatedOrder = await populateOrder(order._id);
+      publishOrderUpdate(populatedOrder);
 
       return populatedOrder;
     },
@@ -314,6 +380,8 @@ export const orderResolvers = {
       if (!order) {
         throw new NotFoundError('Order');
       }
+      await ensureOrderManagementAccess(order, context);
+      if (context.user!.role === 'RIDER') throw new AuthorizationError();
 
       const rider = await User.findById(riderId);
       if (!rider || rider.role !== 'RIDER') {
@@ -325,19 +393,8 @@ export const orderResolvers = {
       order.riderAssignedAt = new Date();
       await order.save();
 
-      const populatedOrder = await Order.findById(order._id)
-        .populate('restaurant')
-        .populate('user')
-        .populate('rider')
-        .populate({
-          path: 'items.food',
-          model: 'Food',
-        });
-
-      // Publish status change event
-      pubsub.publish('ORDER_STATUS_' + orderId, {
-        subscriptionOrder: populatedOrder,
-      });
+      const populatedOrder = await populateOrder(order._id);
+      publishOrderUpdate(populatedOrder);
 
       return populatedOrder;
     },
@@ -367,19 +424,8 @@ export const orderResolvers = {
       order.cancelledAt = new Date();
       await order.save();
 
-      const populatedOrder = await Order.findById(order._id)
-        .populate('restaurant')
-        .populate('user')
-        .populate('rider')
-        .populate({
-          path: 'items.food',
-          model: 'Food',
-        });
-
-      // Publish status change event
-      pubsub.publish('ORDER_STATUS_' + id, {
-        subscriptionOrder: populatedOrder,
-      });
+      const populatedOrder = await populateOrder(order._id);
+      publishOrderUpdate(populatedOrder);
 
       return populatedOrder;
     },
@@ -442,13 +488,40 @@ export const orderResolvers = {
 
   Subscription: {
     subscribePlaceOrder: {
-      subscribe: (_: any, { restaurant }: { restaurant: string }) => {
+      subscribe: async (_: any, { restaurant }: { restaurant: string }, context: AuthContext) => {
+        requireAuth(context);
+        const store = await Restaurant.findById(restaurant);
+        if (!store) throw new NotFoundError('Restaurant');
+        if (context.user!.role !== 'ADMIN' && store.owner.toString() !== context.user!.userId) {
+          throw new AuthorizationError();
+        }
         return pubsub.asyncIterableIterator(['ORDER_PLACED_' + restaurant]);
       },
     },
     subscriptionOrder: {
-      subscribe: (_: any, { id }: { id: string }) => {
+      subscribe: async (_: any, { id }: { id: string }, context: AuthContext) => {
+        requireAuth(context);
+        const existing = await Order.findById(id).populate('restaurant');
+        if (!existing) throw new NotFoundError('Order');
+        const ownerId = (existing.restaurant as any).owner?.toString();
+        if (
+          context.user!.role !== 'ADMIN' &&
+          existing.user.toString() !== context.user!.userId &&
+          ownerId !== context.user!.userId &&
+          existing.rider?.toString() !== context.user!.userId
+        ) {
+          throw new AuthorizationError();
+        }
         return pubsub.asyncIterableIterator(['ORDER_STATUS_' + id]);
+      },
+    },
+    orderStatusChanged: {
+      subscribe: (_: any, { userId }: { userId: string }, context: AuthContext) => {
+        requireAuth(context);
+        if (context.user!.role !== 'ADMIN' && context.user!.userId !== userId) {
+          throw new AuthorizationError();
+        }
+        return pubsub.asyncIterableIterator(['ORDER_STATUS_USER_' + userId]);
       },
     },
   },

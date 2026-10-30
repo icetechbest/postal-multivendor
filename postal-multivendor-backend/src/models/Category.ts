@@ -4,6 +4,7 @@ export interface ICategory extends Document {
   title: string;
   description?: string;
   image?: string;
+  restaurant?: mongoose.Types.ObjectId;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -22,6 +23,7 @@ const categorySchema = new Schema<ICategory>(
       trim: true,
     },
     image: String,
+    restaurant: { type: Schema.Types.ObjectId, ref: 'Restaurant', index: true },
     isActive: {
       type: Boolean,
       default: true,
@@ -33,7 +35,6 @@ const categorySchema = new Schema<ICategory>(
 );
 
 // Indexes
-categorySchema.index({ title: 1 });
 categorySchema.index({ isActive: 1 });
 
 export const Category = mongoose.model<ICategory>('Category', categorySchema);

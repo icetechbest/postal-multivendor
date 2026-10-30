@@ -1,4 +1,3 @@
-// TODO(rebrand): replace placeholder(s): YOUR-DOMAIN.com
 /* eslint-disable react/display-name */
 import React, { useRef, useContext, useLayoutEffect, useState, useEffect } from 'react'
 import { View, SafeAreaView, TouchableOpacity, Animated, StatusBar, Platform, RefreshControl, Image, FlatList, ScrollView } from 'react-native'
@@ -344,7 +343,7 @@ function Main(props) {
 
                       <Image
                         source={{
-                          uri: 'https://YOUR-DOMAIN.com/wp-content/uploads/2024/02/pngimg-1.png'
+                          uri: process.env.EXPO_PUBLIC_HOME_FOOD_IMAGE_URL || undefined
                         }}
                         style={styles().popularMenuImg}
                         resizeMode='contain'
@@ -359,7 +358,7 @@ function Main(props) {
                       </TextDefault>
                       <Image
                         source={{
-                          uri: 'https://YOUR-DOMAIN.com/wp-content/uploads/2024/02/pngwing-4.png'
+                          uri: process.env.EXPO_PUBLIC_HOME_GROCERY_IMAGE_URL || undefined
                         }}
                         style={styles().popularMenuImg}
                         resizeMode='contain'

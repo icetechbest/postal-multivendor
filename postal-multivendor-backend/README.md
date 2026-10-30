@@ -67,7 +67,7 @@ Start the development server with hot reload:
 npm run dev
 ```
 
-The server will start on `http://localhost:4000` by default.
+The server will start on `http://localhost:8001` by default.
 
 ## Production
 
@@ -82,12 +82,12 @@ npm start
 
 ### GraphQL
 
-- **Endpoint**: `http://localhost:4000/graphql`
-- **Subscriptions**: `ws://localhost:4000/graphql`
+- **Endpoint**: `http://localhost:8001/graphql`
+- **Subscriptions**: `ws://localhost:8001/graphql`
 
 ### Health Check
 
-- **Endpoint**: `http://localhost:4000/health`
+- **Endpoint**: `http://localhost:8001/health`
 - **Method**: GET
 - **Response**:
   ```json
@@ -228,7 +228,7 @@ See `.env.example` for all available configuration options.
 
 Key variables:
 - `NODE_ENV`: development | production
-- `PORT`: Server port (default: 4000)
+- `PORT`: Server port (default: 8001)
 - `MONGODB_URI`: MongoDB connection string
 - `JWT_SECRET`: Secret key for JWT tokens
 - `CORS_ORIGIN`: Allowed CORS origins
@@ -264,8 +264,8 @@ src/
 - `npm run dev`: Start development server with hot reload
 - `npm run build`: Build TypeScript to JavaScript
 - `npm start`: Start production server
-- `npm run lint`: Run ESLint (when configured)
-- `npm test`: Run tests (when configured)
+- `npm run lint`: Type-check without emitting files
+- `npm test`: Build and run schema/security tests
 
 ## Contributing
 

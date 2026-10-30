@@ -20,6 +20,7 @@ interface IDeliveryBounds {
 
 export interface IRestaurant extends Document {
   name: string;
+  orderId?: string;
   slug: string;
   image: string;
   logo?: string;
@@ -38,9 +39,19 @@ export interface IRestaurant extends Document {
   owner: mongoose.Types.ObjectId;
   reviewCount: number;
   reviewSum: number;
+  reviewAverage: number;
   rating: number;
+  sections: string[];
+  stripeDetailsSubmitted: boolean;
+  enableNotification: boolean;
+  phone?: string;
+  restaurantUrl?: string;
+  keywords: string[];
+  tags: string[];
+  freeDelivery: boolean;
+  acceptVouchers: boolean;
   categories: mongoose.Types.ObjectId[];
-  cuisines: mongoose.Types.ObjectId[];
+  cuisines: string[];
   openingTimes: IOpeningTime[];
   zone: mongoose.Types.ObjectId;
   shopType?: string;
@@ -69,6 +80,7 @@ const restaurantSchema = new Schema<IRestaurant>(
       required: [true, 'Restaurant name is required'],
       trim: true,
     },
+    orderId: String,
     slug: {
       type: String,
       required: true,
@@ -159,6 +171,16 @@ const restaurantSchema = new Schema<IRestaurant>(
       default: 0,
       min: 0,
     },
+    reviewAverage: { type: Number, default: 0, min: 0, max: 5 },
+    sections: { type: [String], default: [] },
+    stripeDetailsSubmitted: { type: Boolean, default: false },
+    enableNotification: { type: Boolean, default: true },
+    phone: String,
+    restaurantUrl: String,
+    keywords: { type: [String], default: [] },
+    tags: { type: [String], default: [] },
+    freeDelivery: { type: Boolean, default: false },
+    acceptVouchers: { type: Boolean, default: true },
     reviewSum: {
       type: Number,
       default: 0,
@@ -176,12 +198,7 @@ const restaurantSchema = new Schema<IRestaurant>(
         ref: 'Category',
       },
     ],
-    cuisines: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Cuisine',
-      },
-    ],
+    cuisines: { type: [String], default: [] },
     openingTimes: [
       {
         day: String,
@@ -235,7 +252,7 @@ const restaurantSchema = new Schema<IRestaurant>(
 
 // Indexes
 restaurantSchema.index({ location: '2dsphere' });
-restaurantSchema.index({ slug: 1 });
+restaurantSchema.index({ deliveryBounds: '2dsphere' });
 restaurantSchema.index({ owner: 1 });
 restaurantSchema.index({ zone: 1 });
 restaurantSchema.index({ isActive: 1, isAvailable: 1 });

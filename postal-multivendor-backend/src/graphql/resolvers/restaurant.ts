@@ -256,7 +256,7 @@ export const restaurantResolvers = {
 
     updateRestaurantDelivery: async (
       _: any,
-      { id, deliveryBounds }: { id: string; deliveryBounds: number[][][][] },
+      { id, deliveryBounds }: { id: string; deliveryBounds: number[][][] },
       context: AuthContext
     ) => {
       requireVendor(context);

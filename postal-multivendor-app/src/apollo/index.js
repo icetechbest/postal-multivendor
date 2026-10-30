@@ -57,19 +57,7 @@ const setupApollo = () => {
               const distance = calculateDistance(restaurantLocation?.coordinates[0], restaurantLocation?.coordinates[1], variables.latitude, variables.longitude)
               return distance
             }
-          },
-          freeDelivery: {
-            read(_existing) {
-              const randomValue = Math.random() * 10;
-              return randomValue > 5
-            }
-          },
-          acceptVouchers: {
-            read(_existing) {
-              const randomValue = Math.random() * 10;
-              return randomValue < 5
-            }
-          },
+          }
         }
       }
     }
@@ -82,7 +70,11 @@ const setupApollo = () => {
   const wsLink = new WebSocketLink({
     uri: WS_GRAPHQL_URL,
     options: {
-      reconnect: true
+      reconnect: true,
+      connectionParams: async () => {
+        const token = await AsyncStorage.getItem('token')
+        return { authorization: token ? `Bearer ${token}` : '' }
+      }
     }
   })
 

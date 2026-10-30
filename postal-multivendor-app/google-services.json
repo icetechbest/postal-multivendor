@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1077629325742:android:d844bf6103c1e8acf5383f",
+        "mobilesdk_app_id": "1:1077629325742:android:49d33f5a88ef48f1f5383f",
         "android_client_info": {
-          "package_name": "com.shita.multivendor"
+          "package_name": "com.postal.customer"
         }
       },
       "oauth_client": [],

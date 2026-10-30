@@ -18,7 +18,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "plugins": [
-    "expo-router",
+      "expo-router",
       [
         "expo-image-picker",
         {
@@ -59,8 +59,9 @@
       "versionCode": 67,
       "googleServicesFile": "./google-services.json",
       "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
       ],
       "config": {
         "googleMaps": {
@@ -74,13 +75,15 @@
         "backgroundColor": "#ffffff"
       }
     },
-    "extra": {
-      "eas": {
-        "projectId": "9144a7fc-b205-464a-8fb6-64eb66fc8743"
-      }
-    },
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e42f5ba7-121b-4241-8fbe-0065bf1d20cd"
+      }
+    },
+    "owner": "justiceyy"
   }
 }

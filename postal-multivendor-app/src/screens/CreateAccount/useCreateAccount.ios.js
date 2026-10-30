@@ -49,12 +49,11 @@ export const useCreateAccount = () => {
   } = useEnvVars();
 
 
-  // Google Auth Request for iOS (using expo-auth-session)
-  // Hardcoded client IDs as per your provided iOS code block
+  // Configuration-backed IDs retain the existing native credentials as fallbacks.
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: "650001300965-9ochl634tuvv6iguei6dl57jkmfto6r9.apps.googleusercontent.com", // Web client ID for Expo
-    androidClientId: "650001300965-ii3nafver2uiu4qat9gbde9rkmhmvj0j.apps.googleusercontent.com", // Android client ID
-    iosClientId: "650001300965-dkji7jutv8gc5m4n7cdg3nft87sauhn7.apps.googleusercontent.com", // iOS client ID
+    clientId: EXPO_CLIENT_ID,
+    androidClientId: ANDROID_CLIENT_ID_GOOGLE,
+    iosClientId: IOS_CLIENT_ID_GOOGLE,
     scopes: ['profile', 'email', 'openid'],
   });
 

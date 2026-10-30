@@ -1,4 +1,3 @@
-// TODO(rebrand): replace placeholder(s): YOUR-DOMAIN.com
 import React, { useState, useRef, useContext, useEffect } from 'react'
 import { View, TouchableOpacity, KeyboardAvoidingView, Platform, StatusBar, Modal, ScrollView, AppState, Linking } from 'react-native'
 import { useMutation } from '@apollo/client'
@@ -34,6 +33,7 @@ import { languageTypes } from '../../components/LanguageModalize/LanguageModal'
 
 import useNetworkStatus from '../../utils/useNetworkStatus'
 import ErrorView from '../../components/ErrorView/ErrorView'
+import useEnvVars from '../../../environment'
 
 const PUSH_TOKEN = gql`
   ${pushToken}
@@ -56,6 +56,7 @@ function Account(props) {
   const route = useRoute()
   const { params } = route
   const { t, i18n } = useTranslation()
+  const { TERMS_AND_CONDITIONS, PRIVACY_POLICY } = useEnvVars()
   const [toggleView, setToggleView] = useState(true)
   const [showPass, setShowPass] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
@@ -522,7 +523,7 @@ function Account(props) {
                     detail={''}
                     status='null'
                     onPress={() => {
-                      Linking.openURL('https://YOUR-DOMAIN.com/terms')
+                      if (TERMS_AND_CONDITIONS) Linking.openURL(TERMS_AND_CONDITIONS)
                     }}
                   />
                   <View style={styles(currentTheme).line} />
@@ -532,7 +533,7 @@ function Account(props) {
                     detail={''}
                     status='null'
                     onPress={() => {
-                      Linking.openURL('https://YOUR-DOMAIN.com/privacy')
+                      if (PRIVACY_POLICY) Linking.openURL(PRIVACY_POLICY)
                     }}
                   />
                 </View>

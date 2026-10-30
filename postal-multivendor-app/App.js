@@ -177,7 +177,9 @@ export default function App() {
 
   // For Push Notification
   useEffect(() => {
-    // registerForPushNotificationsAsync()
+    registerForPushNotificationsAsync().catch(error => {
+      console.warn('Push notification registration failed:', error.message)
+    })
 
     const notifSub  = Notifications.addNotificationReceivedListener((notification) => {
       if (notification?.request?.content?.data?.type === NOTIFICATION_TYPES.REVIEW_ORDER) {
