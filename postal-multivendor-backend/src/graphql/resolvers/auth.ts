@@ -196,6 +196,7 @@ export const authResolvers = {
         isActive: user.isActive,
         userType: user.role,
         permissions: [],
+        userTypeId: user._id.toString(),
         shopType: restaurants[0]?.shopType,
         restaurants,
         user,

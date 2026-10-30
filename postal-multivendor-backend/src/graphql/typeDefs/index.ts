@@ -664,6 +664,7 @@ export const typeDefs = `#graphql
     image: String
     shopType: String
     permissions: [String!]
+    userTypeId: ID
     restaurants: [Restaurant!]
     user: User
   }
