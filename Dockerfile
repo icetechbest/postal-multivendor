@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY postal-multivendor-backend/package*.json ./
 COPY postal-multivendor-backend/tsconfig.json ./
@@ -6,7 +6,7 @@ RUN npm ci
 COPY postal-multivendor-backend/src ./src
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY postal-multivendor-backend/package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
