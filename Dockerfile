@@ -2,14 +2,14 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY postal-multivendor-backend/package*.json ./
 COPY postal-multivendor-backend/tsconfig.json ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 COPY postal-multivendor-backend/src ./src
 RUN npm run build
 
 FROM node:22-alpine
 WORKDIR /app
 COPY postal-multivendor-backend/package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 ENV NODE_ENV=production
 ENV PORT=8001
