@@ -66,4 +66,5 @@ buck-out/
 .expo/
 web-build/
 
-# @end expo-cli
+# @end expo-cli**/google-service-account*.json
+**/*service-account*.json
