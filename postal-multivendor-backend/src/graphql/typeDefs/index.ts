@@ -449,6 +449,24 @@ export const typeDefs = `#graphql
     googleColor: String
     appleStoreUrl: String
     playStoreUrl: String
+    webClientID: String
+    webAmplitudeApiKey: String
+    webSentryUrl: String
+    apiSentryUrl: String
+    dashboardSentryUrl: String
+    restaurantAppSentryUrl: String
+    riderAppSentryUrl: String
+    sendGridEnabled: Boolean
+    sendGridApiKey: String
+    sendGridEmail: String
+    sendGridEmailName: String
+    sendGridPassword: String
+    formEmail: String
+    skipWhatsAppOTP: Boolean
+    twilioWhatsAppNumber: String
+    cloudinaryUploadUrl: String
+    cloudinaryApiKey: String
+    vapidKey: String
   }
 
   type Taxation {
@@ -660,12 +678,6 @@ export const typeDefs = `#graphql
     email: String
     phone: String
     isNewUser: Boolean
-    userType: String
-    image: String
-    shopType: String
-    permissions: [String!]
-    userTypeId: ID
-    restaurants: [Restaurant!]
     user: User
   }
 
