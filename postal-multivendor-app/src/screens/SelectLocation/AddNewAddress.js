@@ -21,8 +21,7 @@ import SearchModal from '../../components/Address/SearchModal'
 import { Feather } from '@expo/vector-icons'
 import ModalDropdown from '../../components/Picker/ModalDropdown'
 import { useNavigation } from '@react-navigation/native'
-import MapView, { PROVIDER_DEFAULT } from 'react-native-maps'
-import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
+import MapView from '../../components/Map'
 import screenOptions from './screenOptions'
 import { useLocation } from '../../ui/hooks'
 import UserContext from '../../context/User'
@@ -220,7 +219,6 @@ export default function AddNewAddress(props) {
         <View style={[styles().mapView, { height: '55%', zIndex: -10 }]}>
           <MapView
             ref={mapRef}
-            provider={PROVIDER_DEFAULT}
             style={{ flex: 1, width: '100%', height: '100%' }}
             initialRegion={{
               latitude: initialLocation.latitude,
@@ -248,10 +246,8 @@ export default function AddNewAddress(props) {
             zoomTapEnabled={true}
             maxZoomLevel={22}
             minZoomLevel={1}
-            mapType={OSM_MAP_TYPE}
             onMapReady={() => setMapReady(true)}
           >
-            <OsmTiles />
           </MapView>
           
           {/* Marker overlay with pointer events disabled */}

@@ -45,9 +45,22 @@ import * as Clarity from '@microsoft/react-native-clarity';
 // LogBox.ignoreAllLogs() // Ignore all log notifications
 
 
-Clarity.initialize('mcdyi6urgs', {
-  logLevel: Clarity.LogLevel.Verbose, // Note: Use "LogLevel.Verbose" value while testing to debug initialization issues.
-});
+// Analytics must never be able to crash the app at startup
+try {
+  Clarity.initialize('mcdyi6urgs', {
+    logLevel: Clarity.LogLevel.None
+  })
+} catch (error) {
+  console.log('Clarity init failed', error?.message)
+}
+
+// Release builds: log uncaught JS errors instead of letting them kill the app.
+// The ErrorBoundary handles render errors; this covers everything else.
+if (!__DEV__ && global.ErrorUtils) {
+  global.ErrorUtils.setGlobalHandler((error, isFatal) => {
+    console.log('Unhandled JS error', isFatal ? '(fatal)' : '', error?.message)
+  })
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
@@ -67,7 +80,10 @@ export default function App() {
   const [orderId, setOrderId] = useState()
   const [isUpdating, setIsUpdating] = useState(false)
   // const { SENTRY_DSN } = useEnvVars()
-  const client = setupApolloClient()
+  // Create the Apollo client once: re-creating it on every render opened a new WebSocket each time
+  const clientRef = useRef(null)
+  if (!clientRef.current) clientRef.current = setupApolloClient()
+  const client = clientRef.current
 
   useKeepAwake()
   // useWatchLocation()
@@ -118,7 +134,11 @@ export default function App() {
     if (!appIsReady) return
 
     const hideSplashScreen = async () => {
-      await SplashScreen.hideAsync()
+      try {
+        await SplashScreen.hideAsync()
+      } catch (error) {
+        console.log('hideAsync failed', error?.message)
+      }
     }
 
     hideSplashScreen()
@@ -128,7 +148,11 @@ export default function App() {
   useEffect(() => {
     if (!location) return
     const saveLocation = async () => {
-      await AsyncStorage.setItem('location', JSON.stringify(location))
+      try {
+        await AsyncStorage.setItem('location', JSON.stringify(location))
+      } catch (error) {
+        console.log('save location failed', error?.message)
+      }
     }
     saveLocation()
   }, [location])
@@ -158,8 +182,9 @@ export default function App() {
     // eslint-disable-next-line no-undef
     if (__DEV__) return
     ;(async () => {
-      const { isAvailable } = await Updates.checkForUpdateAsync()
-      if (isAvailable) {
+      try {
+        const { isAvailable } = await Updates.checkForUpdateAsync()
+        if (!isAvailable) return
         try {
           setIsUpdating(true)
           const { isNew } = await Updates.fetchUpdateAsync()
@@ -171,6 +196,8 @@ export default function App() {
         } finally {
           setIsUpdating(false)
         }
+      } catch (error) {
+        console.log('update check failed', error?.message)
       }
     })()
   }, [])
@@ -319,16 +346,13 @@ async function registerForPushNotificationsAsync() {
   if (Device.isDevice) {
     const { status: existingStatus } = await Notifications.getPermissionsAsync()
     let finalStatus = existingStatus
-    const { status } = await Notifications.requestPermissionsAsync()
-
     if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync()
       finalStatus = status
     }
     if (finalStatus !== 'granted') {
-      alert('Failed to get push token for push notification!')
+      console.log('Push notification permission not granted')
     }
-  } else {
-    alert('Must use physical device for Push Notifications')
   }
 }
 

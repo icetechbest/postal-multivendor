@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "\u062c\u0627\u0641\u0627",
-    "description": "\u062c\u0627\u0641\u0627 - \u062a\u0637\u0628\u064a\u0642 \u0645\u0646\u062f\u0648\u0628\u064a \u0627\u0644\u062a\u0648\u0635\u064a\u0644.",
+    "name": "جافا",
+    "description": "جافا - تطبيق مندوبي التوصيل.",
     "version": "1.1.67",
     "slug": "food-delivery-rider-multivendor",
     "orientation": "portrait",
@@ -32,7 +32,8 @@
           "supportsBackgroundPlayback": true,
           "supportsPictureInPicture": true
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "platforms": [
       "ios",
@@ -73,9 +74,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e42f5ba7-121b-4241-8fbe-0065bf1d20cd"
+        "projectId": "9353eef2-0c4d-4570-b6e6-108f3593af50"
       }
     },
-    "owner": "justiceyy"
+    "owner": "eyadwaelll"
   }
 }

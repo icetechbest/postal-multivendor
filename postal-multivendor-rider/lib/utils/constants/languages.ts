@@ -70,11 +70,6 @@ export const LANGUAGES = [
     code: "ar",
   },
   {
-    icon: require("@/lib/assets/images/israeli-flag.png"),
-    value: "Israeli",
-    code: "he",
-  },
-  {
     icon: require("@/lib/assets/images/cambodian-flag.png"),
     value: "Combodian",
     code: "km",

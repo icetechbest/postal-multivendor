@@ -19,7 +19,9 @@
       "channel": "staging",
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_SERVER_URL": "https://STAGING_API_URL.example"
+        "EXPO_PUBLIC_SERVER_URL": "https://postal-multivendor-production.up.railway.app/",
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://postal-multivendor-production.up.railway.app/graphql",
+        "EXPO_PUBLIC_WS_GRAPHQL_URL": "wss://postal-multivendor-production.up.railway.app/graphql"
       },
       "android": {
         "buildType": "apk"
@@ -28,7 +30,9 @@
     "production": {
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_SERVER_URL": "https://PRODUCTION_API_URL.example"
+        "EXPO_PUBLIC_SERVER_URL": "https://postal-multivendor-production.up.railway.app/",
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://postal-multivendor-production.up.railway.app/graphql",
+        "EXPO_PUBLIC_WS_GRAPHQL_URL": "wss://postal-multivendor-production.up.railway.app/graphql"
       }
     }
   },

@@ -17,8 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import styles from './styles'
 import { OutlinedTextField, TextField } from 'react-native-material-textfield'
 import { scale } from '../../utils/scaling'
-import MapView, { PROVIDER_DEFAULT } from 'react-native-maps'
-import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
+import MapView from '../../components/Map'
 import gql from 'graphql-tag'
 import { editAddress } from '../../apollo/mutations'
 import * as Location from 'expo-location'
@@ -243,8 +242,6 @@ function EditAddress(props) {
               loadingIndicatorColor={currentTheme.iconColorPink}
               region={region}
               customMapStyle={mapStyle}
-              provider={PROVIDER_DEFAULT}
-              mapType={OSM_MAP_TYPE}
               onPress={() => {
                 props?.navigation.navigate('FullMap', {
                   latitude: region.latitude,
@@ -252,7 +249,6 @@ function EditAddress(props) {
                   currentScreen: 'EditAddress'
                 })
               }}>
-              <OsmTiles />
             </MapView>
             <View style={styles().editAddressImageContainer}>
               <Image

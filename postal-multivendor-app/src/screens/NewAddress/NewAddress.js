@@ -3,8 +3,7 @@ import { View, TouchableOpacity, Platform, KeyboardAvoidingView, ScrollView, Ima
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import styles from './styles'
 import { OutlinedTextField } from 'react-native-material-textfield'
-import MapView, { PROVIDER_DEFAULT } from 'react-native-maps'
-import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
+import MapView from '../../components/Map'
 import * as Location from 'expo-location'
 import gql from 'graphql-tag'
 import { scale } from '../../utils/scaling'
@@ -216,8 +215,6 @@ function NewAddress(props) {
                 longitudeDelta: LONGITUDE_DELTA
               }}
               region={region}
-              provider={PROVIDER_DEFAULT}
-              mapType={OSM_MAP_TYPE}
               onPress={() => {
                 props?.navigation.navigate('FullMap', {
                   latitude: region.latitude,
@@ -226,7 +223,6 @@ function NewAddress(props) {
                 })
               }}
             >
-              <OsmTiles />
             </MapView>
             <View style={styles().imageContainer}>
               <Image source={require('../../assets/images/user.png')} width={20} />

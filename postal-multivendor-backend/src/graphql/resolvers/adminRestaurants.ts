@@ -54,7 +54,7 @@ const response = (message: string, data: unknown) => ({ success: true, message, 
 
 /** Visibility filter for list queries: platform staff see all, owners their own, the public active ones. */
 const listFilter = (context: AuthContext, cloned: boolean, search?: string | null) => {
-  const filter: Record<string, any> = cloned ? { clonedFrom: { $exists: true, $ne: null } } : { clonedFrom: { $in: [null, undefined] } };
+  const filter: Record<string, any> = cloned ? { clonedFrom: { $exists: true, $ne: null } } : { clonedFrom: null };
   const role = context.user?.role;
   if (role === 'VENDOR') filter.owner = context.user!.userId;
   else if (role !== 'ADMIN' && role !== 'STAFF') filter.isActive = true;
@@ -130,7 +130,8 @@ export const adminRestaurantResolvers = {
     commissionRate: async (_parent: unknown, args: { page?: number; limit?: number }, context: AuthContext) => {
       requirePlatformReader(context);
       const p = pageParams(args.page, args.limit);
-      const filter = { clonedFrom: { $in: [null, undefined] } };
+      // `null` matches both a missing field and an explicit null (original restaurants).
+      const filter: Record<string, any> = { clonedFrom: null };
       const [restaurant, total] = await Promise.all([
         Restaurant.find(filter).sort({ name: 1 }).skip(p.skip).limit(p.limit),
         Restaurant.countDocuments(filter),
@@ -291,7 +292,11 @@ export const adminRestaurantResolvers = {
             price: variation.price,
             discounted: variation.discounted,
             isOutOfStock: variation.isOutOfStock,
-            addons: (variation.addons || []).map((addonId) => addonMap.get(idOf(addonId))).filter(Boolean),
+            // Only addons cloned for this restaurant can be remapped; never emit undefined entries.
+            addons: (variation.addons || []).flatMap((addonId) => {
+              const mapped = addonMap.get(idOf(addonId));
+              return mapped ? [mapped] : [];
+            }),
           })),
         });
       }

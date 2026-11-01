@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { Order } from '../../models/Order';
+import { IOrder, Order } from '../../models/Order';
 import { Restaurant } from '../../models/Restaurant';
 import { Review } from '../../models/Review';
 import { User } from '../../models/User';
@@ -8,7 +8,7 @@ import { AuthorizationError } from '../../utils/errors';
 import { idOf } from './appHelpers';
 import { assertObjectId, dateRange, requireDashboard, requirePlatformReader, round2, yearRange } from './adminHelpers';
 
-const DONE = ['DELIVERED', 'COMPLETED'];
+const DONE: IOrder['orderStatus'][] = ['DELIVERED', 'COMPLETED'];
 const oid = (value: string, label: string) => new Types.ObjectId(assertObjectId(value, label));
 const months = <T>(rows: Array<{ _id: number } & Record<string, any>>, pick: (row: any) => T, empty: T): T[] =>
   Array.from({ length: 12 }, (_, i) => {
@@ -71,7 +71,7 @@ export const adminDashboardResolvers = {
     },
     getDashboardOrdersByType: async (_parent: unknown, _args: unknown, context: AuthContext) => {
       requirePlatformReader(context);
-      const [delivery, pickup] = await Promise.all([Order.countDocuments({ orderStatus: { $in: DONE }, ...isDelivery }), Order.countDocuments({ orderStatus: { $in: DONE }, rider: { $in: [null, undefined] }, deliveryCharges: { $lte: 0 } })]);
+      const [delivery, pickup] = await Promise.all([Order.countDocuments({ orderStatus: { $in: DONE }, ...isDelivery }), Order.countDocuments({ orderStatus: { $in: DONE }, rider: { $in: [null] }, deliveryCharges: { $lte: 0 } })]);
       return [{ label: 'Delivery', value: delivery }, { label: 'Pickup', value: pickup }];
     },
     getDashboardSalesByType: async (_parent: unknown, _args: unknown, context: AuthContext) => {

@@ -11,8 +11,7 @@ import { getTipping, orderFragment } from '../../apollo/queries'
 import { applyCoupon, placeOrder } from '../../apollo/mutations'
 import { scale } from '../../utils/scaling'
 import { theme } from '../../utils/themeColors'
-import MapView, { PROVIDER_DEFAULT } from 'react-native-maps'
-import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
+import MapView from '../../components/Map'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
 import ConfigurationContext from '../../context/Configuration'
 import UserContext from '../../context/User'
@@ -687,8 +686,7 @@ function Checkout(props) {
               <View>
                 <View style={[styles(currentTheme).headerContainer]}>
                   <View style={styles().mapView}>
-                    <MapView style={styles().flex} scrollEnabled={false} zoomEnabled={false} zoomControlEnabled={false} rotateEnabled={false} cacheEnabled={false} initialRegion={initialRegion} customMapStyle={customMapStyle} provider={PROVIDER_DEFAULT} mapType={OSM_MAP_TYPE}>
-                      <OsmTiles />
+                    <MapView style={styles().flex} scrollEnabled={false} zoomEnabled={false} zoomControlEnabled={false} rotateEnabled={false} cacheEnabled={false} initialRegion={initialRegion} customMapStyle={customMapStyle}>
                     </MapView>
                     <View style={styles().marker}>
                       <RestaurantMarker />

@@ -5,8 +5,7 @@ import { alignment } from '../../utils/alignment'
 import styles from './styles'
 import React, { useContext, useEffect, useState, useRef } from 'react'
 import Spinner from '../../components/Spinner/Spinner'
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps'
-import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
+import MapView, { Marker, Polyline } from '../../components/Map'
 import { getRoute } from '../../services/osm'
 import TextError from '../../components/Text/TextError/TextError'
 import ConfigurationContext from '../../context/Configuration'
@@ -227,10 +226,7 @@ function OrderDetail(props) {
             zoomControlEnabled={true}
             rotateEnabled={false}
             customMapStyle={mapStyle}
-            provider={PROVIDER_DEFAULT}
-            mapType={OSM_MAP_TYPE}
           >
-            <OsmTiles />
             <Marker
               coordinate={{
                 longitude: +restaurant?.location?.coordinates[0],

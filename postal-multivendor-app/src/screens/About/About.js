@@ -1,8 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { View, StatusBar, Linking, TouchableOpacity, Platform } from 'react-native'
 import { AntDesign, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons'
-import MapView, { PROVIDER_DEFAULT } from 'react-native-maps'
-import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
+import MapView from '../../components/Map'
 import { scale } from '../../utils/scaling'
 import ImageHeader from '../../components/About/Header'
 import styles from './styles'
@@ -85,8 +84,7 @@ function About(props) {
         <ImageHeader iconColor={currentTheme.newIconColor} svgNameL='leftArrow' restaurantImage={restaurantObject.restaurantImage} restaurantName={ restaurantObject.restaurantName} deliveryTime={restaurantObject.deliveryTime} total={restaurantObject.total} rating={restaurantObject?.reviews && restaurantObject?.reviews?.length === 0 ? 0 : restaurantObject.reviews && restaurantObject?.reviews[0]?.rating} />
         {/* map view */}
         <View style={styles(currentTheme).mapContainer}>
-          <MapView style={styles().flex} scrollEnabled={false} zoomEnabled={false} zoomControlEnabled={false} rotateEnabled={false} cacheEnabled={false} initialRegion={RestAbout.map} customMapStyle={customMapStyle} provider={PROVIDER_DEFAULT} mapType={OSM_MAP_TYPE}>
-            <OsmTiles />
+          <MapView style={styles().flex} scrollEnabled={false} zoomEnabled={false} zoomControlEnabled={false} rotateEnabled={false} cacheEnabled={false} initialRegion={RestAbout.map} customMapStyle={customMapStyle}>
           </MapView>
           <View style={styles().marker}>
             <CustomMarker width={80} height={80} transform={[{ translateY: -20 }]} translateY={-20} />

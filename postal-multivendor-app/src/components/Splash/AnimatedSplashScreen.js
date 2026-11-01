@@ -39,6 +39,17 @@ export default function AnimatedSplashScreen({ children }) {
     }
   }, [isAppReady, isSplashVideoComplete])
 
+  // Failsafe: if the video never loads or never finishes, never leave the user on a black screen
+  useEffect(() => {
+    const failsafe = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {})
+      setAppReady(true)
+      setSplashVideoComplete(true)
+      setAnimationComplete(true)
+    }, 8000)
+    return () => clearTimeout(failsafe)
+  }, [])
+
   const onImageLoaded = useCallback(async () => {
     try {
       await SplashScreen.hideAsync()

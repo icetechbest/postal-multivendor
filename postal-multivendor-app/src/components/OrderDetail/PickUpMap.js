@@ -1,7 +1,6 @@
 import React, { useEffect, useContext } from 'react'
 import { View, Dimensions, Image } from 'react-native'
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
-import OsmTiles, { OSM_MAP_TYPE } from '../OsmTiles'
+import MapView, { Marker } from '../Map'
 import { scale } from '../../utils/scaling'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
 import { linkToMapsApp } from '../../utils/links'
@@ -67,10 +66,7 @@ const PickUpMap = ({ deliveryAddress, pickupAddress }) => {
             },
             pickupAddress.label
           )
-        }}
-        provider={PROVIDER_DEFAULT}
-        mapType={OSM_MAP_TYPE}>
-        <OsmTiles />
+        }}>
         <Marker
           title={t('pickUpAddress')}
           coordinate={{
