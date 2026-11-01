@@ -59,7 +59,6 @@ export const GET_ALL_WITHDRAW_REQUESTS = gql`
           username
           password
           slug
-          stripeDetailsSubmitted
           commissionRate
           bussinessDetails {
             bankName

@@ -5,6 +5,7 @@ interface IVariation {
   title: string;
   price: number;
   discounted: number;
+  isOutOfStock?: boolean;
   addons?: mongoose.Types.ObjectId[];
 }
 
@@ -77,6 +78,7 @@ const foodSchema = new Schema<IFood>(
           default: 0,
           min: 0,
         },
+        isOutOfStock: { type: Boolean, default: false },
         addons: [
           {
             type: Schema.Types.ObjectId,

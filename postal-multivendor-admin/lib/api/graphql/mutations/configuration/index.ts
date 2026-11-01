@@ -80,7 +80,9 @@ export const SAVE_GOOGLE_API_KEY_CONFIGURATION = gql`
   ) {
     saveGoogleApiKeyConfiguration(configurationInput: $configurationInput) {
       _id
-      googleApiKey
+      mapTileUrl
+      geocodingUrl
+      routingUrl
     }
   }
 `;
@@ -127,8 +129,9 @@ export const SAVE_WEB_CONFIGURATION = gql`
   mutation SAVE_WEB_CONFIGURATION($configurationInput: WebConfigurationInput!) {
     saveWebConfiguration(configurationInput: $configurationInput) {
       _id
-      googleMapLibraries
-      googleColor
+      mapTileUrl
+      geocodingUrl
+      routingUrl
     }
   }
 `;
@@ -154,31 +157,6 @@ export const SAVE_DELIVERY_RATE_CONFIGURATION = gql`
       _id
       deliveryRate
       costType
-    }
-  }
-`;
-
-export const SAVE_PAYPAL_CONFIGURATION = gql`
-  mutation SAVE_PAYPAL_CONFIGURATION(
-    $configurationInput: PaypalConfigurationInput!
-  ) {
-    savePaypalConfiguration(configurationInput: $configurationInput) {
-      _id
-      clientId
-      clientSecret
-      sandbox
-    }
-  }
-`;
-
-export const SAVE_STRIPE_CONFIGURATION = gql`
-  mutation SAVE_STRIPE_CONFIGURATION(
-    $configurationInput: StripeConfigurationInput!
-  ) {
-    saveStripeConfiguration(configurationInput: $configurationInput) {
-      _id
-      publishableKey
-      secretKey
     }
   }
 `;

@@ -10,6 +10,7 @@ import TextDefault from '../../components/Text/TextDefault/TextDefault'
 import analytics from '../../utils/analytics'
 import { useTranslation } from 'react-i18next'
 import MapView, { PROVIDER_DEFAULT, Polygon, Marker } from 'react-native-maps'
+import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
 import { customMapStyle } from '../../utils/customMapStyles'
 import ModalDropdown from '../../components/Picker/ModalDropdown'
 import { LocationContext } from '../../context/Location'
@@ -246,7 +247,8 @@ export default function CurrentLocation() {
     >
       <View style={[styles().flex, styles(currentTheme).screenBackground]}>
         <View style={styles().mapView}>
-          <MapView style={styles().flex} provider={PROVIDER_DEFAULT} customMapStyle={customMapStyle} region={initialRegion}>
+          <MapView style={styles().flex} provider={PROVIDER_DEFAULT} mapType={OSM_MAP_TYPE} customMapStyle={customMapStyle} region={initialRegion}>
+            <OsmTiles />
             {currentLocation && <Marker coordinate={currentLocation} onPress={() => handleMarkerPress(currentLocation)} />}
 
             {filterCities()?.map((city) => (

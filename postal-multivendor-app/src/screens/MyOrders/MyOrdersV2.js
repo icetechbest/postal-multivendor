@@ -14,7 +14,7 @@ import Spinner from '../../components/Spinner/Spinner'
 import ConfigurationContext from '../../context/Configuration'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
 import { theme } from '../../utils/themeColors'
-import styles from './style'
+import styles from './stylesV2'
 import TextDefault from '../../components/Text/TextDefault/TextDefault'
 import TextError from '../../components/Text/TextError/TextError'
 import { alignment } from '../../utils/alignment'
@@ -27,7 +27,7 @@ import OrdersContext from '../../context/Orders'
 import { HeaderBackButton } from '@react-navigation/elements'
 import { useTranslation } from 'react-i18next'
 
-const orderStatusActive = ['PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
+const orderStatusActive = ['AWAITING_ADMIN', 'PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
 const orderStatusInactive = ['DELIVERED', 'COMPLETED']
 
 function MyOrders(props) {

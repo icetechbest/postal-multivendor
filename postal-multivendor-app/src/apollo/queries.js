@@ -224,7 +224,6 @@ export const restaurantFragment = gql`
           isActive
           isAvailable
           slug
-          stripeDetailsSubmitted
           commissionRate
           tax
           notificationToken
@@ -266,7 +265,6 @@ export const restaurantFragment = gql`
       }
     }
     slug
-    stripeDetailsSubmitted
     commissionRate
     owner {
       _id
@@ -299,7 +297,6 @@ export const restaurantPreviewFragment = gql`
     isActive
     isAvailable
     slug
-    stripeDetailsSubmitted
     commissionRate
     tax
     notificationToken
@@ -513,7 +510,9 @@ export const getConfiguration = `query Configuration{
     androidClientID 
     iOSClientID 
     appAmplitudeApiKey 
-    googleApiKey 
+    mapTileUrl
+    geocodingUrl
+    routingUrl
     expoClientID 
     customerAppSentryUrl 
     termsAndConditions 
@@ -647,7 +646,6 @@ export const restaurantListPreview = `query Restaurants($latitude:Float,$longitu
       isActive
       isAvailable
       slug
-      stripeDetailsSubmitted
       commissionRate
       tax
       notificationToken
@@ -774,7 +772,6 @@ export const restaurant = `query Restaurant($id:String){
     phone
     restaurantUrl
     cuisines
-    stripeDetailsSubmitted
   }
 }`
 

@@ -9,6 +9,11 @@ import { ORDER_STATUS_ENUM } from '../../../utils/enums'
 
 export const orderStatuses = [
   {
+    key: 'AWAITING_ADMIN',
+    status: 0,
+    statusText: 'awaitingAdminOrder'
+  },
+  {
     key: 'PENDING',
     status: 1,
     statusText: 'pendingOrder'

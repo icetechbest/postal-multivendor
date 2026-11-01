@@ -2,6 +2,7 @@ import React, { useState, useContext, useLayoutEffect, useEffect } from 'react'
 import { View, TouchableOpacity } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MapView, { PROVIDER_DEFAULT } from 'react-native-maps'
+import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
 import styles from './styles'
 import { theme } from '../../utils/themeColors'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
@@ -80,7 +81,10 @@ export default function FullMap(props) {
           onMapReady={setMargin}
           showsTraffic={false}
           region={region}
-        />
+          mapType={OSM_MAP_TYPE}
+        >
+          <OsmTiles />
+        </MapView>
         <View style={styles().customMarkerContainer}>
           <CustomMarker
             width={40}

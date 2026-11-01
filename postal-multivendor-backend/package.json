@@ -13,6 +13,7 @@
     "test": "npm run test:smoke",
     "seed": "tsx scripts/seed.ts",
     "verify:contract": "tsx scripts/verify-contract.ts",
+    "verify:admin-contract": "tsx scripts/verify-admin-contract.ts",
     "test:smoke": "tsx scripts/integration-smoke.ts"
   },
   "keywords": [
@@ -47,8 +48,6 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.0",
     "nodemailer": "^8.0.1",
-    "paypal-rest-sdk": "^1.8.1",
-    "stripe": "^20.3.1",
     "subscriptions-transport-ws": "^0.11.0",
     "twilio": "^5.12.1",
     "uuid": "^13.0.0",

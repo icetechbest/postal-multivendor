@@ -1,0 +1,55 @@
+[
+  {
+    "id": "dd13b17c-ff85-4688-ae8c-8a2e5a4dbf73",
+    "status": "ERRORED",
+    "platform": "ANDROID",
+    "error": {
+      "errorCode": "EAS_BUILD_UNKNOWN_GRADLE_ERROR",
+      "message": "Gradle build failed with unknown error. See logs for the \"Run gradlew\" phase for more information."
+    },
+    "artifacts": {},
+    "initiatingActor": {
+      "id": "d66fa851-338f-4787-8776-4bde5d91c2de",
+      "displayName": "justiceyy"
+    },
+    "logFiles": [
+      "https://storage.googleapis.com/eas-workflows-production/logs/823f58be-65d7-476e-b21a-269dddfe9159/dd13b17c-ff85-4688-ae8c-8a2e5a4dbf73/2026-10-31T16%3A00%3A58Z-d2ba1dcc-d807-4d96-b282-c6e7ae85ee04.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20261031%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20261031T174853Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=88540968bd0d064f9c6976e887e623c6fd437d4e9ff9b1dc6e7bf33dbd8e65fd37733adb136cb37ded89ff565352ae40ff27faf1b754d83182b0a3337e5ae15e39842470e0a7279f78b981d2c5de86b76c8d5d5c43672bcc3444fdccc0375e46a5520cfe10d3136bc8fd2f7fb5ce183a93184b50bf201ba22bcf1e4868f29cbbeab60a6dfec8ac5ed06b276350909fe54950a928973378ea5ba0f3bdb4568c8066fe9edfc4c56b05ea0e3ba8df4aaabbe20b3c184b96da0c067554a73abdbacd0fb2bbdb999d7b81141b047e48466a5077a195060f59b7f2a336304f2ccc35d2256cbef222c963015e17d61bc668f25e9a29ba45f66570dcfe24576c852b1a7b"
+    ],
+    "app": {
+      "id": "823f58be-65d7-476e-b21a-269dddfe9159",
+      "name": "postalmultivendor",
+      "slug": "postalmultivendor",
+      "ownerAccount": {
+        "id": "f74131eb-b1f9-4275-acc6-d9f9bf017354",
+        "name": "justiceyy"
+      }
+    },
+    "updateChannel": {
+      "id": "01a191c1-6147-7201-b10b-d1d6e8da73f2",
+      "name": "staging"
+    },
+    "distribution": "INTERNAL",
+    "buildProfile": "staging",
+    "appIdentifier": "com.postal.customer",
+    "sdkVersion": "54.0.0",
+    "appVersion": "1.1.3",
+    "appBuildVersion": "103",
+    "runtime": {
+      "id": "01a1928e-c000-76eb-a153-370ebaef1260",
+      "version": "exposdk:54.0.0"
+    },
+    "gitCommitHash": "fa8f18c10c530e4ffd73791d4a45065e8519e080",
+    "gitCommitMessage": "467",
+    "priority": "NORMAL",
+    "createdAt": "2026-10-31T16:00:53.677Z",
+    "updatedAt": "2026-10-31T16:09:25.835Z",
+    "completedAt": "2026-10-31T16:09:25.609Z",
+    "expirationDate": "2026-11-14T16:00:53.732Z",
+    "isForIosSimulator": false,
+    "metrics": {
+      "buildWaitTime": 4542,
+      "buildQueueTime": 4859,
+      "buildDuration": 502531
+    }
+  }
+]

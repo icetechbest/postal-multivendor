@@ -22,13 +22,15 @@ import MapView, {
   LatLng,
   MapStyleElement,
   Marker,
+  Polyline,
   PROVIDER_DEFAULT,
 } from "react-native-maps";
-import MapViewDirections from "react-native-maps-directions";
 import { Easing } from "react-native-reanimated";
 
 // Methods
 import { linkToMapsApp } from "@/lib/utils/methods";
+import { getRoute } from "@/lib/utils/methods/osm";
+import getEnvVars from "@/environment";
 
 // Icons
 import Icons from "@expo/vector-icons/MaterialIcons";
@@ -48,6 +50,9 @@ import { RIDER_ORDERS } from "@/lib/apollo/queries";
 import { useApptheme } from "@/lib/context/global/theme.context";
 import { useUserContext } from "@/lib/context/global/user.context";
 import { CustomContinueButton } from "@/lib/ui/useable-components";
+import OsmTiles, {
+  OSM_MAP_TYPE,
+} from "@/lib/ui/useable-components/osm-tiles";
 import AccordionItem from "@/lib/ui/useable-components/accordian";
 import SpinnerComponent from "@/lib/ui/useable-components/spinner";
 import { HomeIcon } from "@/lib/ui/useable-components/svg";
@@ -79,7 +84,7 @@ export default function OrderDetailScreen() {
 
   // Context
   const configuration = useContext(ConfigurationContext);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { ROUTING_URL } = getEnvVars();
   const insets = useSafeAreaInsets();
 
   // Hooks
@@ -88,7 +93,6 @@ export default function OrderDetailScreen() {
   const {
     restaurantAddressPin,
     deliveryAddressPin,
-    GOOGLE_MAPS_KEY,
     setDistance,
     setDuration,
     order,
@@ -103,7 +107,7 @@ export default function OrderDetailScreen() {
   // States
   const [customMapStyles, setCustomMapStyles] = useState<MapStyleElement[]>();
   const [orderId, setOrderId] = useState("");
-  const [retryCount, setRetryCount] = useState(0); // Added to implement retry logic
+  const [routeCoordinates, setRouteCoordinates] = useState<LatLng[]>([]);
 
   // Ref
   const latitude = useRef(
@@ -138,16 +142,6 @@ export default function OrderDetailScreen() {
       }),
     ]).start();
   };
-
-  useEffect(() => {
-    return () => {
-      // Clean up any pending retry timeouts
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-        retryTimeoutRef.current = null;
-      }
-    };
-  }, []);
 
   const openMaps = () => {
     try {
@@ -192,10 +186,15 @@ export default function OrderDetailScreen() {
           );
         });
       } else {
-        // Google Maps (Supports waypoints: Rider -> Store -> Customer)
-        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${rider}&destination=${customer}&waypoints=${store}`;
+        // OpenStreetMap directions (free, no API key). Supports waypoints:
+        // Rider -> Store -> Customer, or Rider -> Customer once picked up.
+        const routePoints =
+          localOrder?.orderStatus === "PICKED"
+            ? [rider, customer]
+            : [rider, store, customer];
+        const osmMapsUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${encodeURIComponent(routePoints.join(";"))}`;
         // Added error handling for Linking
-        Linking.openURL(googleMapsUrl).catch(() => {
+        Linking.openURL(osmMapsUrl).catch(() => {
           Alert.alert(
             t("Navigation Error"),
             t("Could not open maps application"),
@@ -219,11 +218,7 @@ export default function OrderDetailScreen() {
       setCustomMapStyles(styles_for_map);
     }
 
-    // Added validation for Google Maps API key to catch common configuration issues
-    if (!GOOGLE_MAPS_KEY || GOOGLE_MAPS_KEY === "") {
-      console.log("Google Maps API key is missing or invalid");
-    }
-  }, [appTheme, currentTheme, GOOGLE_MAPS_KEY]);
+  }, [appTheme, currentTheme]);
 
   useEffect(() => {
     // Only set up the animation if locationPin.location exists and is valid
@@ -299,6 +294,64 @@ export default function OrderDetailScreen() {
     }
   }, [order]);
 
+  // Compute the active route with OSRM. Any failure falls back to a straight
+  // line between the two points so the map never breaks.
+  useEffect(() => {
+    const status = localOrder?.orderStatus;
+
+    let origin: LatLng | undefined;
+    let destination: LatLng | undefined;
+
+    if (status === "ACCEPTED" || status === "ASSIGNED") {
+      origin = locationPin?.location;
+      destination = restaurantAddressPin?.location;
+    } else if (status === "PICKED") {
+      origin = locationPin?.location;
+      destination = deliveryAddressPin?.location;
+    } else {
+      origin = restaurantAddressPin?.location;
+      destination = deliveryAddressPin?.location;
+    }
+
+    if (!isValidCoordinate(origin) || !isValidCoordinate(destination)) {
+      setRouteCoordinates([]);
+      return;
+    }
+
+    let cancelled = false;
+    const from = origin as LatLng;
+    const to = destination as LatLng;
+
+    (async () => {
+      const result = await getRoute(ROUTING_URL, from, to);
+      if (cancelled) return;
+
+      if (result && result.coordinates.length > 1) {
+        setRouteCoordinates(result.coordinates);
+        setDistance(result.distance);
+        setDuration(result.duration);
+      } else {
+        // Straight-line fallback
+        setRouteCoordinates([from, to]);
+        setDistance(null);
+        setDuration(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    localOrder?.orderStatus,
+    locationPin?.location?.latitude,
+    locationPin?.location?.longitude,
+    restaurantAddressPin?.location?.latitude,
+    restaurantAddressPin?.location?.longitude,
+    deliveryAddressPin?.location?.latitude,
+    deliveryAddressPin?.location?.longitude,
+    ROUTING_URL,
+  ]);
+
   if (!localOrder) return;
 
   return (
@@ -337,7 +390,7 @@ export default function OrderDetailScreen() {
               />
             </TouchableOpacity>
           </View>
-          {locationPin && GOOGLE_MAPS_KEY ? (
+          {locationPin ? (
             <MapView
               style={{
                 width: "100%",
@@ -356,8 +409,10 @@ export default function OrderDetailScreen() {
                 longitudeDelta: 0.0421,
               }}
               provider={PROVIDER_DEFAULT}
+              mapType={OSM_MAP_TYPE}
             // customMapStyle={MapStyles}
             >
+              <OsmTiles />
               {deliveryAddressPin?.location && (
                 <Marker
                   coordinate={deliveryAddressPin.location}
@@ -415,105 +470,14 @@ export default function OrderDetailScreen() {
                   </Marker.Animated>
                 )}
 
-              {/* Added validation for rider to restaurant directions */}
-              {localOrder?.orderStatus === "ACCEPTED" ||
-                localOrder?.orderStatus === "ASSIGNED"
-                ? isValidCoordinate(locationPin?.location) &&
-                isValidCoordinate(restaurantAddressPin?.location) &&
-                GOOGLE_MAPS_KEY && (
-                  <MapViewDirections
-                    origin={locationPin?.location}
-                    destination={restaurantAddressPin?.location}
-                    apikey={GOOGLE_MAPS_KEY}
-                    strokeWidth={2}
-                    strokeColor={"#f95509"}
-                    precision="low"
-                    resetOnChange={false} // Prevents unnecessary recalculations
-                    onReady={(results) => {
-                      if (results && results.distance) {
-                        setDistance(results.distance);
-                        setDuration(results.duration);
-                      }
-                    }}
-                    optimizeWaypoints={true}
-                    onError={(error) => {
-                      console.log("Detailed route error:", error);
-                      // Retry logic for NOT_FOUND errors
-                      if (
-                        error.toString().includes("NOT_FOUND") &&
-                        retryCount < 10
-                      ) {
-                        setRetryCount((prev) => prev + 1);
-                      }
-                    }}
-                  />
-                )
-                : null}
-
-              {/* Added validation for rider to customer directions */}
-              {localOrder?.orderStatus === "PICKED" &&
-                isValidCoordinate(locationPin?.location) &&
-                isValidCoordinate(deliveryAddressPin?.location) &&
-                GOOGLE_MAPS_KEY && (
-                  <MapViewDirections
-                    origin={locationPin?.location}
-                    destination={deliveryAddressPin?.location}
-                    apikey={GOOGLE_MAPS_KEY}
-                    strokeWidth={2}
-                    strokeColor={"#f95509"}
-                    precision="low"
-                    resetOnChange={false}
-                    optimizeWaypoints={true}
-                    onReady={(result) => {
-                      setDistance(result.distance);
-                      setDuration(result.duration);
-                    }}
-                    onError={(error) => {
-                      console.log("Delivery route error:", error);
-                      // Retry logic for NOT_FOUND errors
-                      if (
-                        error.toString().includes("NOT_FOUND") &&
-                        retryCount < 10
-                      ) {
-                        setRetryCount((prev) => prev + 1);
-                      }
-                    }}
-                  />
-                )}
-
-              {/* Added validation for restaurant to customer directions */}
-              {localOrder?.orderStatus !== "ACCEPTED" &&
-                localOrder?.orderStatus !== "PICKED" &&
-                localOrder?.orderStatus !== "ASSIGNED" &&
-                isValidCoordinate(restaurantAddressPin?.location) &&
-                isValidCoordinate(deliveryAddressPin?.location) && (
-                  <MapViewDirections
-                    origin={restaurantAddressPin?.location}
-                    destination={deliveryAddressPin?.location}
-                    apikey={GOOGLE_MAPS_KEY ?? ""}
-                    strokeWidth={2}
-                    precision="low"
-                    strokeColor={"#f95509"}
-                    resetOnChange={false}
-                    optimizeWaypoints={true}
-                    onReady={(result) => {
-                      if (result) {
-                        setDistance(result.distance);
-                        setDuration(result.duration);
-                      }
-                    }}
-                    onError={(error) => {
-                      console.log("Default route error:", error);
-                      // Retry logic for NOT_FOUND errors
-                      if (
-                        error.toString().includes("NOT_FOUND") &&
-                        retryCount < 10
-                      ) {
-                        setRetryCount((prev) => prev + 1);
-                      }
-                    }}
-                  />
-                )}
+              {/* Route drawn from OSRM (no API key). Falls back to a straight line. */}
+              {routeCoordinates.length > 1 && (
+                <Polyline
+                  coordinates={routeCoordinates}
+                  strokeWidth={2}
+                  strokeColor={"#f95509"}
+                />
+              )}
               {/* <Button title="Open in Maps" onPress={openMaps} /> */}
             </MapView>
           ) : (

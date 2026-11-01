@@ -186,7 +186,6 @@ export const restaurantFragment = `#graphql
           isActive
           isAvailable
           slug
-          stripeDetailsSubmitted
           commissionRate
           tax
           notificationToken
@@ -228,7 +227,6 @@ export const restaurantFragment = `#graphql
       }
     }
     slug
-    stripeDetailsSubmitted
     commissionRate
     owner {
       _id

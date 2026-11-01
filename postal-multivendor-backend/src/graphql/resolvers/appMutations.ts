@@ -128,8 +128,11 @@ const updateOrderStatus = async (id: string, status: string, reason: string | un
   if (!order) throw new NotFoundError('Order');
   await ensureOrderAccess(order, context, true);
   const normalized = status.toUpperCase() as typeof order.orderStatus;
-  const allowed = ['PENDING', 'ACCEPTED', 'ASSIGNED', 'PICKED', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
+  const allowed = ['AWAITING_ADMIN', 'PENDING', 'ACCEPTED', 'ASSIGNED', 'PICKED', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
   if (!allowed.includes(normalized)) throw new ValidationError('Invalid order status');
+  if ((normalized as string) === 'AWAITING_ADMIN') throw new ValidationError('An order cannot be moved back to AWAITING_ADMIN');
+  // Orders waiting for admin confirmation can only leave that state through adminConfirmOrder / adminRejectOrder.
+  if (order.orderStatus === 'AWAITING_ADMIN') throw new ValidationError('This order is waiting for admin confirmation; use adminConfirmOrder or adminRejectOrder');
   const now = new Date();
   order.orderStatus = normalized;
   if (reason !== undefined) order.reason = reason;
@@ -507,7 +510,7 @@ export const appMutationResolvers = {
     const orderDate = new Date(args.orderDate);
     if (Number.isNaN(orderDate.getTime())) throw new ValidationError('Invalid order date');
     const paymentMethod = String(args.paymentMethod).toUpperCase();
-    if (!['COD', 'CARD', 'PAYPAL', 'STRIPE', 'HYP'].includes(paymentMethod)) throw new ValidationError('Unsupported payment method');
+    if (!['COD', 'CARD', 'HYP'].includes(paymentMethod)) throw new ValidationError('Unsupported payment method');
     const order: any = await Order.create({
       orderId: generateOrderId(restaurant.orderPrefix),
       restaurant: restaurant._id,
@@ -529,7 +532,7 @@ export const appMutationResolvers = {
       paymentMethod,
       paidAmount: 0,
       paymentStatus: 'PENDING',
-      orderStatus: 'PENDING',
+      orderStatus: 'AWAITING_ADMIN',
       isPickedUp: isPickup,
       instructions: args.instructions || '',
       orderDate,
@@ -552,6 +555,7 @@ export const appMutationResolvers = {
     if (!order) throw new NotFoundError('Order');
     await ensureOrderAccess(order, context, true);
     if (context.user!.role === 'RIDER') throw new AuthorizationError();
+    if (order.orderStatus === 'AWAITING_ADMIN') throw new ValidationError('This order is waiting for admin confirmation');
     const rider = await User.findOne({ _id: riderId, role: 'RIDER', isActive: true });
     if (!rider) throw new ValidationError('Invalid rider');
     order.rider = rider._id;

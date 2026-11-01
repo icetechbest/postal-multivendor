@@ -20,7 +20,7 @@ import EmptyView from '../EmptyView/EmptyView'
 import { ORDER_STATUS_ENUM } from '../../utils/enums'
 
 function emptyViewPastOrders() {
-  const orderStatusActive = ['PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
+  const orderStatusActive = ['AWAITING_ADMIN', 'PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
   const orderStatusInactive = ['DELIVERED', 'COMPLETED']
   const { orders, loadingOrders, errorOrders } = useContext(OrdersContext)
   if (loadingOrders)

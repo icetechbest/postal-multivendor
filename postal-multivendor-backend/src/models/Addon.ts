@@ -12,6 +12,7 @@ export interface IAddon extends Document {
   description?: string;
   quantityMinimum: number;
   quantityMaximum: number;
+  restaurant?: mongoose.Types.ObjectId;
   options: IOption[];
   isActive: boolean;
   createdAt: Date;
@@ -39,6 +40,7 @@ const addonSchema = new Schema<IAddon>(
       default: 1,
       min: 0,
     },
+    restaurant: { type: Schema.Types.ObjectId, ref: 'Restaurant', index: true },
     options: [
       {
         title: {

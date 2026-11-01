@@ -12,12 +12,17 @@ export interface IOrder extends Document {
   taxationAmount: number;
   discount: number;
   total: number;
-  paymentMethod: 'COD' | 'CARD' | 'PAYPAL' | 'STRIPE' | 'HYP';
+  paymentMethod: 'COD' | 'CARD' | 'HYP';
   paidAmount: number;
-  orderStatus: 'PENDING' | 'ACCEPTED' | 'ASSIGNED' | 'PICKED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
+  orderStatus: 'AWAITING_ADMIN' | 'PENDING' | 'ACCEPTED' | 'ASSIGNED' | 'PICKED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
   paymentStatus: 'PENDING' | 'PAID' | 'REFUNDED' | 'FAILED';
   paymentReference?: string;
   reason?: string;
+  adminConfirmedBy?: mongoose.Types.ObjectId;
+  adminConfirmedAt?: Date;
+  adminNote?: string;
+  adminRejectedBy?: mongoose.Types.ObjectId;
+  adminRejectedAt?: Date;
   isActive: boolean;
   isRinged: boolean;
   isRiderRinged: boolean;
@@ -98,16 +103,21 @@ const orderSchema = new Schema<IOrder>({
   taxationAmount: { type: Number, default: 0, min: 0 },
   discount: { type: Number, default: 0, min: 0 },
   total: { type: Number, required: true, min: 0 },
-  paymentMethod: { type: String, enum: ['COD', 'CARD', 'PAYPAL', 'STRIPE', 'HYP'], required: true },
+  paymentMethod: { type: String, enum: ['COD', 'CARD', 'HYP'], required: true },
   paidAmount: { type: Number, default: 0, min: 0 },
   orderStatus: {
     type: String,
-    enum: ['PENDING', 'ACCEPTED', 'ASSIGNED', 'PICKED', 'DELIVERED', 'COMPLETED', 'CANCELLED'],
+    enum: ['AWAITING_ADMIN', 'PENDING', 'ACCEPTED', 'ASSIGNED', 'PICKED', 'DELIVERED', 'COMPLETED', 'CANCELLED'],
     default: 'PENDING',
   },
   paymentStatus: { type: String, enum: ['PENDING', 'PAID', 'REFUNDED', 'FAILED'], default: 'PENDING' },
   paymentReference: String,
   reason: String,
+  adminConfirmedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  adminConfirmedAt: Date,
+  adminNote: String,
+  adminRejectedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  adminRejectedAt: Date,
   isActive: { type: Boolean, default: true },
   isRinged: { type: Boolean, default: false },
   isRiderRinged: { type: Boolean, default: false },

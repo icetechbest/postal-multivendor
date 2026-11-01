@@ -18,6 +18,7 @@ import styles from './styles'
 import { OutlinedTextField, TextField } from 'react-native-material-textfield'
 import { scale } from '../../utils/scaling'
 import MapView, { PROVIDER_DEFAULT } from 'react-native-maps'
+import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
 import gql from 'graphql-tag'
 import { editAddress } from '../../apollo/mutations'
 import * as Location from 'expo-location'
@@ -243,13 +244,16 @@ function EditAddress(props) {
               region={region}
               customMapStyle={mapStyle}
               provider={PROVIDER_DEFAULT}
+              mapType={OSM_MAP_TYPE}
               onPress={() => {
                 props?.navigation.navigate('FullMap', {
                   latitude: region.latitude,
                   longitude: region.longitude,
                   currentScreen: 'EditAddress'
                 })
-              }}></MapView>
+              }}>
+              <OsmTiles />
+            </MapView>
             <View style={styles().editAddressImageContainer}>
               <Image
                 source={require('../../assets/images/user.png')}

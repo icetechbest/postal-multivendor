@@ -644,7 +644,6 @@ export const generateSkeletonTransactionHistory = (
         isActive: false,
         isAvailable: false,
         slug: '',
-        stripeDetailsSubmitted: false,
         phone: '',
         city: '',
         postCode: '',

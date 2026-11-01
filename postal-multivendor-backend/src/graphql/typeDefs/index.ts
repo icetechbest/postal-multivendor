@@ -1,4 +1,6 @@
-export const typeDefs = `#graphql
+import { adminTypeDefs } from './admin';
+
+const baseTypeDefs = `#graphql
   scalar Date
   scalar JSON
   directive @client on FIELD
@@ -6,9 +8,9 @@ export const typeDefs = `#graphql
   type Query {
     profile: User
     users: [User!]!
-    restaurants(page: Int, limit: Int, search: String): RestaurantPagination!
+    restaurants(page: Int, limit: Int, search: String): [Restaurant!]!
     restaurant(id: String): Restaurant
-    restaurantByOwner(id: ID!): Restaurant
+    restaurantByOwner(id: String): Vendor
     nearByRestaurants(latitude: Float, longitude: Float, shopType: String, limit: Int): RestaurantList!
     nearByRestaurantsPreview(latitude: Float, longitude: Float, shopType: String): RestaurantPreviewList!
     topRatedVendors(latitude: Float, longitude: Float, limit: Int): [Restaurant!]!
@@ -21,8 +23,8 @@ export const typeDefs = `#graphql
     myOrders(page: Int, limit: Int): OrderPagination!
     orders(offset: Int): [Order!]!
     order(id: String!): Order
-    getActiveOrders(restaurantId: ID, page: Int, limit: Int, status: String): OrderPagination!
-    ordersByRestId(restaurant: ID!, page: Int, limit: Int, status: String): OrderPagination!
+    getActiveOrders(restaurantId: ID, page: Int, limit: Int, status: String, rowsPerPage: Int, actions: [String], search: String): OrderPagination!
+    ordersByRestId(restaurant: String!, page: Int, rows: Int, limit: Int, status: String, search: String): [Order!]!
     food(restaurant: ID!): [Food!]!
     categories: [Category!]!
     popularFoodItems(restaurantId: String!): [Food!]!
@@ -69,17 +71,17 @@ export const typeDefs = `#graphql
     Deactivate(isActive: Boolean!, email: String!): User
     pushToken(token: String): User
     updateNotificationStatus(offerNotification: Boolean!, orderNotification: Boolean!, isOrderNotification: Boolean): User!
-    createRestaurant(restaurantInput: RestaurantInput!): Restaurant!
-    editRestaurant(restaurantInput: EditRestaurantInput!): Restaurant!
-    deleteRestaurant(id: ID!): SuccessMessage!
-    updateRestaurantDelivery(id: ID!, deliveryBounds: [[[Float!]!]!]!): Restaurant!
-    createFood(foodInput: FoodInput!): Food!
-    editFood(foodInput: EditFoodInput!): Food!
-    deleteFood(id: ID!): SuccessMessage!
-    updateFoodOutOfStock(id: ID!, isAvailable: Boolean!): Food!
+    createRestaurant(restaurant: RestaurantInput, owner: ID, restaurantInput: RestaurantInput): Restaurant!
+    editRestaurant(restaurant: RestaurantProfileInput, restaurantInput: EditRestaurantInput): Restaurant!
+    deleteRestaurant(id: String!): Restaurant!
+    updateRestaurantDelivery(id: ID!, deliveryBounds: [[[Float!]!]!], minDeliveryFee: Float, deliveryDistance: Float, deliveryFee: Float): RestaurantResponse!
+    createFood(foodInput: FoodInput!): Restaurant!
+    editFood(foodInput: FoodInput!): Restaurant!
+    deleteFood(id: String!, restaurant: String, categoryId: String): Food!
+    updateFoodOutOfStock(id: String!, restaurant: String, categoryId: String, isAvailable: Boolean): Boolean!
     placeOrder(restaurant: String!, orderInput: [OrderInput!]!, paymentMethod: String!, couponCode: String, tipping: Float!, taxationAmount: Float!, address: AddressInput!, orderDate: String!, isPickedUp: Boolean!, deliveryCharges: Float!, instructions: String): Order!
     updateOrderStatus(id: ID!, status: String!, reason: String): Order!
-    assignRider(orderId: ID!, riderId: ID!): Order!
+    assignRider(id: String, orderId: String, riderId: String!): Order!
     abortOrder(id: String!, reason: String): Order!
     cancelOrder(id: ID!, reason: String!): Order!
     reviewOrder(reviewInput: ReviewInput!): Order!
@@ -90,31 +92,31 @@ export const typeDefs = `#graphql
     selectAddress(id: String!): User!
     addFavourite(id: String!): User!
     addFavouriteRestaurant(id: ID!): User!
-    createCategory(categoryInput: CategoryInput!): Category!
-    editCategory(categoryInput: EditCategoryInput!): Category!
-    deleteCategory(id: ID!): SuccessMessage!
-    createAddons(addonInput: AddonInput!): Addon!
+    createCategory(category: CategoryInput, categoryInput: CategoryInput): Restaurant!
+    editCategory(category: CategoryInput, categoryInput: CategoryInput): Restaurant!
+    deleteCategory(id: String!, restaurant: String): Restaurant!
+    createAddons(addonInput: AddonInput): Restaurant!
     editAddons(addonInput: EditAddonInput!): Addon!
     deleteAddons(id: ID!): SuccessMessage!
     createCoupon(couponInput: CouponInput!): Coupon!
-    editCoupon(couponInput: EditCouponInput!): Coupon!
-    deleteCoupon(id: ID!): SuccessMessage!
+    editCoupon(couponInput: CouponInput!): Coupon!
+    deleteCoupon(id: String!): Boolean!
     coupon(coupon: String!, restaurantId: ID!): CouponResponse!
     applyCoupon(code: String!, restaurant: ID): Coupon!
-    createZone(zoneInput: ZoneInput!): Zone!
-    editZone(zoneInput: EditZoneInput!): Zone!
-    deleteZone(id: ID!): SuccessMessage!
+    createZone(zone: ZoneInput, zoneInput: ZoneInput): Zone!
+    editZone(zone: ZoneInput, zoneInput: ZoneInput): Zone!
+    deleteZone(id: String!): Zone!
     createRider(riderInput: RiderInput!): User!
-    editRider(riderInput: EditRiderInput!): User!
-    deleteRider(id: ID!): SuccessMessage!
-    toggleAvailablity(id: ID!): User!
+    editRider(riderInput: RiderInput!): User!
+    deleteRider(id: String!): User!
+    toggleAvailablity(id: String!): User!
     updateRiderLocation(latitude: Float!, longitude: Float!): User!
     sendChatMessage(message: ChatMessageInput!, orderId: ID!): ChatResponse!
     createActivity(groupId: String!, module: String!, screenPath: String!, type: String!, details: String!): Boolean!
   }
 
   type Subscription {
-    subscribePlaceOrder(restaurant: ID!): Order!
+    subscribePlaceOrder(restaurant: String!): OrderStatusChanged!
     subscriptionOrder(id: String!): Order!
     orderStatusChanged(userId: String!): OrderStatusChanged!
     subscriptionRiderLocation(riderId: String!): User!
@@ -152,6 +154,14 @@ export const typeDefs = `#graphql
     currentWalletAmount: Float
     totalWalletAmount: Float
     withdrawnWalletAmount: Float
+    vehicleType: String
+    assigned: Boolean
+    status: String
+    lastLogin: Date
+    notes: String
+    bussinessDetails: BussinessDetails
+    licenseDetails: LicenseDetails
+    vehicleDetails: VehicleDetails
     createdAt: Date
     updatedAt: Date
   }
@@ -192,7 +202,6 @@ export const typeDefs = `#graphql
     totalOrders: Int
     totalEarnings: Float
     sections: [String!]
-    stripeDetailsSubmitted: Boolean
     notificationToken: String
     enableNotification: Boolean
     shopType: String
@@ -204,6 +213,13 @@ export const typeDefs = `#graphql
     freeDelivery: Boolean
     acceptVouchers: Boolean
     distanceWithCurrentLocation: Float
+    unique_restaurant_id: String
+    deliveryInfo: DeliveryInfo
+    deliveryOptions: DeliveryOptions
+    bussinessDetails: BussinessDetails
+    currentWalletAmount: Float
+    totalWalletAmount: Float
+    withdrawnWalletAmount: Float
     createdAt: Date
     updatedAt: Date
   }
@@ -226,7 +242,6 @@ export const typeDefs = `#graphql
     isActive: Boolean
     isAvailable: Boolean
     slug: String
-    stripeDetailsSubmitted: Boolean
     commissionRate: Float
     tax: Float
     notificationToken: String
@@ -308,6 +323,10 @@ export const typeDefs = `#graphql
     orderStatus: String
     paymentStatus: String
     reason: String
+    adminConfirmedBy: ID
+    adminConfirmedAt: Date
+    adminNote: String
+    adminRejectedAt: Date
     isActive: Boolean
     rider: User
     riderAssignedAt: Date
@@ -328,6 +347,8 @@ export const typeDefs = `#graphql
     isRinged: Boolean
     isRiderRinged: Boolean
     instructions: String
+    zone: Zone
+    selectedPrepTime: Int
     createdAt: Date
     updatedAt: Date
   }
@@ -400,6 +421,9 @@ export const typeDefs = `#graphql
     enabled: Boolean
     isActive: Boolean
     isEnabled: Boolean
+    startDate: Date
+    endDate: Date
+    lifeTimeActive: Boolean
     restaurant: Restaurant
     createdAt: Date
     updatedAt: Date
@@ -411,11 +435,6 @@ export const typeDefs = `#graphql
     password: String
     emailName: String
     enableEmail: Boolean
-    clientId: String
-    clientSecret: String
-    sandbox: Boolean
-    publishableKey: String
-    secretKey: String
     currency: String
     currencySymbol: String
     deliveryRate: Float
@@ -434,8 +453,8 @@ export const typeDefs = `#graphql
     iOSClientID: String
     expoClientID: String
     appAmplitudeApiKey: String
-    googleApiKey: String
-    googlePlacesApiBaseUrl: String
+    mapTileUrl: String
+    geocodingUrl: String
     customerAppSentryUrl: String
     termsAndConditions: String
     privacyPolicy: String
@@ -445,8 +464,7 @@ export const typeDefs = `#graphql
     skipPhoneVerification: Boolean
     costType: String
     isPaidVersion: Boolean
-    googleMapLibraries: String
-    googleColor: String
+    routingUrl: String
     appleStoreUrl: String
     playStoreUrl: String
     webClientID: String
@@ -526,6 +544,7 @@ export const typeDefs = `#graphql
     _id: ID!
     rating: Int
     description: String
+    comments: String
     isActive: Boolean
     order: Order
     restaurant: Restaurant
@@ -678,6 +697,12 @@ export const typeDefs = `#graphql
     email: String
     phone: String
     isNewUser: Boolean
+    userType: String
+    userTypeId: String
+    permissions: [String!]
+    image: String
+    shopType: String
+    restaurants: [Restaurant!]
     user: User
   }
 
@@ -707,6 +732,8 @@ export const typeDefs = `#graphql
     totalCount: Int!
     currentPage: Int!
     totalPages: Int!
+    nextPage: Int
+    prevPage: Int
   }
 
   input UserInput {
@@ -730,14 +757,19 @@ export const typeDefs = `#graphql
   input RestaurantInput {
     name: String!
     address: String!
-    image: String!
+    image: String
     logo: String
-    deliveryTime: Int!
-    minimumOrder: Float!
+    phone: String
+    username: String
+    password: String
+    shopType: String
+    cuisines: [String!]
+    deliveryTime: Int
+    minimumOrder: Float
     salesTax: Float
-    orderPrefix: String!
-    location: LocationInput!
-    ownerId: ID!
+    orderPrefix: String
+    location: LocationInput
+    ownerId: ID
     deliveryFee: Float
     zone: ID
   }
@@ -756,6 +788,9 @@ export const typeDefs = `#graphql
   }
 
   input FoodInput {
+    _id: ID
+    subCategory: String
+    isActive: Boolean
     title: String!
     description: String!
     image: String!
@@ -775,6 +810,7 @@ export const typeDefs = `#graphql
 
   input VariationInput {
     _id: ID
+    isOutOfStock: Boolean
     title: String!
     price: Float!
     discounted: Float
@@ -810,6 +846,9 @@ export const typeDefs = `#graphql
   }
 
   input CategoryInput {
+    _id: ID
+    restaurant: String
+    parentCategoryId: String
     title: String!
     description: String
     image: String
@@ -823,11 +862,13 @@ export const typeDefs = `#graphql
   }
 
   input AddonInput {
-    title: String!
+    restaurant: String
+    addons: [AddonFormInput!]
+    title: String
     description: String
     quantityMinimum: Int
     quantityMaximum: Int
-    options: [OptionInput!]!
+    options: [OptionInput!]
   }
 
   input EditAddonInput {
@@ -847,8 +888,16 @@ export const typeDefs = `#graphql
   }
 
   input CouponInput {
-    code: String!
+    _id: ID
+    code: String
+    title: String
     discount: Float!
+    enabled: Boolean
+    isActive: Boolean
+    isEnabled: Boolean
+    startDate: String
+    endDate: String
+    lifeTimeActive: Boolean
     restaurant: ID
   }
 
@@ -861,9 +910,10 @@ export const typeDefs = `#graphql
   }
 
   input ZoneInput {
+    _id: ID
     title: String!
     description: String
-    coordinates: [[[Float!]!]!]!
+    coordinates: [[[Float!]!]!]
   }
 
   input EditZoneInput {
@@ -874,11 +924,18 @@ export const typeDefs = `#graphql
   }
 
   input RiderInput {
+    _id: ID
     name: String!
-    email: String!
-    password: String!
-    phone: String!
+    username: String
+    email: String
+    password: String
+    phone: String
     zone: ID
+    vehicleType: String
+    available: Boolean
+    bussinessDetails: BussinessDetailsInput
+    licenseDetails: LicenseDetailsInput
+    vehicleDetails: VehicleDetailsInput
   }
 
   input EditRiderInput {
@@ -905,3 +962,5 @@ export const typeDefs = `#graphql
     name: String!
   }
 `;
+
+export const typeDefs = baseTypeDefs + '\n' + adminTypeDefs;

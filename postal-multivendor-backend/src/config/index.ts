@@ -45,17 +45,7 @@ interface Config {
     authProvider: string;
     clientCertUrl: string;
   };
-  stripe: {
-    secretKey: string;
-    publishableKey: string;
-  };
-  paypal: {
-    mode: string;
-    clientId: string;
-    clientSecret: string;
-  };
   google: {
-    mapsApiKey: string;
     clientId: string;
     clientSecret: string;
   };
@@ -102,6 +92,9 @@ interface Config {
     taxRate: number;
     minOrderAmount: number;
     maxDistanceKm: number;
+  };
+  orders: {
+    adminConfirmTimeoutMinutes: number;
   };
   otp: {
     expiryMinutes: number;
@@ -152,17 +145,7 @@ const config: Config = {
     authProvider: process.env.FIREBASE_AUTH_PROVIDER || 'https://www.googleapis.com/oauth2/v1/certs',
     clientCertUrl: process.env.FIREBASE_CLIENT_CERT_URL || '',
   },
-  stripe: {
-    secretKey: process.env.STRIPE_SECRET_KEY || '',
-    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
-  },
-  paypal: {
-    mode: process.env.PAYPAL_MODE || 'sandbox',
-    clientId: process.env.PAYPAL_CLIENT_ID || '',
-    clientSecret: process.env.PAYPAL_CLIENT_SECRET || '',
-  },
   google: {
-    mapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
   },
@@ -209,6 +192,10 @@ const config: Config = {
     taxRate: parseFloat(process.env.DEFAULT_TAX_RATE || '5'),
     minOrderAmount: parseFloat(process.env.MIN_ORDER_AMOUNT || '10'),
     maxDistanceKm: parseFloat(process.env.MAX_DELIVERY_DISTANCE_KM || '50'),
+  },
+  orders: {
+    // 0 (default) disables the automatic cancellation of orders left in AWAITING_ADMIN.
+    adminConfirmTimeoutMinutes: Math.max(0, parseInt(process.env.ADMIN_CONFIRM_TIMEOUT_MINUTES || '0', 10) || 0),
   },
   otp: {
     expiryMinutes: parseInt(process.env.OTP_EXPIRY_MINUTES || '10', 10),

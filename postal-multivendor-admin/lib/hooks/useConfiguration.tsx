@@ -10,8 +10,6 @@ import { IConfiguration } from '@/lib/utils/interfaces';
 // Interface
 import { ConfigurationContext } from '@/lib/context/global/configuration.context';
 
-import { Libraries } from '@react-google-maps/api';
-
 export const useConfiguration = () => {
   const configuration: IConfiguration | undefined =
     useContext(ConfigurationContext);
@@ -20,20 +18,21 @@ export const useConfiguration = () => {
   const GOOGLE_CLIENT_ID_ANDRIOD = configuration?.androidClientID;
   const GOOGLE_CLIENT_ID_IOS = configuration?.iOSClientID;
   const GOOGLE_CLIENT_ID_EXPO = configuration?.expoClientID;
-  const STRIPE_PUBLIC_KEY = configuration?.publishableKey;
-  const STRIPE_SECRET_KEY = configuration?.secretKey;
-  const PAYPAL_KEY = configuration?.clientId;
-  const PAYPAL_SECRET = configuration?.clientSecret;
-  const PAYPAL_SANDBOX = configuration?.sandbox;
-  const GOOGLE_MAPS_KEY = configuration?.googleApiKey;
+  const MAP_TILE_URL =
+    configuration?.mapTileUrl ||
+    process.env.NEXT_PUBLIC_MAP_TILE_URL ||
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const GEOCODING_URL =
+    configuration?.geocodingUrl ||
+    process.env.NEXT_PUBLIC_GEOCODING_URL ||
+    'https://nominatim.openstreetmap.org';
+  const ROUTING_URL =
+    configuration?.routingUrl ||
+    process.env.NEXT_PUBLIC_ROUTING_URL ||
+    'https://router.project-osrm.org';
   const AMPLITUDE_API_KEY_WEB = configuration?.webAmplitudeApiKey;
   const AMPLITUDE_API_KEY_APP = configuration?.appAmplitudeApiKey;
-  const LIBRARIES = 'places,drawing,geometry,visualization'.split(
-    ','
-  ) as Libraries;
-  const COLORS = {
-    GOOGLE: configuration?.googleColor,
-  };
+  const COLORS = {};
 
   const SKIP_EMAIL_VERIFICATION = configuration?.skipEmailVerification;
   const SKIP_MOBILE_VERIFICATION = configuration?.skipMobileVerification;
@@ -84,15 +83,6 @@ export const useConfiguration = () => {
     PASSWORD,
     ENABLE_EMAIL,
 
-    // STRIPE
-    STRIPE_PUBLIC_KEY,
-    STRIPE_SECRET_KEY,
-
-    // PAYPAL
-    PAYPAL_KEY,
-    PAYPAL_SECRET,
-    PAYPAL_SANDBOX,
-
     // DELIVERY RATE
     DELIVERY_RATE,
     COST_TYPE,
@@ -113,9 +103,10 @@ export const useConfiguration = () => {
     RESTAURANT_APP_SENTRY_URL,
     RIDER_APP_SENTRY_URL,
 
-    // GOOGLE MAPS
-    GOOGLE_MAPS_KEY,
-    LIBRARIES,
+    // OPENSTREETMAP
+    MAP_TILE_URL,
+    GEOCODING_URL,
+    ROUTING_URL,
 
     // CLOUDINARY
     CLOUDINARY_UPLOAD_URL,

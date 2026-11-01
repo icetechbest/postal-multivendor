@@ -9,7 +9,7 @@ export interface IUser extends Document {
   emailVerified: boolean;
   phoneIsVerified: boolean;
   emailIsVerified: boolean;
-  role: 'USER' | 'VENDOR' | 'RIDER' | 'ADMIN';
+  role: 'USER' | 'VENDOR' | 'RIDER' | 'ADMIN' | 'STAFF';
   isActive: boolean;
   isOrderNotification: boolean;
   isOfferNotification: boolean;
@@ -36,6 +36,19 @@ export interface IUser extends Document {
   refreshTokenHash?: string;
   resetPasswordToken?: string;
   resetPasswordExpiry?: Date;
+  // Admin-dashboard fields
+  firstName?: string;
+  lastName?: string;
+  permissions: string[];
+  status: string;
+  statusReason?: string;
+  lastLogin?: Date;
+  notes?: string;
+  vehicleType?: string;
+  bussinessDetails?: Record<string, unknown>;
+  licenseDetails?: Record<string, unknown>;
+  vehicleDetails?: Record<string, unknown>;
+  sessionResetAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,7 +97,7 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['USER', 'VENDOR', 'RIDER', 'ADMIN'],
+      enum: ['USER', 'VENDOR', 'RIDER', 'ADMIN', 'STAFF'],
       default: 'USER',
     },
     isActive: {
@@ -108,6 +121,18 @@ const userSchema = new Schema<IUser>(
       coordinates: { type: [Number], default: [0, 0] },
     },
     username: String,
+    firstName: String,
+    lastName: String,
+    permissions: { type: [String], default: [] },
+    status: { type: String, default: 'ACTIVE' },
+    statusReason: String,
+    lastLogin: Date,
+    notes: String,
+    vehicleType: String,
+    bussinessDetails: Schema.Types.Mixed,
+    licenseDetails: Schema.Types.Mixed,
+    vehicleDetails: Schema.Types.Mixed,
+    sessionResetAt: { type: Date, select: false },
     image: String,
     accountNumber: String,
     currentWalletAmount: { type: Number, default: 0 },

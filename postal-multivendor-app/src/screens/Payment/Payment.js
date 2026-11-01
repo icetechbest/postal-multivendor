@@ -38,20 +38,6 @@ function Payment(props) {
       index: 2,
       icon: 'dollar'
     },
-    {
-      payment: 'STRIPE',
-      label: t('creditCart'),
-      index: 0,
-      icon: 'credit-card'
-      // icon1: require('../../assets/images/visaIcon.png')
-    },
-    {
-      payment: 'PAYPAL',
-      label: t('paypal'),
-      index: 1,
-      icon: 'paypal'
-    },
-    
   ]
 
   useFocusEffect(() => {

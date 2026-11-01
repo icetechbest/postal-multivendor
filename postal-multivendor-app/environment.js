@@ -30,7 +30,18 @@ const useEnvVars = () => {
     ANDROID_CLIENT_ID_GOOGLE: configuration?.androidClientID || GOOGLE_IDS.android,
     EXPO_CLIENT_ID: configuration?.expoClientID || GOOGLE_IDS.web,
     AMPLITUDE_API_KEY: configuration?.appAmplitudeApiKey,
-    GOOGLE_MAPS_KEY: configuration?.googleApiKey,
+    MAP_TILE_URL:
+      configuration?.mapTileUrl ||
+      process.env.EXPO_PUBLIC_MAP_TILE_URL ||
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    GEOCODING_URL:
+      configuration?.geocodingUrl ||
+      process.env.EXPO_PUBLIC_GEOCODING_URL ||
+      'https://nominatim.openstreetmap.org',
+    ROUTING_URL:
+      configuration?.routingUrl ||
+      process.env.EXPO_PUBLIC_ROUTING_URL ||
+      'https://router.project-osrm.org',
     TERMS_AND_CONDITIONS: configuration?.termsAndConditions,
     PRIVACY_POLICY: configuration?.privacyPolicy,
     IOS_STORE_URL: configuration?.appleStoreUrl || process.env.EXPO_PUBLIC_IOS_STORE_URL,
@@ -38,8 +49,7 @@ const useEnvVars = () => {
       configuration?.playStoreUrl ||
       process.env.EXPO_PUBLIC_ANDROID_STORE_URL ||
       'https://play.google.com/store/apps/details?id=com.postal.customer',
-    TEST_OTP: configuration?.testOtp,
-    GOOGLE_PACES_API_BASE_URL: configuration?.googlePlacesApiBaseUrl
+    TEST_OTP: configuration?.testOtp
   }
 }
 

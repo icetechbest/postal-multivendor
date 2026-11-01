@@ -33,7 +33,6 @@ export interface IRestaurantData extends IGlobalComponentProps {
   orderPrefix: string;
   shopType: string;
   cuisines: string;
-  stripeDetailsSubmitted?: boolean | null;
   deliveryInfo?: {
     minDeliveryFee: number;
     deliveryDistance: number;

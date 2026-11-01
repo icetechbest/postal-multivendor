@@ -1,7 +1,5 @@
 // Components
 import NodeMailerAddForm from '../../add-form/nodemailer';
-import StripeAddForm from '../../add-form/stripe';
-import PayPalAddForm from '../../add-form/paypal';
 import DeliveryRateAddForm from '../../add-form/delivery-rate';
 import TwilioAddForm from '../../add-form/twilio';
 import SentryAddForm from '../../add-form/sentry-config';
@@ -19,8 +17,6 @@ const ConfigMain = () => {
   return (
     <div className="space-y-6 flex  flex-col  p-3">
       <NodeMailerAddForm />
-      <StripeAddForm />
-      <PayPalAddForm />
       <CurrencyAddForm />
       <DeliveryRateAddForm />
       <TwilioAddForm />

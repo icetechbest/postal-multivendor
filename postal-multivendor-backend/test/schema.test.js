@@ -25,7 +25,27 @@ test('every root GraphQL field has an implemented resolver', () => {
 
 test('public configuration never returns server secrets', async () => {
   const configuration = await resolvers.Query.getConfiguration();
-  for (const secret of ['password', 'clientSecret', 'secretKey', 'twilioAuthToken', 'firebaseKey']) {
+  for (const secret of ['password', 'twilioAuthToken', 'firebaseKey']) {
     assert.equal(configuration[secret], undefined, `${secret} must not be exposed`);
+  }
+});
+
+test('configuration exposes OpenStreetMap service URLs and no Google Maps fields', () => {
+  const fields = Object.keys(schema.getType('Configuration').getFields());
+  for (const field of ['mapTileUrl', 'geocodingUrl', 'routingUrl']) {
+    assert(fields.includes(field), `Configuration.${field} is missing`);
+  }
+  for (const field of ['googleApiKey', 'googleMapLibraries', 'googleColor', 'googlePlacesApiBaseUrl']) {
+    assert(!fields.includes(field), `Configuration.${field} should have been removed`);
+  }
+});
+
+test('admin map settings inputs accept the new URLs', () => {
+  for (const inputName of ['GoogleApiKeyConfigurationInput', 'WebConfigurationInput']) {
+    const fields = Object.keys(schema.getType(inputName).getFields());
+    for (const field of ['mapTileUrl', 'geocodingUrl', 'routingUrl']) {
+      assert(fields.includes(field), `${inputName}.${field} is missing`);
+    }
+    assert(!fields.includes('googleApiKey'), `${inputName}.googleApiKey should have been removed`);
   }
 });

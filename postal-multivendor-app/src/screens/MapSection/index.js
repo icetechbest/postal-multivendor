@@ -6,6 +6,7 @@ import React, {
   useState
 } from 'react'
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
+import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
 import styles from './styles'
 import { Image, View, FlatList, TouchableOpacity, Platform } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
@@ -69,8 +70,8 @@ export default function MapSection() {
         zoomEnabled={true}
         zoomControlEnabled={true}
         rotateEnabled={false}
-        // provider={PROVIDER_DEFAULT}
-        // customMapStyle={mapStyle}
+        provider={PROVIDER_DEFAULT}
+        mapType={OSM_MAP_TYPE}
         initialRegion={{
           latitude: restaurants?.length
             ? parseFloat(restaurants[0].location?.coordinates[1])
@@ -82,6 +83,7 @@ export default function MapSection() {
           longitudeDelta: 0.0421
         }}
       >
+        <OsmTiles />
         <Marker coordinate={location} title='Current Address'>
           <Image source={require('../../assets/images/user.png')} style={styles().userMarkerImage} />
         </Marker>

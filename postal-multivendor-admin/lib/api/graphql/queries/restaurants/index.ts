@@ -221,7 +221,6 @@ export const GET_RESTAURANT_PROFILE = gql`
       minimumOrder
       tax
       isAvailable
-      stripeDetailsSubmitted
       openingTimes {
         day
         times {

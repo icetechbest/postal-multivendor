@@ -316,7 +316,7 @@ export const orderResolvers = {
         discount,
         total,
         paymentMethod: orderInput.paymentMethod.toUpperCase(),
-        orderStatus: 'PENDING',
+        orderStatus: 'AWAITING_ADMIN',
         paymentStatus: 'PENDING',
         paidAmount: 0,
         estimatedDeliveryTime: new Date(Date.now() + restaurant.deliveryTime * 60 * 1000),

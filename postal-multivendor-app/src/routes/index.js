@@ -17,8 +17,6 @@ import SaveAddress from '../screens/SaveAddress/SaveAddress'
 import RateAndReview from '../screens/RateAndReview/RateAndReview'
 import Payment from '../screens/Payment/Payment'
 import Help from '../screens/Help/Help'
-import Paypal from '../screens/Paypal/Paypal'
-import StripeCheckout from '../screens/Stripe/StripeCheckout'
 import Profile from '../screens/Profile/Profile'
 import Addresses from '../screens/Addresses/Addresses'
 import NewAddress from '../screens/NewAddress/NewAddress'
@@ -153,10 +151,8 @@ function MainNavigator() {
       <NavigationStack.Screen name='HelpBrowser' component={HelpBrowser} />
       <NavigationStack.Screen name='About' component={About} options={{ header: () => null, ...SLIDE_RIGHT_WITH_CURVE_ANIM }} />
       <NavigationStack.Screen name='Reviews' component={Reviews} options={SLIDE_RIGHT_WITH_CURVE_ANIM} />
-      <NavigationStack.Screen name='Paypal' component={Paypal} />
       <NavigationStack.Screen name='RateAndReview' component={RateAndReview} />
 
-      <NavigationStack.Screen name='StripeCheckout' component={StripeCheckout} />
 
       {/* Authentication Login */}
       <NavigationStack.Screen name='CreateAccount' component={CreateAccount} />

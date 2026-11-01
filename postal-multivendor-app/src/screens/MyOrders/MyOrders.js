@@ -17,7 +17,7 @@ import { HeaderBackButton } from '@react-navigation/elements'
 import { useTranslation } from 'react-i18next'
 import ReviewModal from '../../components/Review'
 
-const orderStatusActive = ['PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
+const orderStatusActive = ['AWAITING_ADMIN', 'PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
 const orderStatusInactive = ['DELIVERED', 'COMPLETED','CANCELLED','CANCELLEDBYREST']
 
 import useNetworkStatus from '../../utils/useNetworkStatus'

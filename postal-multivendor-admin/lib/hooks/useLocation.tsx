@@ -1,11 +1,12 @@
 'use client';
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useContext, useEffect } from 'react';
-import Geocode from 'react-geocode';
+import { useContext } from 'react';
+
 import { ILocation } from '../utils/interfaces';
 import { useConfiguration } from './useConfiguration';
 import { ToastContext } from '@/lib/context/global/toast.context';
+import { reverseGeocode } from '@/lib/utils/methods/osm';
 
 type LocationCallback = (error: string | null, location?: ILocation) => void;
 
@@ -13,8 +14,9 @@ export default function useLocation() {
   // Toast Context
   const { showToast } = useContext(ToastContext);
 
-  const { GOOGLE_MAPS_KEY } = useConfiguration();
+  const { GEOCODING_URL } = useConfiguration();
 
+  // Reverse geocoding via Nominatim (no API key / no billing).
   const latLngToGeoString = async ({
     latitude,
     longitude,
@@ -22,11 +24,7 @@ export default function useLocation() {
     latitude: number;
     longitude: number;
   }): Promise<string> => {
-    const location = await Geocode.fromLatLng(
-      latitude.toString(),
-      longitude.toString()
-    );
-    return location.results[0].formatted_address;
+    return reverseGeocode(GEOCODING_URL, latitude, longitude);
   };
 
   const getCurrentLocation = (callback: LocationCallback): void => {
@@ -34,15 +32,16 @@ export default function useLocation() {
       async (position: GeolocationPosition) => {
         const { latitude, longitude } = position.coords;
         try {
-          const location = await Geocode.fromLatLng(
-            latitude.toString(),
-            longitude.toString()
+          const address = await reverseGeocode(
+            GEOCODING_URL,
+            latitude,
+            longitude
           );
           callback(null, {
             label: 'Home',
             latitude,
             longitude,
-            deliveryAddress: location.results[0].formatted_address,
+            deliveryAddress: address,
           });
         } catch (error) {
           callback(error instanceof Error ? error.message : String(error));
@@ -58,13 +57,6 @@ export default function useLocation() {
       }
     );
   };
-
-  useEffect(() => {
-    if (!GOOGLE_MAPS_KEY) return;
-    Geocode.setApiKey(GOOGLE_MAPS_KEY);
-    Geocode.setLanguage('en');
-    Geocode.enableDebug(false);
-  }, [GOOGLE_MAPS_KEY]);
 
   return {
     getCurrentLocation,

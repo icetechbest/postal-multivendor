@@ -3,11 +3,18 @@ import { Order } from '../../models/Order';
 import { Restaurant } from '../../models/Restaurant';
 import { Review } from '../../models/Review';
 import { User } from '../../models/User';
+import { WebNotification } from '../../models/Notification';
 import { AuthContext, requireAuth } from '../../middleware/auth';
 import { AuthorizationError, NotFoundError } from '../../utils/errors';
 import { pubsub } from '../../services/pubsub';
 import { sendPushNotification } from '../../services/push';
 import config from '../../config';
+
+/** pubsub channel that receives every new order waiting for admin/staff confirmation. */
+export const ADMIN_PENDING_ORDERS_CHANNEL = 'ADMIN_PENDING_ORDERS';
+/** Admin dashboard page that lists orders waiting for confirmation (used by WebNotification.navigateTo). */
+export const ADMIN_PENDING_ORDERS_PATH = '/general/pending-orders';
+export const AWAITING_ADMIN = 'AWAITING_ADMIN';
 
 export const idOf = (value: any): string => {
   if (!value) return '';
@@ -43,6 +50,11 @@ export const getReviewData = async (restaurant: string) => {
 export const ensureOrderAccess = async (order: any, context: AuthContext, management = false): Promise<void> => {
   requireAuth(context);
   if (context.user!.role === 'ADMIN') return;
+  // Orders waiting for admin confirmation are invisible to restaurants and riders; only the customer may read them.
+  if (order.orderStatus === AWAITING_ADMIN) {
+    if (!management && idOf(order.user) === context.user!.userId) return;
+    throw new AuthorizationError();
+  }
   if (!management && idOf(order.user) === context.user!.userId) return;
   if (order.rider && idOf(order.rider) === context.user!.userId) return;
   if (['VENDOR', 'ADMIN'].includes(context.user!.role)) {
@@ -52,18 +64,19 @@ export const ensureOrderAccess = async (order: any, context: AuthContext, manage
   throw new AuthorizationError();
 };
 
-export const publishOrderUpdate = async (orderId: any, origin = 'backend'): Promise<any> => {
+export const publishOrderUpdate = async (orderId: any, origin = 'backend', pushBody?: string): Promise<any> => {
   const order = await getPopulatedOrder(orderId);
   const userId = idOf(order.user);
   await Promise.all([
     pubsub.publish(`ORDER_STATUS_${idOf(order._id)}`, { subscriptionOrder: order }),
+    pubsub.publish('DISPATCHER_ORDERS', { subscriptionDispatcher: order }),
     pubsub.publish(`ORDER_STATUS_USER_${userId}`, {
       orderStatusChanged: { userId, origin, order },
     }),
   ]);
   const customer = order.user as any;
   if (customer?.notificationToken && customer?.isOrderNotification !== false) {
-    await sendPushNotification(customer.notificationToken, `Order ${order.orderId}`, `Order status: ${order.orderStatus}`, {
+    await sendPushNotification(customer.notificationToken, `Order ${order.orderId}`, pushBody || (order.orderStatus === AWAITING_ADMIN ? 'بانتظار التأكيد' : `Order status: ${order.orderStatus}`), {
       orderId: idOf(order._id),
       status: order.orderStatus,
     });
@@ -71,10 +84,11 @@ export const publishOrderUpdate = async (orderId: any, origin = 'backend'): Prom
   return order;
 };
 
-export const publishOrderPlaced = async (orderId: any): Promise<any> => {
+/** Sends the order to its restaurant (pubsub + push). Called once an admin/staff member has confirmed it. */
+export const publishOrderToRestaurant = async (orderId: any, origin = 'placeOrder'): Promise<any> => {
   const order = await getPopulatedOrder(orderId);
   await pubsub.publish(`ORDER_PLACED_${idOf(order.restaurant)}`, { subscribePlaceOrder: order });
-  await publishOrderUpdate(order._id, 'placeOrder');
+  await publishOrderUpdate(order._id, origin);
   const restaurant = order.restaurant as any;
   if (restaurant?.notificationToken && restaurant?.enableNotification !== false) {
     await sendPushNotification(restaurant.notificationToken, 'New order', `Order ${order.orderId} has been placed`, {
@@ -83,6 +97,38 @@ export const publishOrderPlaced = async (orderId: any): Promise<any> => {
   }
   return order;
 };
+
+/** Notifies admins and staff (pubsub, dashboard notification, push) that an order awaits confirmation. */
+const notifyAdminsOfPendingOrder = async (order: any): Promise<void> => {
+  await pubsub.publish(ADMIN_PENDING_ORDERS_CHANNEL, { subscriptionPendingOrders: order });
+  const customer = order.user as any;
+  const store = order.restaurant as any;
+  const summary = `${order.orderId} - ${customer?.name || ''} - ${store?.name || ''} - ${order.total}`;
+  try {
+    await WebNotification.create({ title: 'طلب جديد بانتظار التأكيد', body: summary, navigateTo: ADMIN_PENDING_ORDERS_PATH });
+  } catch (error) {
+    console.warn('Could not create the pending-order dashboard notification:', error instanceof Error ? error.message : error);
+  }
+  const recipients = await User.find({ role: { $in: ['ADMIN', 'STAFF'] }, isActive: true, notificationToken: { $exists: true, $ne: '' } }).select('notificationToken');
+  const tokens = Array.from(new Set(recipients.map((recipient) => recipient.notificationToken).filter((token): token is string => Boolean(token))));
+  await Promise.all(tokens.map((token) => sendPushNotification(token, 'طلب جديد بانتظار التأكيد', summary, { orderId: idOf(order._id), navigateTo: ADMIN_PENDING_ORDERS_PATH })));
+};
+
+/**
+ * Called right after an order is created. New orders wait for admin/staff confirmation, so the restaurant is NOT notified here;
+ * the restaurant is notified by publishOrderToRestaurant() after adminConfirmOrder.
+ */
+export const publishOrderPlaced = async (orderId: any): Promise<any> => {
+  const order = await getPopulatedOrder(orderId);
+  if (order.orderStatus !== AWAITING_ADMIN) return publishOrderToRestaurant(order._id);
+  await notifyAdminsOfPendingOrder(order);
+  await publishOrderUpdate(order._id, 'placeOrder');
+  return order;
+};
+
+/** Tells the customer an order was cancelled by the platform (confirmation rejected or timed out). */
+export const notifyCustomerCancelled = (orderId: any, reason: string, origin: string): Promise<any> =>
+  publishOrderUpdate(orderId, origin, `تم إلغاء الطلب: ${reason}`);
 
 export const validCoordinates = (latitude: number, longitude: number): boolean =>
   Number.isFinite(latitude) && Number.isFinite(longitude) && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180;

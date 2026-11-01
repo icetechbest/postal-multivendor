@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "طلبات بلبيس",
+    "name": "جافا",
     "slug": "postal-multivendor-restaurant",
-    "description": "طلبات بلبيس - تطبيق المطاعم لإدارة الطلبات.",
+    "description": "جافا - تطبيق المطاعم لإدارة الطلبات.",
     "version": "1.0.67",
     "orientation": "portrait",
     "icon": "./lib/assets/images/icon.png",

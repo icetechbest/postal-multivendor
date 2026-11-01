@@ -10,9 +10,9 @@ import { Modalize } from 'react-native-modalize'
 import { getTipping, orderFragment } from '../../apollo/queries'
 import { applyCoupon, placeOrder } from '../../apollo/mutations'
 import { scale } from '../../utils/scaling'
-import { stripeCurrencies, paypalCurrencies } from '../../utils/currencies'
 import { theme } from '../../utils/themeColors'
 import MapView, { PROVIDER_DEFAULT } from 'react-native-maps'
+import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
 import ConfigurationContext from '../../context/Configuration'
 import UserContext from '../../context/User'
@@ -389,18 +389,6 @@ function Checkout(props) {
         ]
       })
       clearCart()
-    } else if (paymentMode === 'PAYPAL') {
-      props?.navigation.replace('Paypal', {
-        _id: data?.placeOrder.orderId,
-        currency: configuration.currency
-      })
-    } else if (paymentMode === 'STRIPE') {
-      props?.navigation.replace('StripeCheckout', {
-        _id: data?.placeOrder.orderId,
-        amount: data?.placeOrder.orderAmount,
-        email: data?.placeOrder.user.email,
-        currency: configuration.currency
-      })
     }
   }
   function onError(error) {
@@ -521,13 +509,8 @@ function Checkout(props) {
     return true
   }
 
-  function checkPaymentMethod(currency) {
-    if (paymentMode === 'STRIPE') {
-      return stripeCurrencies.find((val) => val.currency === currency)
-    }
-    if (paymentMode === 'PAYPAL') {
-      return paypalCurrencies.find((val) => val.currency === currency)
-    }
+  // Only cash on delivery is supported, so every currency is accepted.
+  function checkPaymentMethod() {
     return true
   }
 
@@ -549,7 +532,7 @@ function Checkout(props) {
   }
   async function onPayment() {
     try {
-      if (checkPaymentMethod(configuration.currency)) {
+      if (checkPaymentMethod()) {
         const items = transformOrder(cart)
         const orderVariables = {
           restaurant: cartRestaurant,
@@ -704,7 +687,9 @@ function Checkout(props) {
               <View>
                 <View style={[styles(currentTheme).headerContainer]}>
                   <View style={styles().mapView}>
-                    <MapView style={styles().flex} scrollEnabled={false} zoomEnabled={false} zoomControlEnabled={false} rotateEnabled={false} cacheEnabled={false} initialRegion={initialRegion} customMapStyle={customMapStyle} provider={PROVIDER_DEFAULT}></MapView>
+                    <MapView style={styles().flex} scrollEnabled={false} zoomEnabled={false} zoomControlEnabled={false} rotateEnabled={false} cacheEnabled={false} initialRegion={initialRegion} customMapStyle={customMapStyle} provider={PROVIDER_DEFAULT} mapType={OSM_MAP_TYPE}>
+                      <OsmTiles />
+                    </MapView>
                     <View style={styles().marker}>
                       <RestaurantMarker />
                     </View>
@@ -772,26 +757,6 @@ function Checkout(props) {
                             setPaymentMode('COD')
                           }}
                         />
-                        {/* <PaymentModeOption
-                          title={t('paypal')}
-                          icon={'credit-card'}
-                          selected={paymentMode === 'PAYPAL'}
-                          theme={currentTheme}
-                          onSelect={() => {
-                            setPaymentMode('PAYPAL')
-                          }}
-                        /> */}
-                        {restaurant?.stripeDetailsSubmitted && (
-                          <PaymentModeOption
-                            title={t('Stripe')}
-                            icon={'credit-card'}
-                            selected={paymentMode === 'STRIPE'}
-                            theme={currentTheme}
-                            onSelect={() => {
-                              setPaymentMode('STRIPE')
-                            }}
-                          />
-                        )}
                       </View>
                     </View>
                   </>

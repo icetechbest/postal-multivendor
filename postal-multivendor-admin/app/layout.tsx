@@ -5,7 +5,7 @@ import { ThemeProvider } from 'next-themes';
 
 // ✅ Add metadata export for favicon
 export const metadata = {
-  title: 'طلبات بلبيس | لوحة الإدارة',
+  title: 'جافا | لوحة الإدارة',
   icons: {
     icon: '/favsicons.png',
     // You can add more like:

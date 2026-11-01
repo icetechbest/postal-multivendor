@@ -4,7 +4,7 @@ import { HeaderBackButton } from '@react-navigation/elements'
 import { View } from 'react-native'
 import { MaterialIcons } from '@expo/vector-icons'
 import navigationService from '../../routes/navigationService'
-import styles from './style'
+import styles from './styles'
 
 const navigationOptions = headerText => ({
   headerTitle: i18next.t('titleOrders'),

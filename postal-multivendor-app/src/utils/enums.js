@@ -1,5 +1,6 @@
 export const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 export const ORDER_STATUS_ENUM = {
+  AWAITING_ADMIN: 'AWAITING_ADMIN',
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
   ASSIGNED: 'ASSIGNED',

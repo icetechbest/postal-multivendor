@@ -59,7 +59,6 @@ export const GET_TRANSACTION_HISTORY = gql`
           isActive
           isAvailable
           slug
-          stripeDetailsSubmitted
           address
           phone
           city

@@ -12,6 +12,10 @@ const ENV = {
         IOS_CLIENT_ID_GOOGLE: "",
         ANDROID_CLIENT_ID_GOOGLE: "",
         AMPLITUDE_API_KEY: "",
+        // OpenStreetMap map services (no API key / no billing required)
+        MAP_TILE_URL: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        GEOCODING_URL: 'https://nominatim.openstreetmap.org',
+        ROUTING_URL: 'https://router.project-osrm.org',
     },
     production: {
        GRAPHQL_URL:'' ,
@@ -19,6 +23,10 @@ const ENV = {
         IOS_CLIENT_ID_GOOGLE: "",
         ANDROID_CLIENT_ID_GOOGLE: "",
         AMPLITUDE_API_KEY: "",
+        // OpenStreetMap map services (no API key / no billing required)
+        MAP_TILE_URL: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        GEOCODING_URL: 'https://nominatim.openstreetmap.org',
+        ROUTING_URL: 'https://router.project-osrm.org',
     }
 };
 

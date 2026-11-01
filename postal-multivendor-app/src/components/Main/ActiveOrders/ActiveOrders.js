@@ -21,7 +21,7 @@ const SCREEN_HEIGHT = Dimensions.get('screen').height
 const MODAL_HEIGHT = Math.floor(SCREEN_HEIGHT / 4)
 const MINIMIZED_HEIGHT = scale(60)
 
-const orderStatusActive = ['PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
+const orderStatusActive = ['AWAITING_ADMIN', 'PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
 
 const ActiveOrders = ({ onActiveOrdersChange }) => {
   const { t, i18n } = useTranslation()

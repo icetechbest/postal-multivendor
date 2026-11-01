@@ -81,7 +81,7 @@ const Item = ({ item, navigation, currentTheme }) => {
               textColor={currentTheme.fontMainColor}
               small
               bold>
-              {item.orderStatus === 'PENDING'
+              {['AWAITING_ADMIN', 'PENDING'].includes(item.orderStatus)
                 ? t('PenddingText')
                 : t('PenddingText1')}
             </TextDefault>

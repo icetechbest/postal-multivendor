@@ -11,17 +11,6 @@ export const NodeMailerValidationSchema = Yup.object().shape({
   enableEmail: Yup.boolean(),
 });
 
-export const StripeValidationSchema = Yup.object().shape({
-  publishableKey: Yup.string().required('required'),
-  secretKey: Yup.string().required('required'),
-});
-
-export const PayPalValidationSchema = Yup.object().shape({
-  clientId: Yup.string().required('required'),
-  clientSecret: Yup.string().required('required'),
-  secret: Yup.boolean(),
-});
-
 export const DeliverytRateValidationSchema = Yup.object().shape({
   deliveryRate: Yup.number().required('required'),
 });
@@ -48,7 +37,9 @@ export const SentryValidationSchema = Yup.object().shape({
 });
 
 export const GoogleApiValidationSchema = Yup.object().shape({
-  googleApiKey: Yup.string().required('Google API Key is required'),
+  mapTileUrl: Yup.string().required('Map Tile URL is required'),
+  geocodingUrl: Yup.string().required('Geocoding URL is required'),
+  routingUrl: Yup.string().required('Routing URL is required'),
 });
 
 export const CloudinaryValidationSchema = Yup.object().shape({

@@ -68,7 +68,7 @@ function Profile(props) {
   const { orders } = useContext(OrdersContext)
 
   const activeOrders = useMemo(() => {
-    const orderStatusActive = ['PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
+    const orderStatusActive = ['AWAITING_ADMIN', 'PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
     return orders.filter((o) => orderStatusActive.includes(o.orderStatus))
   }, [orders])
 

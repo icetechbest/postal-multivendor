@@ -75,7 +75,6 @@ export const seedDemoData = async () => {
         tags: ['demo'],
         freeDelivery: false,
         acceptVouchers: true,
-        stripeDetailsSubmitted: false,
         isActive: true,
         isAvailable: true,
       },

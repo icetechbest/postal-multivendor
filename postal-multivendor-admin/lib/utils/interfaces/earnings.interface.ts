@@ -56,8 +56,6 @@ export enum OrderTypeEnum {
 export enum PaymentMethodEnum {
   ALL = 'ALL',
   COD = 'COD',
-  PAYPAL = 'PAYPAL',
-  STRIPE = 'STRIPE',
 }
 
 export interface IEarning {

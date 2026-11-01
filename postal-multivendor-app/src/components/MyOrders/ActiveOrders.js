@@ -145,7 +145,7 @@ const Item = ({ item, navigation, currentTheme, configuration }) => {
             }}
           >
             <TextDefault h5 bold textColor={currentTheme.secondaryText} isRTL>
-              {item.orderStatus === 'PENDING'
+              {['AWAITING_ADMIN', 'PENDING'].includes(item.orderStatus)
                 ? t('PenddingText')
                 : t('PenddingText1')}
             </TextDefault>

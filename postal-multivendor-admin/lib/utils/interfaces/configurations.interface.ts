@@ -15,17 +15,6 @@ export interface INodeMailerForm {
   enableEmail: boolean | undefined;
 }
 
-export interface IStripeForm {
-  publishableKey: string | undefined;
-  secretKey: string | undefined;
-}
-
-export interface IPaypalForm {
-  clientId: string | undefined;
-  clientSecret: string | undefined;
-  sandbox: boolean | undefined;
-}
-
 export interface IDeliveryRateForm {
   deliveryRate: number | null;
   costType: string;
@@ -49,7 +38,9 @@ export interface ISentryForm {
 }
 
 export interface IGoogleApiForm {
-  googleApiKey: string;
+  mapTileUrl: string;
+  geocodingUrl: string;
+  routingUrl: string;
 }
 
 export interface ICloudinaryForm {

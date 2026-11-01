@@ -5,7 +5,9 @@ import { alignment } from '../../utils/alignment'
 import styles from './styles'
 import React, { useContext, useEffect, useState, useRef } from 'react'
 import Spinner from '../../components/Spinner/Spinner'
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'
+import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps'
+import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
+import { getRoute } from '../../services/osm'
 import TextError from '../../components/Text/TextError/TextError'
 import ConfigurationContext from '../../context/Configuration'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
@@ -32,7 +34,6 @@ import { FlashMessage } from '../../ui/FlashMessage/FlashMessage'
 import { calulateRemainingTime } from '../../utils/customFunctions'
 import { Instructions } from '../../components/Checkout/Instructions'
 
-import MapViewDirections from 'react-native-maps-directions'
 import useEnvVars from '../../../environment'
 import LottieView from 'lottie-react-native'
 import { clearLogEntriesAsync } from 'expo-updates'
@@ -62,8 +63,9 @@ function OrderDetail(props) {
     ...theme[themeContext.ThemeValue]
   }
   const navigation = useNavigation()
-  const { GOOGLE_MAPS_KEY } = useEnvVars()
+  const { ROUTING_URL } = useEnvVars()
   const mapView = useRef(null)
+  const [routeCoordinates, setRouteCoordinates] = useState([])
   const { isConnected: connect, setIsConnected: setConnect } = useNetworkStatus()
   const [cancelOrder, { loading: loadingCancel }] = useMutation(CANCEL_ORDER, {
     onError,
@@ -129,6 +131,60 @@ function OrderDetail(props) {
     }
   }, [order])
 
+  // Fetch the route from OSRM (OpenStreetMap) instead of Google Directions.
+  // On failure, fall back to a straight line so the screen never breaks.
+  useEffect(() => {
+    let cancelled = false
+    const originCoords = order?.restaurant?.location?.coordinates
+    const destinationCoords = order?.deliveryAddress?.location?.coordinates
+    const shouldRoute =
+      order?.rider &&
+      order?.orderStatus === ORDER_STATUS_ENUM.PICKED &&
+      originCoords &&
+      destinationCoords
+
+    if (!shouldRoute) {
+      setRouteCoordinates([])
+      return
+    }
+
+    const origin = { latitude: +originCoords[1], longitude: +originCoords[0] }
+    const destination = {
+      latitude: +destinationCoords[1],
+      longitude: +destinationCoords[0]
+    }
+
+    const fit = (coords) => {
+      if (mapView?.current && coords?.length > 1) {
+        mapView.current.fitToCoordinates(coords, {
+          edgePadding: {
+            right: WIDTH / 20,
+            bottom: HEIGHT / 20,
+            left: WIDTH / 20,
+            top: HEIGHT / 20
+          }
+        })
+      }
+    }
+
+    getRoute(ROUTING_URL, origin, destination)
+      .then(({ coordinates }) => {
+        if (cancelled) return
+        const coords = coordinates?.length ? coordinates : [origin, destination]
+        setRouteCoordinates(coords)
+        fit(coords)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setRouteCoordinates([origin, destination])
+        fit([origin, destination])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [order?.rider, order?.orderStatus, ROUTING_URL])
+
   if (loadingOrders) {
     return <Spinner backColor={currentTheme.themeBackground} spinnerColor={currentTheme.main} />
   }
@@ -140,7 +196,7 @@ function OrderDetail(props) {
 
   const subTotal = total - tip - tax - deliveryCharges
 
-  const isOrderPending = order?.orderStatus === ORDER_STATUS_ENUM.PENDING
+  const isOrderPending = [ORDER_STATUS_ENUM.AWAITING_ADMIN, ORDER_STATUS_ENUM.PENDING].includes(order?.orderStatus)
   const isOrderCancelable = isOrderPending
 
   if (!connect) return <ErrorView refetchFunctions={[]} />
@@ -172,7 +228,9 @@ function OrderDetail(props) {
             rotateEnabled={false}
             customMapStyle={mapStyle}
             provider={PROVIDER_DEFAULT}
+            mapType={OSM_MAP_TYPE}
           >
+            <OsmTiles />
             <Marker
               coordinate={{
                 longitude: +restaurant?.location?.coordinates[0],
@@ -189,36 +247,13 @@ function OrderDetail(props) {
             >
               <CustomerMarker />
             </Marker>
-            <MapViewDirections
-              origin={{
-                longitude: +restaurant?.location?.coordinates[0],
-                latitude: +restaurant?.location?.coordinates[1]
-              }}
-              destination={{
-                latitude: +deliveryAddress?.location?.coordinates[1],
-                longitude: +deliveryAddress?.location?.coordinates[0]
-              }}
-              apikey={GOOGLE_MAPS_KEY}
-              strokeWidth={6}
-              strokeColor={currentTheme.main}
-              optimizeWaypoints={true}
-              onReady={(result) => {
-                //result.distance} km
-                //Duration: ${result.duration} min.
-
-                mapView?.current?.fitToCoordinates(result.coordinates, {
-                  edgePadding: {
-                    right: WIDTH / 20,
-                    bottom: HEIGHT / 20,
-                    left: WIDTH / 20,
-                    top: HEIGHT / 20
-                  }
-                })
-              }}
-              onError={(error) => {
-                console.log('onerror', error)
-              }}
-            />
+            {routeCoordinates.length > 1 && (
+              <Polyline
+                coordinates={routeCoordinates}
+                strokeWidth={6}
+                strokeColor={currentTheme.main}
+              />
+            )}
             {order?.rider && <TrackingRider id={order?.rider?._id} />}
           </MapView>
         )}
@@ -238,7 +273,7 @@ function OrderDetail(props) {
                 justifyContent: 'space-between'
               }}
             >
-              {![ORDER_STATUS_ENUM.PENDING, ORDER_STATUS_ENUM.CANCELLED, ORDER_STATUS_ENUM.CANCELLEDBYREST].includes(order?.orderStatus) && (
+              {![ORDER_STATUS_ENUM.AWAITING_ADMIN, ORDER_STATUS_ENUM.PENDING, ORDER_STATUS_ENUM.CANCELLED, ORDER_STATUS_ENUM.CANCELLEDBYREST].includes(order?.orderStatus) && (
                 <>
                   <TextDefault style={{ ...alignment.MTxSmall }} textColor={currentTheme.gray500} H5>
                     {t('estimatedDeliveryTime')}
@@ -286,6 +321,7 @@ function OrderDetail(props) {
 export const OrderStatusImage = ({ status }) => {
   let imagePath = null
   switch (status) {
+    case ORDER_STATUS_ENUM.AWAITING_ADMIN:
     case ORDER_STATUS_ENUM.PENDING:
       imagePath = require('../../assets/SVG/order-placed.json')
       break

@@ -8,11 +8,6 @@ export const GET_CONFIGURATION = gql`
       emailName
       password
       enableEmail
-      clientId
-      clientSecret
-      sandbox
-      publishableKey
-      secretKey
       currency
       currencySymbol
       deliveryRate
@@ -34,7 +29,9 @@ export const GET_CONFIGURATION = gql`
       customerAppSentryUrl
       restaurantAppSentryUrl
       riderAppSentryUrl
-      googleApiKey
+      mapTileUrl
+      geocodingUrl
+      routingUrl
       cloudinaryUploadUrl
       cloudinaryApiKey
       webAmplitudeApiKey
@@ -43,8 +40,6 @@ export const GET_CONFIGURATION = gql`
       androidClientID
       iOSClientID
       expoClientID
-      googleMapLibraries
-      googleColor
       termsAndConditions
       privacyPolicy
       testOtp

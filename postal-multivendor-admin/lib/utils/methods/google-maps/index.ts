@@ -11,6 +11,10 @@ export function transformPolygon(
 export function transformPath(
   path: { lng: number; lat: number }[]
 ): number[][][] {
+  // An empty path would produce `[[undefined]]`, which serialises to
+  // `[[null]]` and makes the GraphQL `[[[Float!]]]` input fail validation.
+  if (!Array.isArray(path) || path.length === 0) return [];
+
   const geometry: number[][] = path.map((coordinates) => {
     return [coordinates.lng, coordinates.lat];
   });
@@ -46,8 +50,19 @@ export function calculatePolygonCentroid(coordinates: number[][]): LatLng {
 
     // Finalize calculations
     area *= 0.5;
+
+    // A zero-area ring (duplicate or collinear points) would divide by zero and
+    // produce NaN coordinates, which Leaflet cannot render.
+    if (area === 0) {
+      return { lat: 0, lng: 0 };
+    }
+
     centroidX /= 6 * area;
     centroidY /= 6 * area;
+
+    if (!isFinite(centroidX) || !isFinite(centroidY)) {
+      return { lat: 0, lng: 0 };
+    }
 
     return { lat: centroidY, lng: centroidX };
   } catch (err) {

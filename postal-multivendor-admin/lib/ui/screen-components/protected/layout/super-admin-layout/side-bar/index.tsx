@@ -115,6 +115,12 @@ export default function MakeSidebar() {
           route: '/general/staff',
           isParent: false,
         },
+        {
+          text: 'Pending Orders',
+          label: 'بانتظار التأكيد',
+          route: '/general/pending-orders',
+          isParent: false,
+        },
       ]),
       shouldShow: function () {
         return this.subMenu ? this.subMenu.length > 0 : false;

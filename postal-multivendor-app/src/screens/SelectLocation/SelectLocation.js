@@ -7,7 +7,8 @@ import React, {
 } from 'react'
 import { View, TouchableOpacity, StatusBar, Linking } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { PROVIDER_DEFAULT } from 'react-native-maps'
+import OsmTiles, { OSM_MAP_TYPE } from '../../components/OsmTiles'
 import { theme } from '../../utils/themeColors'
 import TextDefault from '../../components/Text/TextDefault/TextDefault'
 import styles from './styles'
@@ -129,12 +130,15 @@ export default function SelectLocation(props) {
             initialRegion={coordinates}
             region={coordinates}
             style={{ flex: 1 }}
-            provider={PROVIDER_GOOGLE}
+            provider={PROVIDER_DEFAULT}
+            mapType={OSM_MAP_TYPE}
             showsTraffic={false}
             maxZoomLevel={15}
             customMapStyle={ themeContext.ThemeValue === 'Dark'  ? darkMapStyle  : customMapStyle }
             onRegionChangeComplete={onRegionChangeComplete}
-          />
+          >
+            <OsmTiles />
+          </MapView>
           <View style={styles().mainContainer}>
             <CustomMarker
               width={40}

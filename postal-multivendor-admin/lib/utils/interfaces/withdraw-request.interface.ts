@@ -56,7 +56,6 @@ interface IStore {
   username: string;
   password: string;
   slug: string;
-  stripeDetailsSubmitted: boolean;
   commissionRate: number;
   bussinessDetails: IBusinessDetails;
 }

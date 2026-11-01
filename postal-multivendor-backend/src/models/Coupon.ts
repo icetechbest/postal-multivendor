@@ -5,6 +5,9 @@ export interface ICoupon extends Document {
   title?: string;
   discount: number;
   expiresAt?: Date;
+  startDate?: Date;
+  endDate?: Date;
+  lifeTimeActive: boolean;
   isActive: boolean;
   isEnabled: boolean;
   restaurant?: mongoose.Types.ObjectId;
@@ -23,6 +26,9 @@ const couponSchema = new Schema<ICoupon>(
     },
     title: String,
     expiresAt: Date,
+    startDate: Date,
+    endDate: Date,
+    lifeTimeActive: { type: Boolean, default: false },
     discount: {
       type: Number,
       required: true,

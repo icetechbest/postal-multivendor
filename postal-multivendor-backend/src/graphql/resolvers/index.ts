@@ -8,6 +8,14 @@ import { appQueryResolvers } from './appQueries';
 import { appMutationResolvers } from './appMutations';
 import { appSubscriptionResolvers } from './appSubscriptions';
 import { appFieldResolvers } from './appFields';
+import { adminConfigResolvers } from './adminConfig';
+import { adminCatalogResolvers, adminCatalogFields } from './adminCatalog';
+import { adminRestaurantResolvers, adminRestaurantFields } from './adminRestaurants';
+import { adminStaffResolvers, adminStaffFields } from './adminStaff';
+import { adminUserResolvers, adminUserFields } from './adminUsers';
+import { adminOrderResolvers, adminOrderFields } from './adminOrders';
+import { adminSupportResolvers } from './adminSupport';
+import { adminDashboardResolvers } from './adminDashboard';
 
 const dateScalar = new GraphQLScalarType({
   name: 'Date',
@@ -34,28 +42,51 @@ const jsonScalar = new GraphQLScalarType({
   parseValue: (value: unknown) => value,
 });
 
+const adminModules: Array<{ Query?: any; Mutation?: any; Subscription?: any }> = [
+  adminConfigResolvers as any,
+  adminCatalogResolvers,
+  adminRestaurantResolvers,
+  adminStaffResolvers,
+  adminUserResolvers,
+  adminOrderResolvers,
+  adminSupportResolvers,
+  adminDashboardResolvers,
+];
+const adminFieldModules: Array<Record<string, Record<string, any>>> = [adminCatalogFields, adminRestaurantFields, adminStaffFields, adminUserFields, adminOrderFields];
+
+// Admin resolvers are merged last so they intentionally override same-named legacy resolvers.
+const mergeRoot = (key: 'Query' | 'Mutation' | 'Subscription', base: Record<string, any>) =>
+  Object.assign({}, base, ...adminModules.map((m) => m[key] || {}));
+
+// Field resolvers are merged per type so admin additions do not drop existing ones.
+const mergeFields = (base: Record<string, any>): Record<string, any> => {
+  const out: Record<string, any> = { ...base };
+  for (const mod of adminFieldModules) for (const [type, fields] of Object.entries(mod)) out[type] = { ...(out[type] || {}), ...fields };
+  return out;
+};
+
 export const resolvers: Record<string, any> = {
   Date: dateScalar,
   JSON: jsonScalar,
-  Query: {
+  Query: mergeRoot('Query', {
     ...authResolvers.Query,
     ...accountResolvers.Query,
     ...restaurantResolvers.Query,
     ...catalogResolvers.Query,
     ...orderResolvers.Query,
     ...appQueryResolvers,
-  },
-  Mutation: {
+  }),
+  Mutation: mergeRoot('Mutation', {
     ...authResolvers.Mutation,
     ...accountResolvers.Mutation,
     ...restaurantResolvers.Mutation,
     ...catalogResolvers.Mutation,
     ...orderResolvers.Mutation,
     ...appMutationResolvers,
-  },
-  Subscription: {
+  }),
+  Subscription: mergeRoot('Subscription', {
     ...orderResolvers.Subscription,
     ...appSubscriptionResolvers,
-  },
-  ...appFieldResolvers,
+  }),
+  ...mergeFields(appFieldResolvers),
 };

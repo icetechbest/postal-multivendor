@@ -20,6 +20,11 @@ import {useTranslation} from 'react-i18next'
 
 const orderStatuses = [
   {
+    key: 'AWAITING_ADMIN',
+    status: 0,
+    statusText: 'awaitingAdminOrder'
+  },
+  {
     key: 'PENDING',
     status: 1,
     statusText: 'pendingOrder'
@@ -51,7 +56,7 @@ const orderStatuses = [
   }
 ]
 
-const orderStatusActive = ['PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
+const orderStatusActive = ['AWAITING_ADMIN', 'PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
 
 const ActiveOrders = () => {
 

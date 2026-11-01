@@ -21,9 +21,13 @@ export const authenticate = async (token: string | undefined): Promise<AuthConte
     const decoded = verifyToken(cleanToken);
 
     // Verify user still exists and is active
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId).select('+sessionResetAt');
     if (!user || !user.isActive) {
       throw new AuthenticationError('User not found or inactive');
+    }
+    // resetUserSession invalidates every access token issued before the reset.
+    if (user.sessionResetAt && decoded.iat && decoded.iat < Math.floor(user.sessionResetAt.getTime() / 1000)) {
+      throw new AuthenticationError('Session was reset');
     }
 
     return {

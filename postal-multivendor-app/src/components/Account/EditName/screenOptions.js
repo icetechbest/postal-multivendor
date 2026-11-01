@@ -3,9 +3,9 @@ import React from 'react'
 import {
   RightButton,
   LeftButton
-} from '../../components/Header/HeaderIcons/HeaderIcons'
-import { textStyles } from '../../utils/textStyles'
-import { scale } from '../../utils/scaling'
+} from '../../Header/HeaderIcons/HeaderIcons'
+import { textStyles } from '../../../utils/textStyles'
+import { scale } from '../../../utils/scaling'
 
 const navigationOptions = props => ({
   // eslint-disable-next-line react/display-name

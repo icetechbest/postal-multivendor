@@ -7,12 +7,11 @@ export interface IConfiguration {
   _id: string;
   pushToken?: string;
   webClientID?: string;
-  publishableKey?: string;
-  clientId?: string;
-  googleApiKey?: string;
+  mapTileUrl?: string;
+  geocodingUrl?: string;
+  routingUrl?: string;
   webAmplitudeApiKey?: string;
   appAmplitudeApiKey?: string;
-  googleColor?: string;
   webSentryUrl?: string;
   apiSentryUrl?: string;
   customerAppSentryUrl?: string;
@@ -24,7 +23,6 @@ export interface IConfiguration {
   currency?: string;
   currencySymbol?: string;
   deliveryRate: number;
-  googleMapLibraries: string;
   twilioEnabled: boolean;
   twilioAccountSid?: string;
   twilioAuthToken?: string;
@@ -46,9 +44,6 @@ export interface IConfiguration {
   emailName?: string;
   password?: string;
   enableEmail?: boolean;
-  clientSecret?: string;
-  sandbox?: boolean;
-  secretKey?: string;
   formEmail?: string;
   sendGridApiKey?: string;
   sendGridEnabled?: boolean;

@@ -15,7 +15,6 @@ const categorySchema = new Schema<ICategory>(
     title: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     description: {
@@ -36,5 +35,7 @@ const categorySchema = new Schema<ICategory>(
 
 // Indexes
 categorySchema.index({ isActive: 1 });
+// Titles only need to be unique within one restaurant (multi-vendor).
+categorySchema.index({ restaurant: 1, title: 1 }, { unique: true });
 
 export const Category = mongoose.model<ICategory>('Category', categorySchema);

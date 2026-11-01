@@ -42,7 +42,6 @@ export interface IRestaurant extends Document {
   reviewAverage: number;
   rating: number;
   sections: string[];
-  stripeDetailsSubmitted: boolean;
   enableNotification: boolean;
   phone?: string;
   restaurantUrl?: string;
@@ -56,8 +55,6 @@ export interface IRestaurant extends Document {
   zone: mongoose.Types.ObjectId;
   shopType?: string;
   deliveryFee: number;
-  stripeAccountId?: string;
-  paypalEmail?: string;
   bankDetails?: {
     accountTitle: string;
     accountNumber: string;
@@ -66,6 +63,15 @@ export interface IRestaurant extends Document {
     swiftCode?: string;
   };
   notificationToken?: string;
+  bussinessDetails?: Record<string, unknown>;
+  deliveryInfo?: { minDeliveryFee?: number; deliveryDistance?: number; deliveryFee?: number };
+  deliveryOptions?: { delivery?: boolean; pickup?: boolean };
+  boundType?: 'polygon' | 'circle';
+  circleBounds?: { radius?: number };
+  city?: string;
+  postCode?: string;
+  withdrawnWalletAmount: number;
+  clonedFrom?: mongoose.Types.ObjectId;
   wallet: number;
   totalOrders: number;
   totalEarnings: number;
@@ -173,7 +179,6 @@ const restaurantSchema = new Schema<IRestaurant>(
     },
     reviewAverage: { type: Number, default: 0, min: 0, max: 5 },
     sections: { type: [String], default: [] },
-    stripeDetailsSubmitted: { type: Boolean, default: false },
     enableNotification: { type: Boolean, default: true },
     phone: String,
     restaurantUrl: String,
@@ -220,8 +225,6 @@ const restaurantSchema = new Schema<IRestaurant>(
       default: 5,
       min: 0,
     },
-    stripeAccountId: String,
-    paypalEmail: String,
     bankDetails: {
       accountTitle: String,
       accountNumber: String,
@@ -230,6 +233,19 @@ const restaurantSchema = new Schema<IRestaurant>(
       swiftCode: String,
     },
     notificationToken: String,
+    bussinessDetails: Schema.Types.Mixed,
+    deliveryInfo: {
+      minDeliveryFee: { type: Number, min: 0 },
+      deliveryDistance: { type: Number, min: 0 },
+      deliveryFee: { type: Number, min: 0 },
+    },
+    deliveryOptions: { delivery: { type: Boolean, default: true }, pickup: { type: Boolean, default: true } },
+    boundType: { type: String, enum: ['polygon', 'circle'], default: 'polygon' },
+    circleBounds: { radius: { type: Number, min: 0 } },
+    city: String,
+    postCode: String,
+    withdrawnWalletAmount: { type: Number, default: 0, min: 0 },
+    clonedFrom: { type: Schema.Types.ObjectId, ref: 'Restaurant', index: true },
     wallet: {
       type: Number,
       default: 0,

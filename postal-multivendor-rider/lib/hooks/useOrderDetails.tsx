@@ -4,7 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useNavigation, useRoute } from "@react-navigation/native";
 
-import getEnvVars from "@/environment";
 import { useRouter } from "expo-router";
 import { useLocationContext } from "../context/global/location.context";
 import { useApptheme } from "../context/global/theme.context";
@@ -20,7 +19,6 @@ const useOrderDetail = () => {
   const [orderID] = useState(route.params?.itemId);
   const { assignedOrders, loadingAssigned } = useContext(UserContext);
   const [order, setOrder] = useState(route.params?.order);
-  const { GOOGLE_MAPS_KEY } = getEnvVars();
   const { location } = useLocationContext();
 
   const [distance, setDistance] = useState<number | null>(null);
@@ -72,7 +70,6 @@ const useOrderDetail = () => {
     locationPin,
     restaurantAddressPin,
     deliveryAddressPin,
-    GOOGLE_MAPS_KEY,
     distance,
     setDistance,
     duration,

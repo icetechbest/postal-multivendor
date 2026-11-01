@@ -1,5 +1,3 @@
-import { Libraries } from '@react-google-maps/api';
-import { ReactNode } from 'react';
 import { IGlobalComponentProps } from './global.interface';
 
 export interface IGoogleMapsLoaderComponentProps
@@ -17,12 +15,6 @@ export interface ICustomGoogleMapsLocationBoundsComponentProps {
 
 export interface IGoogleMapsContext {
   isLoaded: boolean;
-}
-
-export interface IGoogleMapsProviderProps {
-  apiKey: string;
-  libraries: Libraries;
-  children: ReactNode;
 }
 
 /* Shape */
@@ -70,7 +62,7 @@ export interface IPlaceSelectedOption {
 export interface IUpdateRestaurantDeliveryZoneVariables {
   id: string;
   boundType: string;
-  bounds: number[][][];
+  bounds?: number[][][];
   circleBounds?: {
     radius: number;
   };

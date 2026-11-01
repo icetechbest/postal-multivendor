@@ -62,7 +62,6 @@ export interface ITransactionHistory {
     isActive: boolean;
     isAvailable: boolean;
     slug: string;
-    stripeDetailsSubmitted: boolean;
     phone: string;
     city: string;
     postCode: string;

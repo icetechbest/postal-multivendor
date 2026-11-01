@@ -4,7 +4,7 @@ import { Form, Formik } from 'formik';
 
 // Components
 import ConfigCard from '../../view/card';
-import CustomPasswordTextField from '@/lib/ui/useable-components/password-input-field';
+import CustomTextField from '@/lib/ui/useable-components/input-field';
 
 // Toast
 import useToast from '@/lib/hooks/useToast';
@@ -27,12 +27,14 @@ import { useMutation } from '@apollo/client';
 
 const GoogleApiAddForm = () => {
   // Hooks
-  const { GOOGLE_MAPS_KEY } = useConfiguration();
+  const { MAP_TILE_URL, GEOCODING_URL, ROUTING_URL } = useConfiguration();
   const { showToast } = useToast();
 
   // Initial values for the form
   const initialValues = {
-    googleApiKey: GOOGLE_MAPS_KEY ?? '',
+    mapTileUrl: MAP_TILE_URL ?? '',
+    geocodingUrl: GEOCODING_URL ?? '',
+    routingUrl: ROUTING_URL ?? '',
   };
 
   const [mutate, { loading: mutationLoading }] = useMutation(
@@ -46,14 +48,16 @@ const GoogleApiAddForm = () => {
     mutate({
       variables: {
         configurationInput: {
-          googleApiKey: values.googleApiKey,
+          mapTileUrl: values.mapTileUrl,
+          geocodingUrl: values.geocodingUrl,
+          routingUrl: values.routingUrl,
         },
       },
       onCompleted: () => {
         showToast({
           type: 'success',
           title: 'Success!',
-          message: 'Google API Key Updated',
+          message: 'Map Service URLs Updated',
           duration: 3000,
         });
       },
@@ -61,7 +65,7 @@ const GoogleApiAddForm = () => {
         let message = '';
         try {
           message = error.graphQLErrors[0]?.message;
-        } catch (err) {
+        } catch {
           message = 'ActionFailedTryAgain';
         }
         showToast({
@@ -86,23 +90,49 @@ const GoogleApiAddForm = () => {
           return (
             <Form onSubmit={handleSubmit}>
               <ConfigCard
-                cardTitle={'Google API'}
+                cardTitle={'Map Services (OpenStreetMap)'}
                 buttonLoading={mutationLoading}
               >
                 <div className="grid grid-cols-1 gap-4">
-                  <CustomPasswordTextField
-                    placeholder="Google API Key"
-                    name="googleApiKey"
+                  <CustomTextField
+                    type="text"
+                    placeholder="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    name="mapTileUrl"
                     maxLength={255}
-                    feedback={false}
-                    value={values.googleApiKey}
+                    value={values.mapTileUrl}
                     showLabel={true}
                     onChange={handleChange}
                     style={{
                       borderColor:
-                        errors.googleApiKey && touched.googleApiKey
+                        errors.mapTileUrl && touched.mapTileUrl ? 'red' : '',
+                    }}
+                  />
+                  <CustomTextField
+                    type="text"
+                    placeholder="https://nominatim.openstreetmap.org"
+                    name="geocodingUrl"
+                    maxLength={255}
+                    value={values.geocodingUrl}
+                    showLabel={true}
+                    onChange={handleChange}
+                    style={{
+                      borderColor:
+                        errors.geocodingUrl && touched.geocodingUrl
                           ? 'red'
                           : '',
+                    }}
+                  />
+                  <CustomTextField
+                    type="text"
+                    placeholder="https://router.project-osrm.org"
+                    name="routingUrl"
+                    maxLength={255}
+                    value={values.routingUrl}
+                    showLabel={true}
+                    onChange={handleChange}
+                    style={{
+                      borderColor:
+                        errors.routingUrl && touched.routingUrl ? 'red' : '',
                     }}
                   />
                 </div>

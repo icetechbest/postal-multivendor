@@ -25,7 +25,6 @@ const restaurantShared = {
   tax: (parent: any) => parent.tax ?? parent.salesTax ?? 0,
   reviewAverage: (parent: any) => parent.reviewAverage ?? parent.rating ?? 0,
   password: () => null,
-  stripeDetailsSubmitted: (parent: any) => Boolean(parent.stripeDetailsSubmitted),
   enableNotification: (parent: any) => parent.enableNotification !== false,
   freeDelivery: (parent: any) => Boolean(parent.freeDelivery),
   acceptVouchers: (parent: any) => Boolean(parent.acceptVouchers),
@@ -131,8 +130,6 @@ export const appFieldResolvers: Record<string, any> = {
   },
   Configuration: {
     password: (parent: any, _args: unknown, context: AuthContext) => adminValue(parent, 'password', context),
-    clientSecret: (parent: any, _args: unknown, context: AuthContext) => adminValue(parent, 'clientSecret', context),
-    secretKey: (parent: any, _args: unknown, context: AuthContext) => adminValue(parent, 'secretKey', context),
     twilioAuthToken: (parent: any, _args: unknown, context: AuthContext) => adminValue(parent, 'twilioAuthToken', context),
     firebaseKey: (parent: any, _args: unknown, context: AuthContext) => adminValue(parent, 'firebaseKey', context),
     testOtp: (parent: any) => config.env === 'production' ? null : parent.testOtp ?? null,

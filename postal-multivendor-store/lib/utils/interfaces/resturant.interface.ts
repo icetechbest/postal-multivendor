@@ -25,7 +25,6 @@ export interface IRestaurantProfile {
   minimumOrder: number;
   tax: number;
   isAvailable: boolean;
-  stripeDetailsSubmitted: boolean;
   openingTimes: {
     day: string;
     times: {

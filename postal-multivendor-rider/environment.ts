@@ -11,7 +11,18 @@ const getEnvVars = () => {
   return {
     GRAPHQL_URL: process.env.EXPO_PUBLIC_GRAPHQL_URL || "http://localhost:8001/graphql",
     WS_GRAPHQL_URL: process.env.EXPO_PUBLIC_WS_GRAPHQL_URL || "ws://localhost:8001/graphql",
-    GOOGLE_MAPS_KEY: configuration?.googleApiKey,
+    MAP_TILE_URL:
+      configuration?.mapTileUrl ||
+      process.env.EXPO_PUBLIC_MAP_TILE_URL ||
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    GEOCODING_URL:
+      configuration?.geocodingUrl ||
+      process.env.EXPO_PUBLIC_GEOCODING_URL ||
+      "https://nominatim.openstreetmap.org",
+    ROUTING_URL:
+      configuration?.routingUrl ||
+      process.env.EXPO_PUBLIC_ROUTING_URL ||
+      "https://router.project-osrm.org",
     ENVIRONMENT: __DEV__ ? "development" : "production",
   };
 };

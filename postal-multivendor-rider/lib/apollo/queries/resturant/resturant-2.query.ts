@@ -16,7 +16,6 @@ export const restaurantPreviewFragment = `#graphql
     isActive
     isAvailable
     slug
-    stripeDetailsSubmitted
     commissionRate
     tax
     notificationToken
@@ -161,7 +160,6 @@ query Restaurants($latitude:Float,$longitude:Float,$shopType:String){
       isActive
       isAvailable
       slug
-      stripeDetailsSubmitted
       commissionRate
       tax
       notificationToken

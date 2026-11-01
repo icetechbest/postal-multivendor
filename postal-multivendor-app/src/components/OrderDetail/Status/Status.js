@@ -9,6 +9,7 @@ import OrderDelivered from '../../../assets/SVG/order-delivered'
 import {useTranslation} from 'react-i18next'
 
 const STATUS_MESSAGES = {
+  AWAITING_ADMIN: 'AWAITING_ADMINStatusMessage',
   PENDING: 'PENDINGStatusMessage',
   ACCEPTED: 'ACCEPTEDStatusMessage',
   ASSIGNED: 'ASSIGNEDStatusMessage',
@@ -19,6 +20,7 @@ const STATUS_MESSAGES = {
   
 }
 const STATUS_ORDER = [
+  'AWAITING_ADMIN',
   'PENDING',
   'ACCEPTED',
   'ASSIGNED',
@@ -46,7 +48,7 @@ export default function Status({
     <View style={styles.container(theme)}>
       <View style={styles.statusBox(theme)}>
         <Circle color={theme.white} size={60} style={styles.icon}>
-          {orderStatus === 'PENDING' && <ArrowsLoading />}
+          {(orderStatus === 'AWAITING_ADMIN' || orderStatus === 'PENDING') && <ArrowsLoading />}
           {orderStatus === 'ACCEPTED' && <RestaurantPreparing />}
           {orderStatus === 'ASSIGNED' && <Rider />}
           {orderStatus === 'PICKED' && <Rider />}

@@ -1,4 +1,5 @@
 import http from 'http';
+import { resolve as resolvePath } from 'path';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
@@ -18,6 +19,7 @@ import { resolvers } from './graphql/resolvers';
 import { typeDefs } from './graphql/typeDefs';
 import { authenticate, AuthContext } from './middleware/auth';
 import { paymentRoutes } from './routes/payments';
+import { startAdminConfirmTimeout } from './services/adminConfirmTimeout';
 import { bootstrapDatabase } from './services/bootstrap';
 
 const connectionToken = (params: any, headers?: any): string | undefined =>
@@ -28,6 +30,8 @@ const startServer = async () => {
   await bootstrapDatabase();
 
   const app = express();
+  // Images uploaded from the admin dashboard (see uploadImageToS3).
+  app.use('/uploads', express.static(resolvePath(process.cwd(), 'uploads'), { fallthrough: true, index: false }));
   const httpServer = http.createServer(app);
   const schema = makeExecutableSchema({ typeDefs, resolvers });
   const modernWs = new WebSocketServer({ noServer: true });
@@ -111,7 +115,7 @@ const startServer = async () => {
   app.use(
     '/graphql',
     cors(corsOptions),
-    express.json({ limit: '1mb' }),
+    express.json({ limit: '12mb' }),
     rateLimit({ windowMs: config.rateLimit.windowMs, limit: config.rateLimit.maxRequests, standardHeaders: 'draft-8', legacyHeaders: false }),
     sensitiveOperation,
     expressMiddleware(apollo, { context: async ({ req }) => authenticate(req.headers.authorization) })
@@ -138,9 +142,11 @@ const startServer = async () => {
   console.log(`GraphQL HTTP ready at http://localhost:${config.port}/graphql`);
   console.log(`GraphQL WebSockets ready at ws://localhost:${config.port}/graphql`);
   console.log(`Environment: ${config.env}`);
+  const adminConfirmTimer = startAdminConfirmTimeout();
 
   const shutdown = async () => {
     console.log('Shutting down gracefully...');
+    if (adminConfirmTimer) clearInterval(adminConfirmTimer);
     await apollo.stop();
     await new Promise<void>((resolve) => httpServer.close(() => resolve()));
     await database.disconnect();
