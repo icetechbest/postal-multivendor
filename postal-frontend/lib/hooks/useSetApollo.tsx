@@ -106,7 +106,7 @@ export const useSetupApollo = (): ApolloClient<NormalizedCacheObject> => {
       httpLink
     ),
     cache,
-    connectToDevTools: true,
+    // `connectToDevTools` was removed in Apollo Client 3.14; rely on defaults.
   });
 
   return client;

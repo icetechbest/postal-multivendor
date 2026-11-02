@@ -11,7 +11,9 @@
       "backgroundColor": "#0f766e",
       "resizeMode": "contain"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.postal.admin",
@@ -24,7 +26,13 @@
       "adaptiveIcon": {
         "backgroundColor": "#0f766e"
       },
-      "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT", "POST_NOTIFICATIONS"]
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "POST_NOTIFICATIONS",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -50,8 +58,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "00000000-0000-0000-0000-000000000000"
+        "projectId": "1b6608a8-dd47-4071-99f1-fde814567d13"
       }
-    }
+    },
+    "owner": "eyadwaelll"
   }
 }

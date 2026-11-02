@@ -136,7 +136,8 @@ const AuthProviderInner = ({ children }: { children: React.ReactNode }) => {
     async (email: string, password: string) => {
       const { data } = await client.mutate<{ login: ILoginPayload }>({
         mutation: LOGIN,
-        variables: { email: email.trim(), password, type: 'ADMIN' },
+        // Backend accepts only email|google|facebook|apple; admin login is email.
+        variables: { email: email.trim(), password, type: 'email' },
         fetchPolicy: 'no-cache',
       });
 

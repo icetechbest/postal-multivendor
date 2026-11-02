@@ -91,7 +91,9 @@ const createApolloClient = (): ApolloClient<unknown> => {
       },
     }),
     ssrMode: typeof window === 'undefined',
-    connectToDevTools: process.env.NODE_ENV !== 'production',
+    // Note: `connectToDevTools` was removed in Apollo Client 3.14 (replaced by
+    // `devtools.enabled`). We simply rely on the default behaviour so the
+    // console works with both 3.11 and 3.14 without a version-specific option.
   });
 };
 

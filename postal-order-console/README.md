@@ -102,6 +102,24 @@ Both values are comma-separated lists and are merged into the Express CORS allow
 The pending-order subscription already checks the JWT role and only allows `ADMIN` and
 `STAFF`.
 
+## Admin credentials troubleshooting
+
+The backend creates its first admin at boot from `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+(defaults: `admin@postal.local` / `admin123`) **only when that email does not exist
+yet**. If the account already exists with an older password, the console answers
+`Invalid email or password`. Reset it from the backend repository:
+
+```bash
+cd postal-backend
+npm run create-admin -- --email admin@postal.local --password "Str0ngPass!" --role ADMIN
+# or a staff operator
+npm run create-admin -- --email staff@postal.local --password "Str0ngPass!" --role STAFF --name "Night Shift"
+```
+
+The script upserts the account, re-hashes the password, activates it, and clears any
+old refresh token. Run it against the same `MONGODB_URI` the API uses (locally, or on
+Railway with `railway run npm run create-admin -- ...`).
+
 ## Deployment checklist
 
 1. Build the image with the production `NEXT_PUBLIC_*` URLs.
