@@ -13,8 +13,6 @@
     "lint": "next lint",
     "prettier": "prettier --write .",
     "prepare": "husky",
-    "cy:open": "cypress open",
-    "cy:run": "cypress run",
     "test:maps": "ts-node -P tsconfig.maps.json lib/utils/methods/google-maps/transform.test.ts && ts-node -P tsconfig.maps.json lib/utils/methods/osm/throttle.test.ts"
   },
   "dependencies": {
@@ -22,6 +20,7 @@
     "@fortawesome/fontawesome-svg-core": "^6.6.0",
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
+    "@geoman-io/leaflet-geoman-free": "^2.17.0",
     "autosuggest-highlight": "^3.3.4",
     "browser-image-compression": "^2.0.2",
     "chart.js": "^4.4.4",
@@ -30,6 +29,7 @@
     "formik": "^2.4.6",
     "graphql": "^16.9.0",
     "graphql-ws": "^5.16.0",
+    "leaflet": "^1.9.4",
     "lodash": "^4.17.21",
     "moment": "^2.30.1",
     "next": "^14.2.35",
@@ -40,17 +40,16 @@
     "react": "^18",
     "react-dom": "^18",
     "react-international-phone": "^4.3.0",
+    "react-leaflet": "^4.2.1",
     "subscriptions-transport-ws": "^0.11.0",
     "tailwind-merge": "^2.5.2",
-    "yup": "^1.6.1",
-    "leaflet": "^1.9.4",
-    "react-leaflet": "^4.2.1",
-    "@geoman-io/leaflet-geoman-free": "^2.17.0"
+    "yup": "^1.6.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
     "@types/autosuggest-highlight": "^3.2.3",
+    "@types/leaflet": "^1.9.12",
     "@types/lodash": "^4.17.7",
     "@types/node": "^20.14.12",
     "@types/react": "^18",
@@ -59,7 +58,6 @@
     "@typescript-eslint/parser": "^7.17.0",
     "autoprefixer": "^10.4.19",
     "cross-env": "^7.0.3",
-    "cypress": "^13.13.1",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.35",
     "eslint-config-prettier": "^9.1.0",
@@ -74,7 +72,6 @@
     "ts-node": "^10.9.2",
     "tslib": "^2.6.3",
     "typescript": "^5.6.2",
-    "webpack-bundle-analyzer": "^4.10.2",
-    "@types/leaflet": "^1.9.12"
+    "webpack-bundle-analyzer": "^4.10.2"
   }
 }

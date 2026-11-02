@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 
 import L from 'leaflet';
+import '@geoman-io/leaflet-geoman-free';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Circle,
