@@ -7,6 +7,7 @@ const baseTypeDefs = `#graphql
 
   type Query {
     profile: User
+    lastOrderCreds: RiderCreds
     users: [User!]!
     restaurants(page: Int, limit: Int, search: String): [Restaurant!]!
     restaurant(id: String): Restaurant
@@ -58,6 +59,7 @@ const baseTypeDefs = `#graphql
     login(email: String, password: String, type: String!, appleId: String, name: String, notificationToken: String): AuthPayload!
     """Phone-number-only sign-in / sign-up. Verifies the OTP sent by
     sendOtpToPhoneNumber and creates the customer account on first use."""
+    riderLogin(username: String, password: String, notificationToken: String, timeZone: String): AuthPayload!
     loginWithPhone(phone: String!, otp: String!, name: String, notificationToken: String): AuthPayload!
     createUser(userInput: UserInput!): AuthPayload!
     refreshToken(refreshToken: String!): AuthPayload!
@@ -688,6 +690,11 @@ const baseTypeDefs = `#graphql
     deliveryAddress: String
     details: String
     location: Location
+  }
+
+  type RiderCreds {
+    riderUsername: String
+    riderPassword: String
   }
 
   type AuthPayload {

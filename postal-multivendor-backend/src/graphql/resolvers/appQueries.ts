@@ -22,6 +22,7 @@ const configuration = async () => Configuration.findOne({ key: 'default' });
 const sortedByRating = (restaurants: any[]) => restaurants.sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.reviewCount || 0) - (a.reviewCount || 0));
 
 export const appQueryResolvers: Record<string, (...args: any[]) => any> = {
+  lastOrderCreds: () => null,
   profile: async (_parent: unknown, _args: unknown, context: AuthContext) => {
     requireAuth(context);
     return getUser(context.user!.userId);

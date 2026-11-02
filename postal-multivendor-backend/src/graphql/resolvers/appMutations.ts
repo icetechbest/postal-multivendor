@@ -210,13 +210,13 @@ export const appMutationResolvers = {
   login: async (_parent: unknown, args: any) => {
     const type = (args.type || 'email').toLowerCase();
     const email = args.email?.trim().toLowerCase();
-    if (!email || !validateEmail(email)) throw new ValidationError('Invalid email address');
+    if (!email || !validateEmail(email)) throw new ValidationError('Invalid email address (INVALID_EMAIL)');
     let user = await User.findOne(email ? { email } : { socialId: args.appleId }).select('+password');
     let isNewUser = false;
     if (type === 'email') {
       if (!args.password) throw new ValidationError('Password is required');
       if (!user || !user.password || !(await comparePassword(args.password, user.password))) {
-        throw new AuthenticationError('Invalid email or password');
+        throw new AuthenticationError('Invalid email or password (INVALID_CREDENTIALS)');
       }
     } else {
       if (!['google', 'facebook', 'apple'].includes(type)) throw new ValidationError('Unsupported login type');
@@ -246,6 +246,23 @@ export const appMutationResolvers = {
    * The account is created on first successful verification, so sign-up and
    * sign-in share the same flow. No email or password is involved.
    */
+  riderLogin: async (
+    _parent: unknown,
+    { username, password, notificationToken }: { username?: string; password?: string; notificationToken?: string; timeZone?: string }
+  ) => {
+    const name = username?.trim();
+    if (!name || !password) throw new ValidationError('Username and password are required');
+    const user = await User.findOne({
+      role: 'RIDER',
+      $or: [{ username: name }, { username: name.toLowerCase() }, { email: name.toLowerCase() }],
+    }).select('+password');
+    if (!user || !user.password || !(await comparePassword(password, user.password))) {
+      throw new AuthenticationError('Invalid username or password');
+    }
+    if (!user.isActive) throw new AuthenticationError('Account is deactivated');
+    if (notificationToken) user.notificationToken = notificationToken;
+    return authPayload(user);
+  },
   loginWithPhone: async (
     _parent: unknown,
     { phone, otp, name, notificationToken }: { phone: string; otp: string; name?: string; notificationToken?: string }
