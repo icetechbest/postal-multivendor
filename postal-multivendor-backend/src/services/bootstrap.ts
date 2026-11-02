@@ -4,7 +4,7 @@ import { Taxation } from '../models/Taxation';
 import { Tipping } from '../models/Tipping';
 import { User } from '../models/User';
 import { Version } from '../models/Version';
-import { hashPassword } from '../utils/crypto';
+import { comparePassword, hashPassword } from '../utils/crypto';
 
 const boolEnv = (name: string, fallback: boolean): boolean => {
   const value = process.env[name];
@@ -73,15 +73,39 @@ export const bootstrapDatabase = async (): Promise<void> => {
       enabled: process.env.TIPPING_ENABLED !== 'false',
     });
   }
-  if (!await User.findOne({ email: config.admin.email.toLowerCase() })) {
+  // The admin account is env-driven: ADMIN_EMAIL / ADMIN_PASSWORD.
+  // - If it does not exist, create it.
+  // - If it exists and an explicit password was supplied in the environment,
+  //   re-hash and store it so changing the Railway variable actually takes
+  //   effect on the next deploy instead of silently keeping the old password.
+  //   Set ADMIN_SYNC_PASSWORD=false to opt out (e.g. if the password is
+  //   managed from the dashboard only).
+  const adminEmail = config.admin.email.toLowerCase();
+  const explicitPassword = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS;
+  const syncPassword = boolEnv('ADMIN_SYNC_PASSWORD', Boolean(explicitPassword));
+  const existingAdmin = await User.findOne({ email: adminEmail }).select('+password');
+
+  if (!existingAdmin) {
     await User.create({
       name: 'Postal Admin',
-      email: config.admin.email.toLowerCase(),
+      email: adminEmail,
       password: await hashPassword(config.admin.password),
       role: 'ADMIN',
       emailVerified: true,
       emailIsVerified: true,
     });
+  } else if (syncPassword && explicitPassword) {
+    const matches = existingAdmin.password
+      ? await comparePassword(explicitPassword, existingAdmin.password)
+      : false;
+    if (!matches) {
+      existingAdmin.password = await hashPassword(explicitPassword);
+      existingAdmin.role = existingAdmin.role === 'STAFF' ? 'STAFF' : 'ADMIN';
+      existingAdmin.isActive = true;
+      existingAdmin.refreshTokenHash = undefined;
+      await existingAdmin.save();
+      console.log(`🔑 Admin password synchronised from environment for ${adminEmail}`);
+    }
   }
   if (config.env === 'production' && config.admin.password === 'admin123') {
     console.warn('WARNING: ADMIN_PASSWORD is using the default value. Set a strong password in the environment.');

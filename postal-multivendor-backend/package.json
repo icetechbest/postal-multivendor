@@ -12,6 +12,8 @@
     "lint": "tsc --noEmit",
     "test": "npm run test:smoke",
     "seed": "tsx scripts/seed.ts",
+    "create-admin": "tsx scripts/create-admin.ts",
+    "check-admin": "tsx scripts/check-admin.ts",
     "verify:contract": "tsx scripts/verify-contract.ts",
     "verify:admin-contract": "tsx scripts/verify-admin-contract.ts",
     "test:smoke": "tsx scripts/integration-smoke.ts"
