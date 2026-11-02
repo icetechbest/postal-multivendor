@@ -166,6 +166,20 @@ try {
   const admin = await request(
     `mutation AdminLogin { login(email: "admin@postal.local", password: "${password}", type: "email") { token } }`
   );
+
+  // Regression guard: signing in must never destroy the stored password hash.
+  // Previously the resolver did `user.password = undefined` on the mongoose
+  // document and then saved it, which $unset the hash — so the first login
+  // worked and every later login failed with "Invalid email or password".
+  const adminSecondLogin = await request(
+    `mutation AdminLoginAgain { login(email: "admin@postal.local", password: "${password}", type: "email") { token refreshToken } }`
+  );
+  assert(adminSecondLogin.login.token, 'A second consecutive admin login failed (password hash was destroyed)');
+  const refreshed = await request(
+    `mutation Refresh($t: String!) { refreshToken(refreshToken: $t) { token } }`,
+    { t: adminSecondLogin.login.refreshToken }
+  );
+  assert(refreshed.refreshToken.token, 'Refresh token flow failed');
   const vendorLogin = await request(
     `mutation VendorLogin { login(email: "vendor@postal.local", password: "password123", type: "email") { token } }`
   );

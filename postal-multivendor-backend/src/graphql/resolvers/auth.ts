@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { User } from '../../models/User';
 import { Restaurant } from '../../models/Restaurant';
 import { hashPassword, comparePassword, generateOTP } from '../../utils/crypto';
+import { sanitizeUser } from '../../utils/sanitize';
 import { generateRefreshToken, generateToken } from '../../utils/jwt';
 import { validateEmail, validatePassword } from '../../utils/validation';
 import {
@@ -153,8 +154,7 @@ export const authResolvers = {
       user.refreshTokenHash = hashToken(refreshToken);
       await user.save();
 
-      // Remove password from response
-      user.password = undefined;
+      // Remove password from response (on a copy — see utils/sanitize.ts)
 
       return {
         userId: user._id.toString(),
@@ -167,7 +167,7 @@ export const authResolvers = {
         phone: user.phone,
         userType: user.role,
         image: user.image,
-        user,
+        user: sanitizeUser(user),
       };
     },
 
@@ -207,8 +207,6 @@ export const authResolvers = {
         email: user.email,
         role: user.role,
       });
-
-      user.password = undefined;
 
       const restaurants =
         user.role === 'ADMIN'

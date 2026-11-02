@@ -2,6 +2,7 @@ import { Restaurant } from '../../models/Restaurant';
 import { User } from '../../models/User';
 import { AuthContext, requireRole } from '../../middleware/auth';
 import { comparePassword, hashPassword } from '../../utils/crypto';
+import { sanitizeUser } from '../../utils/sanitize';
 import { AuthenticationError, AuthorizationError, NotFoundError, ValidationError } from '../../utils/errors';
 import { generateToken } from '../../utils/jwt';
 import { validateEmail, validatePassword } from '../../utils/validation';
@@ -60,7 +61,6 @@ export const adminStaffResolvers = {
       if (!user.isActive) throw new AuthenticationError('Account is deactivated');
       const token = generateToken({ userId: idOf(user._id), email: user.email, role: user.role });
       await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } });
-      user.password = undefined;
       const restaurants = user.role === 'VENDOR' ? await Restaurant.find({ owner: user._id }) : [];
       return {
         userId: idOf(user._id),
@@ -74,7 +74,7 @@ export const adminStaffResolvers = {
         image: user.image || user.avatar || null,
         shopType: restaurants[0]?.shopType,
         restaurants,
-        user,
+        user: sanitizeUser(user),
       };
     },
 

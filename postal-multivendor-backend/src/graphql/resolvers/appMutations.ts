@@ -18,6 +18,7 @@ import { AuthContext, requireAuth, requireRider } from '../../middleware/auth';
 import { sendEmail, sendSms } from '../../services/notifications';
 import { pubsub } from '../../services/pubsub';
 import { comparePassword, generateOTP, generateOrderId, hashPassword } from '../../utils/crypto';
+import { sanitizeUser } from '../../utils/sanitize';
 import { AuthenticationError, AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../../utils/errors';
 import { generateRefreshToken, generateToken, verifyRefreshToken } from '../../utils/jwt';
 import { validateEmail, validatePassword } from '../../utils/validation';
@@ -40,6 +41,13 @@ const authPayload = async (user: any, isNewUser = false) => {
   const refreshToken = generateRefreshToken(payload);
   user.refreshTokenHash = hashToken(refreshToken);
   await user.save();
+
+  // Never return the password hash. Strip it on a plain object copy instead of
+  // assigning `user.password = undefined` on the mongoose document — that marks
+  // the path as modified and the next save() would $unset the stored hash,
+  // silently breaking every subsequent login.
+  const safeUser = sanitizeUser(user);
+
   return {
     userId: idOf(user._id),
     token,
@@ -50,7 +58,7 @@ const authPayload = async (user: any, isNewUser = false) => {
     email: user.email,
     phone: user.phone,
     isNewUser,
-    user,
+    user: safeUser,
   };
 };
 
@@ -228,7 +236,6 @@ export const appMutationResolvers = {
     }
     if (!user.isActive) throw new AuthenticationError('Account is deactivated');
     if (args.notificationToken) user.notificationToken = args.notificationToken;
-    user.password = undefined;
     return authPayload(user, isNewUser);
   },
   refreshToken: async (_parent: unknown, { refreshToken }: { refreshToken: string }) => {
