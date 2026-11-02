@@ -31,7 +31,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     const data = await graphqlRequest<ILoginResult>(LOGIN_MUTATION, {
       email,
       password,
-      type: 'ADMIN',
+      // The backend login resolver accepts only email|google|facebook|apple.
+      // Admin/staff sign-in is always an email + password login.
+      type: 'email',
     });
     const login = data.login;
     const user: IAuthUser = login.user ?? {
