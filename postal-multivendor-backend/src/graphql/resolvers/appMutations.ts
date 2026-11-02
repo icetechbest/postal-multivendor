@@ -238,6 +238,52 @@ export const appMutationResolvers = {
     if (args.notificationToken) user.notificationToken = args.notificationToken;
     return authPayload(user, isNewUser);
   },
+  /**
+   * Phone-number-only authentication.
+   *
+   * The customer enters a phone number, receives an OTP through
+   * `sendOtpToPhoneNumber` and then calls this mutation with the code.
+   * The account is created on first successful verification, so sign-up and
+   * sign-in share the same flow. No email or password is involved.
+   */
+  loginWithPhone: async (
+    _parent: unknown,
+    { phone, otp, name, notificationToken }: { phone: string; otp: string; name?: string; notificationToken?: string }
+  ) => {
+    const normalizedPhone = normalizeTarget(phone || '');
+    if (!normalizedPhone) throw new ValidationError('Phone number is required');
+    if (!otp) throw new ValidationError('Verification code is required');
+
+    // Throws when the code is wrong/expired; also flips phoneVerified on an
+    // existing user when the target already has an account.
+    await verifyOtpCode(normalizedPhone, otp);
+
+    let user = await User.findOne({ phone: normalizedPhone });
+    let isNewUser = false;
+
+    if (!user) {
+      user = await User.create({
+        name: name?.trim() || 'Customer',
+        phone: normalizedPhone,
+        role: 'USER',
+        phoneVerified: true,
+        phoneIsVerified: true,
+        notificationToken,
+      });
+      isNewUser = true;
+    } else {
+      if (!user.phoneVerified) {
+        user.phoneVerified = true;
+        user.phoneIsVerified = true;
+      }
+      // Let a brand-new account pick up the name entered during sign-up.
+      if (name?.trim() && (!user.name || user.name === 'Customer')) user.name = name.trim();
+      if (notificationToken) user.notificationToken = notificationToken;
+    }
+
+    if (!user.isActive) throw new AuthenticationError('Account is deactivated');
+    return authPayload(user, isNewUser);
+  },
   refreshToken: async (_parent: unknown, { refreshToken }: { refreshToken: string }) => {
     try {
       const decoded = verifyRefreshToken(refreshToken);

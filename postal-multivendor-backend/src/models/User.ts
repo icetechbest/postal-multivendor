@@ -60,10 +60,14 @@ const userSchema = new Schema<IUser>(
       required: [true, 'Name is required'],
       trim: true,
     },
+    // Email is optional: customers can sign up with a phone number only.
+    // `sparse` keeps the unique index working while allowing many users
+    // without an email address (null/undefined values are not indexed).
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: false,
       unique: true,
+      sparse: true,
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],

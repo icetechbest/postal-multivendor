@@ -73,6 +73,22 @@ export const bootstrapDatabase = async (): Promise<void> => {
       enabled: process.env.TIPPING_ENABLED !== 'false',
     });
   }
+  // Customers can now register with a phone number only, so `email` is
+  // optional. The unique index must therefore be sparse, otherwise every
+  // phone-only account (email = null) would collide on the same key.
+  // Reconcile a legacy non-sparse `email_1` index left over from older deploys.
+  try {
+    const indexes = await User.collection.indexes();
+    const emailIndex = indexes.find((index) => index.name === 'email_1');
+    if (emailIndex && !emailIndex.sparse) {
+      await User.collection.dropIndex('email_1');
+      console.log('\ud83e\uddf9 Dropped legacy non-sparse email index');
+    }
+    await User.collection.createIndex({ email: 1 }, { unique: true, sparse: true, name: 'email_1' });
+  } catch (error) {
+    console.warn('\u26a0\ufe0f  Could not reconcile the User email index:', (error as Error).message);
+  }
+
   // The admin account is env-driven: ADMIN_EMAIL / ADMIN_PASSWORD.
   // - If it does not exist, create it.
   // - If it exists and an explicit password was supplied in the environment,

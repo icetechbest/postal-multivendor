@@ -5,8 +5,6 @@ import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import navigationService from './navigationService'
 import * as Notifications from 'expo-notifications'
-import Login from '../screens/Login/Login'
-import Register from '../screens/Register/Register'
 import ForgotPassword from '../screens/ForgotPassword/ForgotPassword'
 import SetYourPassword from '../screens/ForgotPassword/SetYourPassword'
 import CreateAccount from '../screens/CreateAccount/CreateAccount'
@@ -40,7 +38,6 @@ import Reorder from '../screens/Reorder/Reorder'
 import Favourite from '../screens/Favourite/Favourite'
 import ChatScreen from '../screens/ChatWithRider/ChatScreen'
 import { DarkBackButton, RightButton } from '../components/Header/HeaderIcons/HeaderIcons'
-import EmailOtp from '../screens/Otp/Email/EmailOtp'
 import PhoneOtp from '../screens/Otp/Phone/PhoneOtp'
 import ForgotPasswordOtp from '../screens/Otp/ForgotPassword/ForgetPasswordOtp'
 import PhoneNumber from '../screens/PhoneNumber/PhoneNumber'
@@ -156,12 +153,11 @@ function MainNavigator() {
 
       {/* Authentication Login */}
       <NavigationStack.Screen name='CreateAccount' component={CreateAccount} />
-      <NavigationStack.Screen name='Login' component={Login} />
-      <NavigationStack.Screen name='Register' component={Register} />
+      {/* Phone-number-only auth: the Login route reuses the phone screen in auth mode */}
+      <NavigationStack.Screen name='Login' component={PhoneNumber} initialParams={{ mode: 'auth' }} />
       <NavigationStack.Screen name='PhoneNumber' component={PhoneNumber} />
       <NavigationStack.Screen name='ForgotPassword' component={ForgotPassword} />
       <NavigationStack.Screen name='SetYourPassword' component={SetYourPassword} />
-      <NavigationStack.Screen name='EmailOtp' component={EmailOtp} />
       <NavigationStack.Screen name='PhoneOtp' component={PhoneOtp} />
       <NavigationStack.Screen name='ForgotPasswordOtp' component={ForgotPasswordOtp} />
       <NavigationStack.Screen name='SelectLocation' component={SelectLocation} options={SLIDE_RIGHT_WITH_CURVE_ANIM} />

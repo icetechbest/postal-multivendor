@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client';
-import { ALL_ORDERS_PAGINATED } from '@postal/graphql-docs';
+import { ALL_ORDERS_PAGINATED } from '@/lib/graphql-docs';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {

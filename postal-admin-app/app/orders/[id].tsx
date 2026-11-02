@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { ASSIGN_RIDER, ORDER_BY_ID, RIDERS, UPDATE_ORDER_STATUS } from '@postal/graphql-docs';
+import { ASSIGN_RIDER, ORDER_BY_ID, RIDERS, UPDATE_ORDER_STATUS } from '@/lib/graphql-docs';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';

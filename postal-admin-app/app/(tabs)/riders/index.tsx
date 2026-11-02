@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client';
-import { RIDERS } from '@postal/graphql-docs';
+import { RIDERS } from '@/lib/graphql-docs';
 import { useCallback, useState } from 'react';
 import {
   Alert,

@@ -5,7 +5,7 @@ import {
   DASHBOARD_USERS,
   RIDERS,
   WITHDRAW_REQUESTS,
-} from '@postal/graphql-docs';
+} from '@/lib/graphql-docs';
 import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 

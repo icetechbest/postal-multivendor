@@ -56,6 +56,9 @@ const baseTypeDefs = `#graphql
 
   type Mutation {
     login(email: String, password: String, type: String!, appleId: String, name: String, notificationToken: String): AuthPayload!
+    """Phone-number-only sign-in / sign-up. Verifies the OTP sent by
+    sendOtpToPhoneNumber and creates the customer account on first use."""
+    loginWithPhone(phone: String!, otp: String!, name: String, notificationToken: String): AuthPayload!
     createUser(userInput: UserInput!): AuthPayload!
     refreshToken(refreshToken: String!): AuthPayload!
     updateUser(updateUserInput: UpdateUserInput!): User!

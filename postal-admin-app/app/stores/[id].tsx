@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { RESTAURANT_BY_ID, TOGGLE_RESTAURANT } from '@postal/graphql-docs';
+import { RESTAURANT_BY_ID, TOGGLE_RESTAURANT } from '@/lib/graphql-docs';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';

@@ -1,5 +1,5 @@
 import type { ApolloClient } from '@apollo/client';
-import { UPLOAD_TOKEN } from '@postal/graphql-docs';
+import { UPLOAD_TOKEN } from '@/lib/graphql-docs';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';

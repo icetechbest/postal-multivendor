@@ -479,6 +479,7 @@ secureAccountWithPhone: 'سنستخدم رقمك فقط إذا كنا بحاجة
   placeOrder: 'أرسل الطلب',
   titleFAQ: 'الأسئلة المتكررة',
   continueAsGuest: 'تابع كضيف',
+  continueWithPhone: 'المتابعة برقم الهاتف',
   restaurantClosed: 'المطعم مغلق في الوقت الحالي',
   backToRestaurants: 'العودة إلى المطاعم',
   seeMenu: 'انظر القائمة',

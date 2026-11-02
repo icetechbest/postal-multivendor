@@ -39,7 +39,6 @@
       "userInterfaceStyle": "automatic",
       "bundleIdentifier": "com.postal.customer",
       "icon": "./assets/icon.png",
-      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use location to determine the delivery address for your orders.",
         "UIBackgroundModes": [
@@ -47,13 +46,6 @@
           "remote-notification"
         ],
         "NSUserTrackingUsageDescription": "Allow this app to collect app-related data that can be used for tracking you or your device.",
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.650001300965-dkji7jutv8gc5m4n7cdg3nft87sauhn7"
-            ]
-          }
-        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -123,7 +115,6 @@
       "expo-localization",
       "expo-web-browser",
       "expo-video",
-      "expo-apple-authentication",
       "expo-updates"
     ],
     "runtimeVersion": {

@@ -1,5 +1,5 @@
 import { ApolloProvider, useApolloClient } from '@apollo/client';
-import { LOGIN } from '@postal/graphql-docs';
+import { LOGIN } from '@/lib/graphql-docs';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import {

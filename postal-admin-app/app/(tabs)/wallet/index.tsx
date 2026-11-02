@@ -4,7 +4,7 @@ import {
   TRANSACTION_HISTORY,
   UPDATE_WITHDRAW_STATUS,
   WITHDRAW_REQUESTS,
-} from '@postal/graphql-docs';
+} from '@/lib/graphql-docs';
 import { useCallback, useState } from 'react';
 import {
   Alert,

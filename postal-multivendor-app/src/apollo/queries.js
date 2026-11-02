@@ -507,13 +507,10 @@ export const getConfiguration = `query Configuration{
     currencySymbol
     deliveryRate
     twilioEnabled
-    androidClientID 
-    iOSClientID 
     appAmplitudeApiKey 
     mapTileUrl
     geocodingUrl
     routingUrl
-    expoClientID 
     customerAppSentryUrl 
     termsAndConditions 
     privacyPolicy

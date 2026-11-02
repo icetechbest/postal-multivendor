@@ -9,11 +9,21 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@postal/graphql-docs": ["../packages/graphql-docs/src/index.ts"],
-      "graphql-tag": ["./node_modules/graphql-tag"]
+      "@/*": [
+        "./*"
+      ],
+      "graphql-tag": [
+        "./node_modules/graphql-tag"
+      ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

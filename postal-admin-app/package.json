@@ -10,12 +10,12 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "test": "jest --watchAll=false"
+    "test": "jest --watchAll=false",
+    "sync:docs": "node scripts/sync-graphql-docs.js"
   },
   "dependencies": {
     "@apollo/client": "^3.11.8",
     "@expo/vector-icons": "^14.0.4",
-    "@postal/graphql-docs": "file:../packages/graphql-docs",
     "expo": "~51.0.28",
     "expo-constants": "~16.0.2",
     "expo-device": "~6.0.2",

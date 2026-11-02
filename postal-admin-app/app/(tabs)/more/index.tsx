@@ -4,7 +4,7 @@ import {
   TICKET_USERS,
   USER_TICKETS,
   USERS,
-} from '@postal/graphql-docs';
+} from '@/lib/graphql-docs';
 import Constants from 'expo-constants';
 import { useCallback, useState } from 'react';
 import {

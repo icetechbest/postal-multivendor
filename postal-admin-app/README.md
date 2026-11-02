@@ -2,8 +2,7 @@
 
 A deliberately **simple** React Native admin app built with **Expo (SDK 51) + Expo
 Router + TypeScript**. It reuses the existing Postal GraphQL API and the shared
-`@postal/graphql-docs` package so the web admin and the mobile app never drift
-apart. It is an operational companion to the web admin, not a replacement: heavy
+GraphQL documents so the web admin and the mobile app never drift apart. It is an operational companion to the web admin, not a replacement: heavy
 configuration screens (zones editor, banners, cuisines, shop types, commission
 rates, configurations, audit logs) stay on the website and are reachable through
 an **Open on web** shortcut.
@@ -86,12 +85,22 @@ npm run lint                # eslint
 npm test                    # jest (order list screen)
 ```
 
-### Shared GraphQL package
+### Shared GraphQL documents
 
-The app imports every operation from `@postal/graphql-docs` (a local package at
-`../packages/graphql-docs`). `metro.config.js` adds it to `watchFolders` and the
-root `node_modules` to `nodeModulesPaths`, so no publishing step is needed. If
-you move the app, update those paths.
+The canonical documents live in `packages/graphql-docs` (shared with the web
+console). The app keeps a **vendored copy** in `lib/graphql-docs/index.ts` and
+imports it as `@/lib/graphql-docs`, so a standalone checkout — EAS Build, CI, or
+a plain `git clone` of just this folder — bundles with no monorepo sibling.
+
+After changing the shared package, refresh the copy and commit it:
+
+```bash
+npm run sync:docs
+```
+
+`metro.config.js` only adds `../packages/graphql-docs` to `watchFolders` when
+that directory actually exists, so the dev server still hot-reloads shared edits
+in a monorepo checkout without breaking standalone builds.
 
 ---
 

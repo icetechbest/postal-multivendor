@@ -17,7 +17,8 @@
     "verify:contract": "tsx scripts/verify-contract.ts",
     "verify:admin-contract": "tsx scripts/verify-admin-contract.ts",
     "test:smoke": "tsx scripts/integration-smoke.ts",
-    "test:login": "tsx scripts/verify-login.ts"
+    "test:login": "tsx scripts/verify-login.ts",
+    "test:phone-login": "tsx scripts/verify-phone-login.ts"
   },
   "keywords": [
     "food-delivery",

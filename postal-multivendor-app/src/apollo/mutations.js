@@ -348,6 +348,20 @@ export const login = `
    }
   }
   `
+export const loginWithPhone = `
+  mutation LoginWithPhone($phone: String!, $otp: String!, $name: String, $notificationToken: String) {
+    loginWithPhone(phone: $phone, otp: $otp, name: $name, notificationToken: $notificationToken) {
+      userId
+      token
+      tokenExpiration
+      isActive
+      name
+      email
+      phone
+      isNewUser
+    }
+  }
+  `
 export const createUser = `
     mutation CreateUser($phone:String,$email:String,$password:String,$name:String,$notificationToken:String,$appleId:String, $emailIsVerified:Boolean, $isPhoneExists:Boolean){
         createUser(userInput:{

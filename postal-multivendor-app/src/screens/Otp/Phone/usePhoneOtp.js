@@ -1,11 +1,15 @@
-import { useState, useContext, useEffect, useRef } from 'react'
-import { sendOtpToPhoneNumber, updateUser, VERIFY_OTP } from '../../../apollo/mutations'
+import { useState, useContext, useEffect } from 'react'
+import { sendOtpToPhoneNumber, updateUser, VERIFY_OTP, loginWithPhone } from '../../../apollo/mutations'
 import gql from 'graphql-tag'
 import { useMutation } from '@apollo/client'
+import * as Device from 'expo-device'
+import Constants from 'expo-constants'
+import * as Notifications from 'expo-notifications'
 import ThemeContext from '../../../ui/ThemeContext/ThemeContext'
 import { theme } from '../../../utils/themeColors'
 import { FlashMessage } from '../../../ui/FlashMessage/FlashMessage'
 import UserContext from '../../../context/User'
+import AuthContext from '../../../context/Auth'
 import { useNavigation, useRoute } from '@react-navigation/native'
 
 import useEnvVars from '../../../../environment'
@@ -19,6 +23,9 @@ const SEND_OTP_TO_PHONE = gql`
 const UPDATEUSER = gql`
   ${updateUser}
 `
+const LOGIN_WITH_PHONE = gql`
+  ${loginWithPhone}
+`
 
 const usePhoneOtp = () => {
   const { TEST_OTP } = useEnvVars()
@@ -29,10 +36,12 @@ const usePhoneOtp = () => {
   const [otp, setOtp] = useState('')
   const [otpError, setOtpError] = useState(false)
   const { profile, loadingProfile } = useContext(UserContext)
+  const { setTokenAsync } = useContext(AuthContext)
   const themeContext = useContext(ThemeContext)
   const currentTheme = theme[themeContext.ThemeValue]
   const [seconds, setSeconds] = useState(30)
-  const { name, phone, screen } = route?.params || {}
+  const { name, phone, screen, mode, prevScreen } = route?.params || {}
+  const isAuthMode = mode === 'auth'
 
   function onError(error) {
     if (error.networkError) {
@@ -73,12 +82,34 @@ const usePhoneOtp = () => {
     } else if (screen === 'Checkout') {
       navigation.navigate('Checkout')
     } else {
-      route.params?.prevScreen
-        ? navigation.navigate(route.params.prevScreen)
+      prevScreen
+        ? navigation.navigate(prevScreen)
         : navigation.navigate({
             name: 'Main',
             merge: true
           })
+    }
+  }
+
+  // Phone-only sign-in / sign-up. The backend creates the account the first
+  // time this phone number completes the OTP challenge.
+  async function onPhoneLoginCompleted(data) {
+    if (data?.loginWithPhone?.isActive === false) {
+      FlashMessage({ message: t('accountDeactivated') })
+      return
+    }
+    try {
+      await setTokenAsync(data.loginWithPhone.token)
+      if (!data.loginWithPhone.name || data.loginWithPhone.name === 'Customer') {
+        navigation.navigate('Profile', { editName: true })
+      } else {
+        navigation.navigate({
+          name: 'Main',
+          merge: true
+        })
+      }
+    } catch (error) {
+      FlashMessage({ message: t('errorInLoginError') })
     }
   }
 
@@ -96,7 +127,39 @@ const usePhoneOtp = () => {
     onError: onUpdateUserError
   })
 
+  const [phoneLogin, { loading: phoneLoginLoading }] = useMutation(LOGIN_WITH_PHONE, {
+    onCompleted: onPhoneLoginCompleted,
+    onError
+  })
+
+  async function notificationToken() {
+    try {
+      if (!Device.isDevice) return null
+      const { status } = await Notifications.getPermissionsAsync()
+      if (status !== 'granted') return null
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId
+      })
+      return token.data
+    } catch (error) {
+      return null
+    }
+  }
+
   const onCodeFilled = async (otp_code) => {
+    if (isAuthMode) {
+      const token = await notificationToken()
+      phoneLogin({
+        variables: {
+          phone: phone ?? profile?.phone,
+          otp: otp_code,
+          name: name ?? profile?.name,
+          notificationToken: token
+        }
+      })
+      return
+    }
+
     if (configuration?.skipMobileVerification) {
       mutateUser({
         variables: {
@@ -165,14 +228,16 @@ const usePhoneOtp = () => {
 
   useEffect(() => {
     if (!configuration) return
+    if (isAuthMode) return
     if (!configuration.skipMobileVerification) {
       onSendOTPHandler()
     }
-  }, [configuration,  phone])
+  }, [configuration, phone])
 
   useEffect(() => {
     let timer = null
     if (!configuration || !profile) return
+    if (isAuthMode) return
     if (configuration.skipMobileVerification) {
       setOtp(TEST_OTP)
       timer = setTimeout(() => {
@@ -192,7 +257,7 @@ const usePhoneOtp = () => {
     seconds,
     profile,
     loading,
-    updateUserLoading,
+    updateUserLoading: updateUserLoading || phoneLoginLoading,
     onCodeFilled,
     resendOtp,
     currentTheme,

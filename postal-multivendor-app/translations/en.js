@@ -491,6 +491,7 @@ export const en = {
   away: 'away',
   placeOrder: 'Place Order',
   continueAsGuest: 'Continue as Guest',
+  continueWithPhone: 'Continue with phone number',
   restaurantClosed: 'Restaurant Closed at the moment',
   backToRestaurants: 'Go back to restaurants',
   seeMenu: 'See Menu',

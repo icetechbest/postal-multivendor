@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { RESTAURANTS_PAGINATED, TOGGLE_RESTAURANT } from '@postal/graphql-docs';
+import { RESTAURANTS_PAGINATED, TOGGLE_RESTAURANT } from '@/lib/graphql-docs';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
