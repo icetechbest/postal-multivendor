@@ -42,23 +42,23 @@ export default function TabsLayout() {
         options={{ title: t('tabs.home'), tabBarIcon: icon('home-outline', 'home') }}
       />
       <Tabs.Screen
-        name="orders"
+        name="orders/index"
         options={{ title: t('tabs.orders'), tabBarIcon: icon('receipt-outline', 'receipt') }}
       />
       <Tabs.Screen
-        name="stores"
+        name="stores/index"
         options={{ title: t('tabs.stores'), tabBarIcon: icon('storefront-outline', 'storefront') }}
       />
       <Tabs.Screen
-        name="riders"
+        name="riders/index"
         options={{ title: t('tabs.riders'), tabBarIcon: icon('bicycle-outline', 'bicycle') }}
       />
       <Tabs.Screen
-        name="wallet"
+        name="wallet/index"
         options={{ title: t('tabs.wallet'), tabBarIcon: icon('wallet-outline', 'wallet') }}
       />
       <Tabs.Screen
-        name="more"
+        name="more/index"
         options={{ title: t('tabs.more'), tabBarIcon: icon('ellipsis-horizontal', 'ellipsis-horizontal') }}
       />
     </Tabs>

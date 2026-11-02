@@ -10,6 +10,13 @@ import { IConfiguration } from '@/lib/utils/interfaces';
 // Interface
 import { ConfigurationContext } from '@/lib/context/global/configuration.context';
 
+// `.env` is git-ignored, so NEXT_PUBLIC_* may be missing at build time on the
+// host (it then became "undefinedgraphql" -> a 404 served by Next itself).
+// Always return a URL that ends with exactly one "/".
+const FALLBACK_SERVER_URL = 'https://postal-multivendor-production.up.railway.app';
+const FALLBACK_WS_SERVER_URL = 'wss://postal-multivendor-production.up.railway.app';
+const withTrailingSlash = (url: string): string => `${url.trim().replace(/\/+$/, '')}/`;
+
 export const useConfiguration = () => {
   const configuration: IConfiguration | undefined =
     useContext(ConfigurationContext);
@@ -73,8 +80,12 @@ export const useConfiguration = () => {
   const ISPAID_VERSION = configuration?.isPaidVersion;
 
   return {
-    SERVER_URL: process.env.NEXT_PUBLIC_SERVER_URL,
-    WS_SERVER_URL: process.env.NEXT_PUBLIC_WS_SERVER_URL,
+    SERVER_URL: withTrailingSlash(
+      process.env.NEXT_PUBLIC_SERVER_URL || FALLBACK_SERVER_URL
+    ),
+    WS_SERVER_URL: withTrailingSlash(
+      process.env.NEXT_PUBLIC_WS_SERVER_URL || FALLBACK_WS_SERVER_URL
+    ),
     COLORS,
 
     // EMAIL CONFIG

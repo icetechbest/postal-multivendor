@@ -33,7 +33,7 @@ export default function LoginScreen() {
       await login(email, password);
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
-      setError(message.includes('INVALID') ? t('login.invalid') : t('common.error'));
+      setError(/invalid/i.test(message) ? t('login.invalid') : message ? `${t('common.error')}: ${message}` : t('common.error'));
     } finally {
       setSubmitting(false);
     }
