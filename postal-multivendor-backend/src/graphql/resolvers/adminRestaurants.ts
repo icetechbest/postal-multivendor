@@ -1,12 +1,12 @@
 import { randomInt } from 'crypto';
-import { Types } from 'mongoose';
+import { QueryFilter, Types } from 'mongoose';
 import { Addon } from '../../models/Addon';
 import { Category } from '../../models/Category';
 import { Coupon } from '../../models/Coupon';
 import { Food } from '../../models/Food';
 import { Order } from '../../models/Order';
 import { RestaurantOption } from '../../models/Option';
-import { Restaurant } from '../../models/Restaurant';
+import { IRestaurant, Restaurant } from '../../models/Restaurant';
 import { User } from '../../models/User';
 import { AuthContext, requireAuth, requireRole } from '../../middleware/auth';
 import { hashPassword } from '../../utils/crypto';
@@ -130,7 +130,7 @@ export const adminRestaurantResolvers = {
     commissionRate: async (_parent: unknown, args: { page?: number; limit?: number }, context: AuthContext) => {
       requirePlatformReader(context);
       const p = pageParams(args.page, args.limit);
-      const filter = { clonedFrom: { $in: [null, undefined] } };
+      const filter: QueryFilter<IRestaurant> = { $or: [{ clonedFrom: null }, { clonedFrom: { $exists: false } }] };
       const [restaurant, total] = await Promise.all([
         Restaurant.find(filter).sort({ name: 1 }).skip(p.skip).limit(p.limit),
         Restaurant.countDocuments(filter),
@@ -291,7 +291,9 @@ export const adminRestaurantResolvers = {
             price: variation.price,
             discounted: variation.discounted,
             isOutOfStock: variation.isOutOfStock,
-            addons: (variation.addons || []).map((addonId) => addonMap.get(idOf(addonId))).filter(Boolean),
+            addons: (variation.addons || [])
+              .map((addonId) => addonMap.get(idOf(addonId)))
+              .filter((addonId): addonId is Types.ObjectId => Boolean(addonId)),
           })),
         });
       }
