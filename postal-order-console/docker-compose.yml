@@ -1,0 +1,24 @@
+services:
+  order-console:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:-http://localhost:8001}
+        NEXT_PUBLIC_WS_SERVER_URL: ${NEXT_PUBLIC_WS_SERVER_URL:-ws://localhost:8001}
+        NEXT_PUBLIC_WARN_MINUTES: ${NEXT_PUBLIC_WARN_MINUTES:-5}
+        NEXT_PUBLIC_DANGER_MINUTES: ${NEXT_PUBLIC_DANGER_MINUTES:-10}
+        NEXT_PUBLIC_POLL_INTERVAL_MS: ${NEXT_PUBLIC_POLL_INTERVAL_MS:-15000}
+    image: postal-order-console:latest
+    container_name: postal-order-console
+    restart: unless-stopped
+    ports:
+      - '${CONSOLE_PORT:-3002}:3002'
+    environment:
+      NODE_ENV: production
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3002/login']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

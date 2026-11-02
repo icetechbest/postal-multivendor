@@ -1,7 +1,8 @@
+import { createHash } from 'crypto';
 import { User } from '../../models/User';
 import { Restaurant } from '../../models/Restaurant';
 import { hashPassword, comparePassword, generateOTP } from '../../utils/crypto';
-import { generateToken } from '../../utils/jwt';
+import { generateRefreshToken, generateToken } from '../../utils/jwt';
 import { validateEmail, validatePassword } from '../../utils/validation';
 import {
   AuthenticationError,
@@ -12,6 +13,17 @@ import {
 import { AuthContext, requireAdmin, requireAuth } from '../../middleware/auth';
 import config from '../../config';
 import { sendEmail, sendSms } from '../../services/notifications';
+
+const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
+
+/** Access-token lifetime in seconds, derived from the configured JWT expiry. */
+const expirationSeconds = (value: string): number => {
+  const match = /^(\d+)([smhd])?$/.exec(value);
+  if (!match) return 7 * 24 * 60 * 60;
+  const amount = Number(match[1]);
+  const multiplier = { s: 1, m: 60, h: 3600, d: 86400 }[match[2] || 's'] || 1;
+  return amount * multiplier;
+};
 
 export interface UserInput {
   name: string;
@@ -128,18 +140,33 @@ export const authResolvers = {
         throw new AuthenticationError('Invalid email or password');
       }
 
-      // Generate token
-      const token = generateToken({
+      // Generate access + refresh tokens. The refresh token is hashed at rest
+      // and rotated by the refreshToken mutation, so web/mobile clients can
+      // keep the short-lived access token in memory only.
+      const payload = {
         userId: user._id.toString(),
         email: user.email,
         role: user.role,
-      });
+      };
+      const token = generateToken(payload);
+      const refreshToken = generateRefreshToken(payload);
+      user.refreshTokenHash = hashToken(refreshToken);
+      await user.save();
 
       // Remove password from response
       user.password = undefined;
 
       return {
+        userId: user._id.toString(),
         token,
+        refreshToken,
+        tokenExpiration: expirationSeconds(config.jwt.expiresIn),
+        isActive: user.isActive,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        userType: user.role,
+        image: user.image,
         user,
       };
     },

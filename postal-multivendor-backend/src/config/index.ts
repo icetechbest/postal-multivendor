@@ -173,7 +173,14 @@ const config: Config = {
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
   },
   cors: {
-    origin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
+    // Comma-separated allow-list. ORDER_CONSOLE_ORIGIN lets the standalone
+    // order-confirmation site be deployed independently without touching the
+    // admin dashboard origins.
+    origin: [process.env.CORS_ORIGIN || 'http://localhost:3000', process.env.ORDER_CONSOLE_ORIGIN || '']
+      .join(',')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
   },
   sentry: {
     dsn: process.env.SENTRY_DSN || '',

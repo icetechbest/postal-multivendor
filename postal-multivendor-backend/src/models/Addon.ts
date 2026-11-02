@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IOption {
+interface IOption {
   _id?: mongoose.Types.ObjectId;
   title: string;
   description?: string;

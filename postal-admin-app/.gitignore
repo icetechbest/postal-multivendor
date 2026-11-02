@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Native builds
+android/
+ios/
+
+# Environment — never commit real values
+.env
+.env.*
+!.env.example
+
+# Testing / tooling
+coverage/
+.jest-cache/
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo

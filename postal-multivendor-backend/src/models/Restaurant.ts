@@ -1,11 +1,11 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface ILocation {
+interface ILocation {
   type: string;
   coordinates: [number, number]; // [longitude, latitude]
 }
 
-export interface IOpeningTime {
+interface IOpeningTime {
   day: string;
   times: Array<{
     startTime: string[];
@@ -13,7 +13,7 @@ export interface IOpeningTime {
   }>;
 }
 
-export interface IDeliveryBounds {
+interface IDeliveryBounds {
   type: string;
   coordinates: number[][][];
 }
