@@ -7,7 +7,7 @@ import SpinnerComponent from "@/lib/ui/useable-components/spinner";
 
 // Expo
 import { Stack } from "expo-router";
-import { StatusBar, StatusBarStyle } from "expo-status-bar";
+import { StatusBar } from "expo-status-bar";
 
 // React Native Flash Message
 import FlashMessage from "react-native-flash-message";
@@ -39,7 +39,7 @@ export default function ProtectedLayout() {
             name="bank-management"
             options={{ headerShown: true }}
           /> */}
-          <StatusBar style={currentTheme as StatusBarStyle} />
+          <StatusBar style={currentTheme === "dark" ? "light" : "dark"} />
           <FlashMessage position="bottom" />
         </>
       </SoundProvider>

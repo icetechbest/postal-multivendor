@@ -1,6 +1,6 @@
 import "expo-dev-client";
 import * as SplashScreen from "expo-splash-screen";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
@@ -11,12 +11,27 @@ import Animated, {
 } from "react-native-reanimated";
 import SplashVideo from "./SplashVideo";
 
-export default function AnimatedSplashScreen({ children }) {
+export default function AnimatedSplashScreen({
+  children,
+}: {
+  children?: React.ReactNode;
+}) {
   const opacityAnimation = useSharedValue(1); // Shared value for opacity
   const scaleAnimation = useSharedValue(1); // Shared value for scale
   const [isAppReady, setAppReady] = useState(false);
   const [isSplashVideoComplete, setSplashVideoComplete] = useState(false);
   const [isSplashAnimationComplete, setAnimationComplete] = useState(false);
+
+  // Fail-safe: if the video never reports loaded / finished (decoder problem,
+  // missing event) the app must still open instead of staying on a black screen.
+  useEffect(() => {
+    const loadTimer = setTimeout(() => setAppReady(true), 4000);
+    const endTimer = setTimeout(() => setSplashVideoComplete(true), 9000);
+    return () => {
+      clearTimeout(loadTimer);
+      clearTimeout(endTimer);
+    };
+  }, []);
 
   useEffect(() => {
     if (isAppReady && isSplashVideoComplete) {
@@ -45,7 +60,7 @@ export default function AnimatedSplashScreen({ children }) {
       // Load stuff
       await Promise.all([]);
     } catch (e) {
-      console.error("Error hiding splash screen:", e);
+      console.log("Error hiding splash screen:", e);
       // Handle errors
     } finally {
       setAppReady(true);
@@ -73,16 +88,18 @@ export default function AnimatedSplashScreen({ children }) {
   return (
     <View style={{ flex: 1 }}>
       {isSplashAnimationComplete ? children : null}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          animatedStyle,
-          { backgroundColor: "black" },
-        ]}
-      >
-        {videoElement}
-      </Animated.View>
+      {!isSplashAnimationComplete ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            animatedStyle,
+            { backgroundColor: "black" },
+          ]}
+        >
+          {videoElement}
+        </Animated.View>
+      ) : null}
     </View>
   );
 }

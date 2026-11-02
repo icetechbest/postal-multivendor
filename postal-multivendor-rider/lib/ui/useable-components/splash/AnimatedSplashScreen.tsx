@@ -18,6 +18,17 @@ export default function AnimatedSplashScreen({ children }:any) {
   const [isSplashVideoComplete, setSplashVideoComplete] = useState(false);
   const [isSplashAnimationComplete, setAnimationComplete] = useState(false);
 
+  // Fail-safe: if the video never reports "loaded"/"finished" (decoder problem,
+  // missing event, ...) the app must still open instead of hanging on the logo.
+  useEffect(() => {
+    const loadTimer = setTimeout(() => setAppReady(true), 4000);
+    const endTimer = setTimeout(() => setSplashVideoComplete(true), 9000);
+    return () => {
+      clearTimeout(loadTimer);
+      clearTimeout(endTimer);
+    };
+  }, []);
+
   useEffect(() => {
     if (isAppReady && isSplashVideoComplete) {
       // Start fade out and scale down animation when the app is ready and video has completed
@@ -71,18 +82,21 @@ export default function AnimatedSplashScreen({ children }:any) {
   });
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "black" }}>
       {isSplashAnimationComplete ? children : null}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          animatedStyle,
-          { backgroundColor: "black" },
-        ]}
-      >
-        {videoElement}
-      </Animated.View>
+      {/* Removed completely once finished (also releases the video player) */}
+      {!isSplashAnimationComplete ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            animatedStyle,
+            { backgroundColor: "black" },
+          ]}
+        >
+          {videoElement}
+        </Animated.View>
+      ) : null}
     </View>
   );
 }

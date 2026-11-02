@@ -52,6 +52,7 @@ export const UserProvider = ({ children }: IUserProviderProps) => {
     refetch: refetchProfile,
   } = useQuery(STORE_PROFILE, {
     fetchPolicy: "network-only",
+    skip: !userId,
     variables: {
       restaurantId: userId,
     },

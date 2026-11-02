@@ -29,7 +29,7 @@ const useLogin = () => {
     onError,
   });
 
-  useQuery(DEFAULT_STORE_CREDS, { onCompleted, onError });
+  useQuery(DEFAULT_STORE_CREDS, { onCompleted, onError, skip: true });
 
   // Handlers
   async function onCompleted({

@@ -28,21 +28,40 @@ import { LocationPermissionComp } from "@/lib/ui/useable-components";
 import AnimatedSplashScreen from "@/lib/ui/useable-components/splash/AnimatedSplashScreen";
 import UnavailableStatus from "@/lib/ui/useable-components/unavailable-status";
 import { requestMediaLibraryPermissionsAsync } from "expo-image-picker";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import AppErrorBoundary from "@/lib/ui/useable-components/error-boundary";
 
 import "../global.css";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen?.preventAutoHideAsync();
 
+// Registered once (not on every render). Errors are logged instead of closing
+// the app; render errors are shown by <AppErrorBoundary /> below.
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  console.log("Global Error Caught:", { error, isFatal });
+  // Keep the original errors so <AppErrorBoundary /> can show them. Metro swallows
+  // errors thrown while a module loads and returns `undefined`, which later shows
+  // up as "Cannot read property 'ErrorBoundary' of undefined".
+  try {
+    const g = globalThis as any;
+    (g.__APP_ERRORS__ = g.__APP_ERRORS__ || []).push(
+      String((error as any)?.stack || (error as any)?.message || error),
+    );
+  } catch {}
+});
 
 function RootLayout() {
   // Hooks
-  const [loaded] = useFonts({
+  const [loaded, fontError] = useFonts({
     SpaceMono: require("../lib/assets/fonts/SpaceMono-Regular.ttf"),
     Inter: require("../lib/assets/fonts/Inter.ttf"),
   });
-  const client = setupApollo();
+  // One Apollo client for the whole app lifetime (it used to be re-created on
+  // every render, which also opened a new WebSocket each time).
+  const client = useMemo(() => setupApollo(), []);
+  // If a font fails to load we still start the app instead of waiting forever.
+  const ready = loaded || !!fontError;
 
   // Permissions
   async function grantCameraAndGalleryPermissions() {
@@ -51,22 +70,22 @@ function RootLayout() {
 
   // Use Effect
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (ready) {
+      SplashScreen.hideAsync().catch(() => {});
     }
-  }, [loaded]);
-  ErrorUtils.setGlobalHandler((error, isFatal) => {
-    console.log("Global Error Caught:", { error, isFatal });
-  });
+  }, [ready]);
   useEffect(() => {
-    grantCameraAndGalleryPermissions();
+    grantCameraAndGalleryPermissions().catch((e) =>
+      console.log("Media library permission error:", e),
+    );
   }, []);
 
-  if (!loaded) {
+  if (!ready) {
     return null;
   }
 
   return (
+    <AppErrorBoundary>
     <AnimatedSplashScreen>
       <AppThemeProvidor>
         <ApolloProvider client={client}>
@@ -91,6 +110,7 @@ function RootLayout() {
         </ApolloProvider>
       </AppThemeProvidor>
     </AnimatedSplashScreen>
+    </AppErrorBoundary>
   );
 }
 

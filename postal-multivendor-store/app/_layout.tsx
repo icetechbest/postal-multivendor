@@ -24,7 +24,8 @@ import "../global.css";
 import { UserProvider } from "@/lib/context/global/user.context";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import AppErrorBoundary from "@/lib/ui/useable-components/error-boundary";
 import FlashMessage from "react-native-flash-message";
 
 // PRoviders
@@ -48,49 +49,58 @@ SplashScreen.preventAutoHideAsync();
 // });
 
 
+// Must live INSIDE <AppThemeProvidor>, otherwise useApptheme() only returns the
+// default (light) values and the status bar never follows the real theme.
+function ThemedStatusBar() {
+  const { currentTheme } = useApptheme();
+  // expo-status-bar: "light" = WHITE icons, so dark theme -> "light"
+  return <StatusBar style={currentTheme === "dark" ? "light" : "dark"} />;
+}
+
 function RootLayout() {
   // Hooks
-  const { currentTheme, appTheme } = useApptheme();
-  const [loaded] = useFonts({
+  const [loaded, fontError] = useFonts({
     SpaceMono: require("../lib/assets/fonts/SpaceMono-Regular.ttf"),
     Inter: require("../lib/assets/fonts/Inter.ttf"),
   });
 
-  const client = setupApollo();
+  // One client for the app lifetime (it was re-created on every render,
+  // which also opened a new WebSocket each time).
+  const client = useMemo(() => setupApollo(), []);
+  const ready = loaded || !!fontError;
 
   // Use Effect
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (ready) {
+      SplashScreen.hideAsync().catch(() => {});
     }
-  }, [loaded]);
+  }, [ready]);
 
-  if (!loaded) {
+  if (!ready) {
     return null;
   }
 
   return (
-    <ApolloProvider client={client}>
-      <AppThemeProvidor>
-        <AnimatedSplashScreen>
-          <InternetProvider>
-            <ConfigurationProvider>
-              <AuthProvider client={client}>
-                <StatusBar
-                  style={currentTheme ?? "dark"}
-                  backgroundColor={appTheme.themeBackground ?? ""}
-                />
-                <UserProvider>
-                  <UnavailableStatus />
-                  <Slot />
-                </UserProvider>
-              </AuthProvider>
-            </ConfigurationProvider>
-          </InternetProvider>
-        </AnimatedSplashScreen>
-        <FlashMessage position="center" />
-      </AppThemeProvidor>
-    </ApolloProvider>
+    <AppErrorBoundary>
+      <ApolloProvider client={client}>
+        <AppThemeProvidor>
+          <AnimatedSplashScreen>
+            <InternetProvider>
+              <ConfigurationProvider>
+                <AuthProvider client={client}>
+                  <ThemedStatusBar />
+                  <UserProvider>
+                    <UnavailableStatus />
+                    <Slot />
+                  </UserProvider>
+                </AuthProvider>
+              </ConfigurationProvider>
+            </InternetProvider>
+          </AnimatedSplashScreen>
+          <FlashMessage position="center" />
+        </AppThemeProvidor>
+      </ApolloProvider>
+    </AppErrorBoundary>
   );
 }
 

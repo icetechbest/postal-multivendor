@@ -1,4 +1,4 @@
-import { LatLng } from "react-native-maps";
+export type LatLng = { latitude: number; longitude: number };
 
 // OpenStreetMap routing (OSRM). No API key / no billing.
 const OSM_USER_AGENT = "PostalMultivendor/1.0 (https://postal.example.com)";

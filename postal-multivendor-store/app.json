@@ -41,6 +41,7 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "$(PRODUCT_NAME) uses your location for features like finding orders nearby and tracking customer orders!",
         "UIBackgroundModes": [
+          "remote-notification",
           "remote-notification"
         ],
         "ITSAppUsesNonExemptEncryption": false,
@@ -53,6 +54,13 @@
       "versionCode": 67,
       "googleServicesFile": "./google-services.json",
       "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO",
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_ADMIN",
         "android.permission.BLUETOOTH_CONNECT",
@@ -73,9 +81,15 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6f555c34-1e08-42ca-a2a6-26e20ca37892"
+        "projectId": "90894ccf-a37b-4c65-9b07-c02e1399c9c8"
       }
     },
-    "owner": "justiceyy"
+    "owner": "eyadwaelll",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/90894ccf-a37b-4c65-9b07-c02e1399c9c8"
+    }
   }
 }

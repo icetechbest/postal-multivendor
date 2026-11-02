@@ -3,6 +3,7 @@ import {
   LocationAccuracy,
   LocationObject,
   LocationSubscription,
+  getForegroundPermissionsAsync,
   requestForegroundPermissionsAsync,
   watchPositionAsync,
 } from "expo-location";
@@ -101,36 +102,49 @@ export const UserProvider = ({ children }: IUserProviderProps) => {
   }
 
   const trackRiderLocation = async () => {
-    locationListener.current = await watchPositionAsync(
-      {
-        accuracy: LocationAccuracy.BestForNavigation,
-        timeInterval: 60000,
-        distanceInterval: 10,
-      },
-      async (location) => {
-        try {
-          const token = await AsyncStorage.getItem(RIDER_TOKEN);
-          if (!token) return;
-          if (
-            coordinatesRef.current?.coords?.latitude ===
-              location.coords?.latitude &&
-            coordinatesRef.current?.coords?.longitude ===
-              location.coords?.longitude
-          )
-            return;
-          coordinatesRef.current = location;
-          client.mutate({
-            mutation: UPDATE_LOCATION,
-            variables: {
-              latitude: location.coords.latitude.toString(),
-              longitude: location.coords.longitude.toString(),
-            },
-          });
-        } catch (error) {
-          console.log(error);
+    // Already tracking
+    if (locationListener.current) return true;
+    try {
+      // Without permission watchPositionAsync throws (unhandled rejection) and
+      // tracking would never start later; the caller retries until it works.
+      const { status } = await getForegroundPermissionsAsync();
+      if (status !== "granted") return false;
+
+      locationListener.current = await watchPositionAsync(
+        {
+          accuracy: LocationAccuracy.BestForNavigation,
+          timeInterval: 60000,
+          distanceInterval: 10,
+        },
+        async (location) => {
+          try {
+            const token = await AsyncStorage.getItem(RIDER_TOKEN);
+            if (!token) return;
+            if (
+              coordinatesRef.current?.coords?.latitude ===
+                location.coords?.latitude &&
+              coordinatesRef.current?.coords?.longitude ===
+                location.coords?.longitude
+            )
+              return;
+            coordinatesRef.current = location;
+            client.mutate({
+              mutation: UPDATE_LOCATION,
+              variables: {
+                latitude: location.coords.latitude.toString(),
+                longitude: location.coords.longitude.toString(),
+              },
+            });
+          } catch (error) {
+            console.log(error);
+          }
         }
-      }
-    );
+      );
+      return true;
+    } catch (error) {
+      console.log("trackRiderLocation error:", error);
+      return false;
+    }
   };
 
   // UseEffects
@@ -219,10 +233,23 @@ export const UserProvider = ({ children }: IUserProviderProps) => {
     });
 
     getUserId();
-    trackRiderLocation();
+
+    // Start tracking now, or as soon as the rider grants the permission.
+    let retryTimer: ReturnType<typeof setInterval> | undefined;
+    trackRiderLocation().then((started) => {
+      if (started) return;
+      retryTimer = setInterval(async () => {
+        if (await trackRiderLocation()) {
+          if (retryTimer) clearInterval(retryTimer);
+        }
+      }, 10000);
+    });
+
     return () => {
+      if (retryTimer) clearInterval(retryTimer);
       if (locationListener.current) {
         locationListener?.current?.remove();
+        locationListener.current = undefined;
       }
 
       if (listener) {

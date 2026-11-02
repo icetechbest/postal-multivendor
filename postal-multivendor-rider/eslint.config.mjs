@@ -24,7 +24,6 @@ export default [
         cy: "readonly",
         it: "readonly",
         React: "readonly",
-        google: "readonly",
         GeolocationPosition: "readonly",
         GeolocationPositionError: "readonly",
         require: "readonly",

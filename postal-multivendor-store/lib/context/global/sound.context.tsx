@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import { useContext, useEffect, useState, createContext } from "react";
-import { Audio } from "expo-av";
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
 // Interface
 import {
   ISoundContext,
@@ -30,12 +30,12 @@ export const SoundProvider = ({ children }: ISoundContextProviderProps) => {
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
         staysActiveInBackground: true,
-        interruptionModeIOS: (Audio.INTERRUPTION_MODE_IOS_DUCK_OTHERS = 2),
+        interruptionModeIOS: InterruptionModeIOS.DuckOthers,
         playsInSilentModeIOS: true,
         shouldDuckAndroid: true,
-        interruptionModeAndroid:
-          (Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS = 2),
-        playThroughEarpieceAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+        // false = loudspeaker. With true the new-order alarm played through the (quiet) earpiece.
+        playThroughEarpieceAndroid: false,
       });
       await newSound.playAsync();
 

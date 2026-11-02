@@ -3,12 +3,11 @@ import BottomSheet, {
   BottomSheetScrollView,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
   Alert,
-  Animated,
   Dimensions,
   Image,
   Linking,
@@ -18,14 +17,6 @@ import {
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import MapView, {
-  LatLng,
-  MapStyleElement,
-  Marker,
-  Polyline,
-  PROVIDER_DEFAULT,
-} from "react-native-maps";
-import { Easing } from "react-native-reanimated";
 
 // Methods
 import { linkToMapsApp } from "@/lib/utils/methods";
@@ -50,14 +41,14 @@ import { RIDER_ORDERS } from "@/lib/apollo/queries";
 import { useApptheme } from "@/lib/context/global/theme.context";
 import { useUserContext } from "@/lib/context/global/user.context";
 import { CustomContinueButton } from "@/lib/ui/useable-components";
-import OsmTiles, {
-  OSM_MAP_TYPE,
-} from "@/lib/ui/useable-components/osm-tiles";
+import OsmMap, {
+  MapLatLng as LatLng,
+  MapMarkerKind,
+} from "@/lib/ui/useable-components/osm-map";
 import AccordionItem from "@/lib/ui/useable-components/accordian";
 import SpinnerComponent from "@/lib/ui/useable-components/spinner";
 import { HomeIcon } from "@/lib/ui/useable-components/svg";
 import WelldoneComponent from "@/lib/ui/useable-components/well-done";
-import { CustomMapStyles } from "@/lib/utils/constants/map";
 import { map_styles } from "@/lib/utils/constants/order-details";
 import { IOrder } from "@/lib/utils/interfaces/order.interface";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -74,7 +65,9 @@ const isValidCoordinate = (coord?: LatLng): boolean => {
     !isNaN(coord.latitude) &&
     !isNaN(coord.longitude) &&
     Math.abs(coord.latitude) <= 90 &&
-    Math.abs(coord.longitude) <= 180
+    Math.abs(coord.longitude) <= 180 &&
+    // (0,0) is the placeholder used while a location is still unknown
+    !(coord.latitude === 0 && coord.longitude === 0)
   );
 };
 
@@ -84,7 +77,7 @@ export default function OrderDetailScreen() {
 
   // Context
   const configuration = useContext(ConfigurationContext);
-  const { ROUTING_URL } = getEnvVars();
+  const { ROUTING_URL, MAP_TILE_URL } = getEnvVars();
   const insets = useSafeAreaInsets();
 
   // Hooks
@@ -105,44 +98,35 @@ export default function OrderDetailScreen() {
     useDetails(order);
 
   // States
-  const [customMapStyles, setCustomMapStyles] = useState<MapStyleElement[]>();
   const [orderId, setOrderId] = useState("");
   const [routeCoordinates, setRouteCoordinates] = useState<LatLng[]>([]);
 
-  // Ref
-  const latitude = useRef(
-    new Animated.Value(locationPin.location.latitude),
-  ).current;
-  const longitude = useRef(
-    new Animated.Value(locationPin.location.longitude),
-  ).current;
-  const waveAnimation = useRef(new Animated.Value(0)).current; // Wave animation value
+  // Map helpers
+  const mapLabels = useMemo(
+    () => ({
+      rider: t("Rider"),
+      restaurant: t("Restaurant"),
+      customer: t("Delivery Address"),
+    }),
+    [t],
+  );
+
+  const onMarkerPress = useCallback(
+    (kind: MapMarkerKind) => {
+      const pin =
+        kind === "rider"
+          ? locationPin
+          : kind === "restaurant"
+            ? restaurantAddressPin
+            : deliveryAddressPin;
+      if (pin?.location && isValidCoordinate(pin.location)) {
+        linkToMapsApp(pin.location, pin.label);
+      }
+    },
+    [locationPin, restaurantAddressPin, deliveryAddressPin],
+  );
 
   // Handler
-  const moveMarker = (newLocation: LatLng) => {
-    // Safety check for valid coordinates before starting animation
-    // This prevents trying to animate to invalid coordinates which could cause crashes
-    if (!isValidCoordinate(newLocation)) {
-      console.warn("Attempted to move marker to invalid location", newLocation);
-      return;
-    }
-
-    // Use a single animation group to prevent potential race conditions
-    // This prevents array index issues by ensuring animations stay in sync
-    Animated.parallel([
-      Animated.timing(latitude, {
-        toValue: newLocation.latitude,
-        duration: 2000,
-        useNativeDriver: false,
-      }),
-      Animated.timing(longitude, {
-        toValue: newLocation.longitude,
-        duration: 2000,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
-
   const openMaps = () => {
     try {
       // Validate all required coordinates to prevent app crashes
@@ -212,82 +196,6 @@ export default function OrderDetailScreen() {
   };
 
   // Use Effect
-  useEffect(() => {
-    const styles_for_map = CustomMapStyles(appTheme);
-    if (currentTheme && appTheme) {
-      setCustomMapStyles(styles_for_map);
-    }
-
-  }, [appTheme, currentTheme]);
-
-  useEffect(() => {
-    // Only set up the animation if locationPin.location exists and is valid
-    // This prevents trying to animate when location data is invalid
-    if (!locationPin?.location || !isValidCoordinate(locationPin.location)) {
-      console.warn("Location pin is invalid or missing:", locationPin);
-      return;
-    }
-
-    // Reference to the timer for proper cleanup
-    let intervalId: NodeJS.Timeout | null = null;
-
-    try {
-      // Safely initialize marker position before starting animations
-      // This prevents issues with undefined initial values
-      const initialLatitude = locationPin.location.latitude;
-      const initialLongitude = locationPin.location.longitude;
-
-      // Initial positioning (without animation)
-      latitude.setValue(initialLatitude);
-      longitude.setValue(initialLongitude);
-
-      // Start periodic updates with proper error handling
-      intervalId = setInterval(() => {
-        if (
-          !locationPin?.location ||
-          !isValidCoordinate(locationPin.location)
-        ) {
-          console.warn("Skipping marker update due to invalid location data");
-          return;
-        }
-
-        const newLatitude = locationPin.location.latitude;
-        const newLongitude = locationPin.location.longitude;
-        moveMarker({ latitude: newLatitude, longitude: newLongitude });
-      }, 5000);
-
-      // Start wave animation
-      const animation = Animated.loop(
-        Animated.timing(waveAnimation, {
-          toValue: 1000,
-          duration: 10000,
-          useNativeDriver: true,
-          easing: Easing.linear,
-        }),
-      );
-
-      animation.start();
-
-      return () => {
-        // Proper cleanup to prevent animation continuing after unmount
-        if (intervalId) {
-          clearInterval(intervalId);
-          intervalId = null;
-        }
-        animation.stop();
-      };
-    } catch (error) {
-      // Error handling to prevent uncaught exceptions
-      console.log("Error in location animation setup:", error);
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-      return () => { };
-    }
-    // Added proper dependency array to control rerunning this effect
-    // This prevents stale closures that might reference outdated data
-  }, [locationPin?.location?.latitude, locationPin?.location?.longitude]);
-
   useEffect(() => {
     if (order) {
       setLocalOrder(order);
@@ -390,107 +298,20 @@ export default function OrderDetailScreen() {
               />
             </TouchableOpacity>
           </View>
-          {locationPin ? (
-            <MapView
-              style={{
-                width: "100%",
-                height: "100%",
-                backgroundColor: appTheme.themeBackground,
-              }}
-              customMapStyle={customMapStyles}
-              showsUserLocation
-              zoomEnabled={true}
-              zoomControlEnabled={true}
-              rotateEnabled={false}
-              initialRegion={{
-                latitude: locationPin?.location?.latitude ?? 0.0,
-                longitude: locationPin?.location?.longitude ?? 0.0,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
-              }}
-              provider={PROVIDER_DEFAULT}
-              mapType={OSM_MAP_TYPE}
-            // customMapStyle={MapStyles}
-            >
-              <OsmTiles />
-              {deliveryAddressPin?.location && (
-                <Marker
-                  coordinate={deliveryAddressPin.location}
-                  title={t("Delivery Address")}
-                  onPress={() => {
-                    linkToMapsApp(
-                      deliveryAddressPin.location,
-                      deliveryAddressPin.label,
-                    );
-                  }}
-                >
-                  <Image
-                    source={require("@/lib/assets/home_icon.png")}
-                    style={{ height: 35, width: 32 }}
-                  />
-                </Marker>
-              )}
-              {restaurantAddressPin?.location && (
-                <Marker
-                  coordinate={restaurantAddressPin.location}
-                  title={t("Restaurant")}
-                  onPress={() => {
-                    linkToMapsApp(
-                      restaurantAddressPin.location,
-                      restaurantAddressPin.label,
-                    );
-                  }}
-                >
-                  <Image
-                    source={require("@/lib/assets/rest_icon.png")}
-                    style={{ height: 35, width: 32 }}
-                  />
-                </Marker>
-              )}
-              {/* Added multiple validation checks for rider marker to prevent array index errors */}
-              {locationPin?.location &&
-                isValidCoordinate(locationPin.location) && (
-                  <Marker.Animated
-                    coordinate={{ latitude, longitude }}
-                    title="Rider"
-                    description={t("This is rider's location")}
-                    onPress={() => {
-                      if (
-                        locationPin?.location &&
-                        isValidCoordinate(locationPin.location)
-                      ) {
-                        linkToMapsApp(locationPin.location, locationPin.label);
-                      }
-                    }}
-                  >
-                    <Image
-                      source={require("@/lib/assets/rider_icon.png")}
-                      style={{ height: 35, width: 32 }}
-                    />
-                  </Marker.Animated>
-                )}
-
-              {/* Route drawn from OSRM (no API key). Falls back to a straight line. */}
-              {routeCoordinates.length > 1 && (
-                <Polyline
-                  coordinates={routeCoordinates}
-                  strokeWidth={2}
-                  strokeColor={"#f95509"}
-                />
-              )}
-              {/* <Button title="Open in Maps" onPress={openMaps} /> */}
-            </MapView>
-          ) : (
-            <View className="flex-1 justify-center items-center gap-y-3">
-              <Text className="text-3xl">{t("Map not loaded.")}</Text>
-              <Text
-                className="text-lg "
-                style={{ color: appTheme.fontSecondColor }}
-              >
-                {t("Please check for permissions.")}
-              </Text>
-            </View>
-          )}
+          <OsmMap
+            style={{ width: "100%", height: "100%" }}
+            dark={currentTheme === "dark"}
+            tileUrl={MAP_TILE_URL}
+            rider={locationPin?.location}
+            restaurant={restaurantAddressPin?.location}
+            customer={deliveryAddressPin?.location}
+            route={routeCoordinates}
+            fitKey={`${localOrder?.orderStatus ?? ""}:${localOrder?._id ?? ""}`}
+            labels={mapLabels}
+            onMarkerPress={onMarkerPress}
+            errorTitle={t("Map not loaded")}
+            retryLabel={t("Retry")}
+          />
         </View>
 
         <BottomSheet

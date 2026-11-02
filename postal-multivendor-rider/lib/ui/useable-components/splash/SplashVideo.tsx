@@ -57,6 +57,15 @@ export default function SplashVideo({ onLoaded, onFinish }: SplashVideoProps) {
 
     // Also try checking status changes for completion
     const statusSubscription = player.addListener('statusChange', (status) => {
+      // A broken / undecodable video must never block the app
+      if (status.status === 'error' && !hasFinished) {
+        setHasLoaded(true);
+        setHasFinished(true);
+        onLoaded?.();
+        onFinish?.();
+        return;
+      }
+
       if (status.status === 'readyToPlay' && !hasLoaded) {
         setHasLoaded(true);
         onLoaded?.();

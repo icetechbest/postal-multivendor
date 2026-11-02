@@ -43,18 +43,9 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({
       const lng = await AsyncStorage.getItem("lang");
       console.log("🚀 ~ handleSetCurrentLanguage ~ lng:", lng);
       
-      // Safe handling of Localization.locale
-      let systemLanguage = "en"; // default fallback
-      
-      if (Localization.locale && typeof Localization.locale === 'string') {
-        systemLanguage = Localization.locale.split("-")[0];
-      } else if (Localization.locales && Array.isArray(Localization.locales) && Localization.locales.length > 0) {
-        const firstLocale = Localization.locales[0];
-        if (firstLocale && typeof firstLocale === 'string') {
-          systemLanguage = firstLocale.split("-")[0];
-        }
-      }
-      
+      // expo-localization >= 15: use getLocales() (locale/locales were removed)
+      const systemLanguage = Localization.getLocales()?.[0]?.languageCode || "en";
+
       console.log("🚀 ~ handleSetCurrentLanguage ~ systemLanguage:", systemLanguage);
 
       // Use stored language preference or fall back to system language

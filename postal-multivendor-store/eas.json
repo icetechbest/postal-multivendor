@@ -7,8 +7,13 @@
       "ios": {
         "simulator": false
       },
-       "android": {
+      "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://postal-multivendor-production.up.railway.app/graphql",
+        "EXPO_PUBLIC_WS_GRAPHQL_URL": "wss://postal-multivendor-production.up.railway.app/graphql",
+        "EXPO_PUBLIC_SERVER_URL": "https://postal-multivendor-production.up.railway.app/"
       }
     },
     "staging": {
@@ -19,12 +24,18 @@
         "buildType": "apk"
       },
       "env": {
-        "SENTRY_AUTH_TOKEN": "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"
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://postal-multivendor-production.up.railway.app/graphql",
+        "EXPO_PUBLIC_WS_GRAPHQL_URL": "wss://postal-multivendor-production.up.railway.app/graphql",
+        "EXPO_PUBLIC_SERVER_URL": "https://postal-multivendor-production.up.railway.app/"
       }
     },
-
     "production": {
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://postal-multivendor-production.up.railway.app/graphql",
+        "EXPO_PUBLIC_WS_GRAPHQL_URL": "wss://postal-multivendor-production.up.railway.app/graphql",
+        "EXPO_PUBLIC_SERVER_URL": "https://postal-multivendor-production.up.railway.app/"
+      }
     }
   },
   "submit": {

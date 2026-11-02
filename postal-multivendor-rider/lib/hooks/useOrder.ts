@@ -6,7 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import { ASSIGN_ORDER } from "../apollo/mutations/order.mutation";
 import { SUBSCRIPTION_ORDERS } from "../apollo/subscriptions";
 import UserContext from "../context/global/user.context";
-import { FlashMessageComponent } from "../ui/useable-components";
+import FlashMessageComponent from "../ui/useable-components/flash-message";
 import { IOrder } from "../utils/interfaces/order.interface";
 import { getRemainingAcceptingTime } from "../utils/methods";
 

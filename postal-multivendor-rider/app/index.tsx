@@ -12,19 +12,19 @@ import { useLocationContext } from "@/lib/context/global/location.context";
 
 // API
 import { RIDER_ORDERS } from "@/lib/apollo/queries";
+import { useApolloClient } from "@apollo/client";
 
 // Constant
 import { RIDER_TOKEN, ROUTES } from "@/lib/utils/constants";
-
-// Service
-import setupApollo from "@/lib/apollo";
 
 // Interfaces
 import { IOrder } from "@/lib/utils/interfaces/order.interface";
 import { useUserContext } from "@/lib/context/global/user.context";
 
 function App() {
-  const client = setupApollo();
+  // Reuse the app-wide client (calling setupApollo() here created a second
+  // client + WebSocket on every render).
+  const client = useApolloClient();
   const router = useRouter();
   const { locationPermission } = useLocationContext();
   const { dataProfile } = useUserContext();

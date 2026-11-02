@@ -203,6 +203,8 @@ export const ar = {
   Language: "اللغة",
   "You don't have any orders yet": "ليس لديك أي طلبات حتى الآن!",
   "No delivered orders yet": "لا توجد طلبات تم تسليمها بعد!",
+  "Retry": "إعادة المحاولة",
+  "Rider": "المندوب",
   "Map not loaded": "لم يتم تحميل الخريطة.",
   "Please check for permissions": "يرجى التحقق من الأذونات.",
   "Pick up": "استلام",

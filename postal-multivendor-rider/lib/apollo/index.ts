@@ -17,14 +17,14 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DefinitionNode, FragmentDefinitionNode } from "graphql";
 import { Subscription } from "zen-observable-ts";
-import useEnvVars from "../../environment";
+import { getStaticEnvVars } from "../../environment";
 import { RIDER_TOKEN } from "../utils/constants";
 import { IRestaurantLocation } from "../utils/interfaces";
 import { calculateDistance } from "../utils/methods/custom-functions";
 // import { onError } from "apollo-link-error";
 
 const setupApollo = () => {
-  const { GRAPHQL_URL, WS_GRAPHQL_URL } = useEnvVars();
+  const { GRAPHQL_URL, WS_GRAPHQL_URL } = getStaticEnvVars();
 
   const cache = new InMemoryCache({
     typePolicies: {

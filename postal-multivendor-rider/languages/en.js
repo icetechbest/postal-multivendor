@@ -205,6 +205,8 @@ export const en = {
   Language: "Language",
   "You don't have any orders yet": "You don't have any orders yet!",
   "No delivered orders yet": "No delivered orders yet!",
+  "Retry": "Retry",
+  "Rider": "Rider",
   "Map not loaded": "Map not loaded.",
   "Please check for permissions": "Please check for permissions.",
   "Pick up": "Pick up",
