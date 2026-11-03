@@ -256,7 +256,11 @@ export const appMutationResolvers = {
   ) => {
     const name = username?.trim();
     if (!name || !password) throw new ValidationError('Username and password are required');
-    const restaurant = await Restaurant.findOne({ username: name }).select('+password');
+    // Usernames are emails typed on a phone: match case-insensitively so keyboard auto-capitalisation doesn't break login.
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const restaurant =
+      (await Restaurant.findOne({ username: name }).select('+password')) ||
+      (await Restaurant.findOne({ username: { $regex: `^${escaped}$`, $options: 'i' } }).select('+password'));
     if (!restaurant || !restaurant.password || !(await comparePassword(password, restaurant.password))) {
       throw new AuthenticationError('Invalid username or password (INVALID_CREDENTIALS)');
     }
