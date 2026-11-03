@@ -122,14 +122,22 @@ function CustomUploadImageComponent({
         } else {
           throw new Error('No image URL returned');
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Upload error:', error);
         // Extract the real reason (GraphQL error, network error, or plain message)
+        const err = error as {
+          graphQLErrors?: { message?: string }[];
+          networkError?: {
+            message?: string;
+            result?: { errors?: { message?: string }[] };
+          };
+          message?: string;
+        };
         const reason: string =
-          error?.graphQLErrors?.[0]?.message ||
-          error?.networkError?.result?.errors?.[0]?.message ||
-          error?.networkError?.message ||
-          error?.message ||
+          err?.graphQLErrors?.[0]?.message ||
+          err?.networkError?.result?.errors?.[0]?.message ||
+          err?.networkError?.message ||
+          err?.message ||
           'Unknown error';
         onSetImageUrl(name, '');
         showToast({
