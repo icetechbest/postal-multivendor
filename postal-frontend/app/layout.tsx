@@ -35,6 +35,24 @@ export default async function RootLayout({
     })(window, document, "clarity", "script", "tjqxrz689j");
           `}
         </Script>
+        {/* Eruda – in-page devtools console (disable with NEXT_PUBLIC_ENABLE_ERUDA=false) */}
+        {process.env.NEXT_PUBLIC_ENABLE_ERUDA !== 'false' && (
+          <>
+            <Script
+              id="eruda-src"
+              src="https://cdn.jsdelivr.net/npm/eruda@3.4.1/eruda.min.js"
+              strategy="afterInteractive"
+            />
+            <Script id="eruda-init" strategy="afterInteractive">
+              {`
+                (function init() {
+                  if (window.eruda) { window.eruda.init(); }
+                  else { setTimeout(init, 200); }
+                })();
+              `}
+            </Script>
+          </>
+        )}
       </head>
       <body>
         <ThemeProvider attribute={'class'}>
