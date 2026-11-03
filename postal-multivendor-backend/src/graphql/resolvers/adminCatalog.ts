@@ -78,6 +78,19 @@ const couponFields = (input: any) => {
 
 const firstOrCreate = async (model: any) => (await model.findOne().sort({ createdAt: 1 })) || null;
 
+/** Upserts the sub-categories sent together with a category (parent id is always the saved category). */
+const saveSubCategories = async (parentCategoryId: string, items?: Array<{ title?: string | null }> | null) => {
+  for (const item of items ?? []) {
+    const title = item?.title?.trim();
+    if (!title) continue;
+    await SubCategory.findOneAndUpdate(
+      { parentCategoryId, title },
+      { $set: { isActive: true }, $setOnInsert: { parentCategoryId, title } },
+      { upsert: true }
+    );
+  }
+};
+
 export const adminCatalogResolvers = {
   Query: {
     reviews: async (_parent: unknown, { restaurant }: { restaurant: string }, context: AuthContext) => {
@@ -113,7 +126,8 @@ export const adminCatalogResolvers = {
       if (!input?.title?.trim()) throw new ValidationError('Category title is required');
       const restaurant = await loadRestaurant(input.restaurant, context);
       try {
-        await Category.create({ title: input.title.trim(), description: input.description, image: input.image, restaurant: restaurant._id });
+        const created = await Category.create({ title: input.title.trim(), description: input.description, image: input.image, restaurant: restaurant._id });
+        await saveSubCategories(String(created._id), input.subCategories);
       } catch (error) {
         if (isDuplicate(error)) throw duplicate('A category with this title');
         throw error;
@@ -128,6 +142,7 @@ export const adminCatalogResolvers = {
       Object.assign(category, definedOnly({ title: input.title?.trim(), description: input.description, image: input.image }));
       try {
         await category.save();
+        await saveSubCategories(String(category._id), input.subCategories);
       } catch (error) {
         if (isDuplicate(error)) throw duplicate('A category with this title');
         throw error;
@@ -459,6 +474,17 @@ const legacyAddonIds = async (restaurantId: string) => {
 
 export const adminCatalogFields = {
   Restaurant: {
+    // Always resolve categories from the Category collection (restaurant-scoped + legacy ids) so categories
+    // created/deleted from the store or admin apps appear immediately and inactive ones never leak through
+    // a stale `restaurant.categories` id array.
+    categories: async (parent: any) => {
+      const restaurantId = idOf(parent._id);
+      const legacyIds = (parent.categories || []).map(idOf).filter((id: string) => Types.ObjectId.isValid(id));
+      return Category.find({
+        isActive: true,
+        $or: [{ restaurant: restaurantId }, ...(legacyIds.length ? [{ _id: { $in: legacyIds } }] : [])],
+      }).sort({ title: 1 });
+    },
     addons: async (parent: any) => {
       const restaurantId = idOf(parent._id);
       const ids = await legacyAddonIds(restaurantId);

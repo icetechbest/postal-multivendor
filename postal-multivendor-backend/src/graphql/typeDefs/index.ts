@@ -871,6 +871,13 @@ const baseTypeDefs = `#graphql
     title: String!
     description: String
     image: String
+    subCategories: [CategorySubCategoryInput!]
+  }
+
+  input CategorySubCategoryInput {
+    _id: ID
+    title: String
+    parentCategoryId: String
   }
 
   input EditCategoryInput {
