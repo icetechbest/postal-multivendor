@@ -198,6 +198,6 @@ export const adminStaffFields = {
     image: (parent: any) => parent.image || parent.avatar || null,
     password: () => null,
     plainPassword: () => null,
-    restaurants: (parent: any) => Restaurant.find({ owner: parent._id }).sort({ createdAt: -1 }),
+    restaurants: async (parent: any) => Restaurant.find({ owner: parent._id }).sort({ createdAt: -1 }).exec(),
   },
 };
