@@ -475,17 +475,22 @@ const LocationBoundsCore: React.FC<ILocationBoundsCoreProps> = ({
   const onMarkerDragEnd = async (
     event: L.LeafletEvent & { target: L.Marker }
   ) => {
-    const latLng = event.target.getLatLng();
-    const next = { lat: latLng.lat, lng: latLng.lng };
+    try {
+      const latLng = event?.target?.getLatLng?.();
+      if (!latLng) return;
+      const next = { lat: latLng.lat, lng: latLng.lng };
 
-    setMarker(next);
-    setCenter(next);
+      setMarker(next);
+      setCenter(next);
 
-    if (deliveryZoneType === 'polygon') {
-      setPath(getPolygonPathFromCircle(next, radiusInMeter || 1));
+      if (deliveryZoneType === 'polygon' && path.length < 3) {
+        setPath(getPolygonPathFromCircle(next, radiusInMeter || 1));
+      }
+
+      await resolveAddressAt(next);
+    } catch (error) {
+      console.warn('Marker drag failed:', error);
     }
-
-    await resolveAddressAt(next);
   };
 
   // Polygon editing (Leaflet-Geoman)
@@ -525,8 +530,13 @@ const LocationBoundsCore: React.FC<ILocationBoundsCoreProps> = ({
     const polygon = polygonRef.current;
     if (!polygon || hideControls || !isPolygonMounted) return;
 
-    polygon.pm.enable({ allowSelfIntersection: false, snappable: true });
-    polygon.pm.enableLayerDrag();
+    try {
+      polygon.pm.enable({ allowSelfIntersection: false, snappable: true });
+      polygon.pm.enableLayerDrag();
+    } catch (error) {
+      console.warn('Polygon editing could not be enabled:', error);
+      return;
+    }
 
     polygon.on('pm:edit', syncPathFromPolygon);
     polygon.on('pm:vertexadded', syncPathFromPolygon);
@@ -538,7 +548,11 @@ const LocationBoundsCore: React.FC<ILocationBoundsCoreProps> = ({
       polygon.off('pm:vertexadded', syncPathFromPolygon);
       polygon.off('pm:vertexremoved', syncPathFromPolygon);
       polygon.off('pm:dragend', syncPathFromPolygon);
-      polygon.pm.disable();
+      try {
+        polygon.pm.disable();
+      } catch {
+        // The layer may already be removed from the map.
+      }
     };
     // Re-run when the polygon is mounted/unmounted or editability changes.
   }, [hideControls, isPolygonMounted, syncPathFromPolygon]);
