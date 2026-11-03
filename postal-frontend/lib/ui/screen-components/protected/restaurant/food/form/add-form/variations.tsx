@@ -184,15 +184,19 @@ export default function VariationAddForm({
           };
         }
       );
+      const foodData = foodContextData?.food?.data;
+      // Send only the fields FoodInput accepts (e.g. top-level isOutOfStock is not part of it)
       const foodInput = {
         _id: foodContextData?.food?._id ?? '',
         restaurant: restaurantId,
-        ...foodContextData?.food?.data,
-        category: foodContextData?.food?.data.category?.code,
-        subCategory: foodContextData?.food?.data.subCategory?.code,
+        title: foodData?.title,
+        description: foodData?.description,
+        image: foodData?.image ?? '',
+        isActive: foodData?.isActive ?? true,
+        category: foodData?.category?.code,
+        subCategory: foodData?.subCategory?.code,
         variations: _variations,
       };
-      delete foodInput.__typename;
       await createFood({
         variables: {
           foodInput: foodInput,

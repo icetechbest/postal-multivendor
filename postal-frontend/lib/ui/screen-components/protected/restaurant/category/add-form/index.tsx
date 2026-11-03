@@ -68,8 +68,10 @@ export default function CategoryAddForm({
     refetch: refetchSubCatrgories,
   } = useQuery<ISubCategoryByParentIdResponse>(GET_SUBCATEGORIES_BY_PARENT_ID, {
     variables: {
-      parentCategoryId: category?._id,
+      parentCategoryId: category?._id ?? '',
     },
+    // A brand-new category has no _id yet, so there is nothing to fetch
+    skip: !category?._id,
   });
   const { restaurantLayoutContextData } = useContext(RestaurantLayoutContext);
   const restaurantId = restaurantLayoutContextData?.restaurantId || '';
@@ -91,7 +93,9 @@ export default function CategoryAddForm({
     _id: '',
     title: '',
     subCategories:
-      subCategories?.subCategoriesByParentId.length && !subCategoriesLoading
+      category?._id &&
+      subCategories?.subCategoriesByParentId?.length &&
+      !subCategoriesLoading
         ? subCategories?.subCategoriesByParentId
         : [{ _id: '', title: '', parentCategoryId: '' }],
     image: '',
@@ -109,14 +113,16 @@ export default function CategoryAddForm({
   // Mutations
   const [deleteSubCategory, { loading: deleteSubCategoryLoading }] =
     useMutation(DELETE_SUB_CATEGORY, {
-      refetchQueries: [
-        {
-          query: GET_SUBCATEGORIES_BY_PARENT_ID,
-          variables: {
-            parentCategoryId: category?._id,
-          },
-        },
-      ],
+      refetchQueries: category?._id
+        ? [
+            {
+              query: GET_SUBCATEGORIES_BY_PARENT_ID,
+              variables: {
+                parentCategoryId: category._id,
+              },
+            },
+          ]
+        : [],
       onCompleted: () => {
         showToast({
           type: 'success',
@@ -195,10 +201,14 @@ export default function CategoryAddForm({
       });
       return;
     }
-    const transformedSubCategories = values.subCategories.map((subCategory) => {
-      delete subCategory.__typename;
-      return subCategory;
-    });
+    // Send only what the API accepts and drop empty rows
+    const transformedSubCategories = values.subCategories
+      .filter((subCategory) => subCategory.title?.trim())
+      .map((subCategory) => ({
+        _id: subCategory._id || undefined,
+        title: subCategory.title.trim(),
+        parentCategoryId: category?._id ?? '',
+      }));
     try {
       await createCategory({
         variables: {
@@ -221,7 +231,7 @@ export default function CategoryAddForm({
     }
   };
   useEffect(() => {
-    refetchSubCatrgories();
+    if (category?._id) refetchSubCatrgories();
   }, [isAddCategoryVisible]);
   if (subCategoriesLoading) return <CustomLoader />;
   if (!subCategoriesLoading)
