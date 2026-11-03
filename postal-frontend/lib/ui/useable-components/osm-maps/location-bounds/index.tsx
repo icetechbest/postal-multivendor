@@ -130,15 +130,15 @@ const LocationBoundsCore: React.FC<ILocationBoundsCoreProps> = ({
   const { MAP_TILE_URL, GEOCODING_URL } = useConfiguration();
 
   // States
-  const [zoom, setZoom] = useState(14);
+  const [zoom, setZoom] = useState(12);
   const [deliveryZoneType, setDeliveryZoneType] = useState(defaultZoneType);
   const [center, setCenter] = useState<ILocationPoint>({
-    lat: -25.2744,
-    lng: 133.7751,
+    lat: 30.0444,
+    lng: 31.2357,
   });
   const [marker, setMarker] = useState<ILocationPoint>({
-    lat: -25.2744,
-    lng: 133.7751,
+    lat: 30.0444,
+    lng: 31.2357,
   });
   const [path, setPath] = useState<ILocationPoint[]>([]);
   const [distance, setDistance] = useState(1);
@@ -251,9 +251,9 @@ const LocationBoundsCore: React.FC<ILocationBoundsCoreProps> = ({
   }: {
     restaurant: IRestaurantProfile;
   }) {
+    const profileCoords = restaurant?.location?.coordinates;
     const isLocationZero =
-      +restaurant?.location?.coordinates[0] === 0 &&
-      +restaurant?.location?.coordinates[1] === 0;
+      !profileCoords || (+profileCoords[0] === 0 && +profileCoords[1] === 0);
     if (!restaurant || isLocationZero) return;
 
     setCenter({
@@ -265,7 +265,7 @@ const LocationBoundsCore: React.FC<ILocationBoundsCoreProps> = ({
       lng: +restaurant.location.coordinates[0],
     });
     setPath(
-      restaurant?.deliveryBounds
+      restaurant?.deliveryBounds?.coordinates?.[0]
         ? transformPolygon(restaurant.deliveryBounds.coordinates[0])
         : []
     );
@@ -295,8 +295,8 @@ const LocationBoundsCore: React.FC<ILocationBoundsCoreProps> = ({
       getRestaurantDeliveryZoneInfo;
 
     const coordinates = {
-      lng: location.coordinates[0],
-      lat: location.coordinates[1],
+      lng: location?.coordinates?.[0] ?? 0,
+      lat: location?.coordinates?.[1] ?? 0,
     };
 
     if (!hideControls && zoneAddress) {
@@ -305,7 +305,8 @@ const LocationBoundsCore: React.FC<ILocationBoundsCoreProps> = ({
     }
 
     const isLocationZero =
-      +location?.coordinates[0] === 0 && +location?.coordinates[1] === 0;
+      !location?.coordinates ||
+      (+location.coordinates[0] === 0 && +location.coordinates[1] === 0);
 
     if (!isLocationZero) {
       setCenter(coordinates);
