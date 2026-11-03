@@ -14,7 +14,6 @@ export const GET_VENDORS = gql`
         _id
       }
     }
-    vendorCount @client
   }
 `;
 
