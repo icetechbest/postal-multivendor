@@ -1096,5 +1096,8 @@
     "weak": "Faible",
     "medium": "Moyen",
     "strong": "Fort"
-  }
+  },
+  "Add Shop Category": "Add Shop Category",
+  "Add Cuisine": "Add Cuisine",
+  "custom": "Custom"
 }

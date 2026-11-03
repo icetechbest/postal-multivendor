@@ -1104,5 +1104,8 @@
     "weak": "弱い",
     "medium": "普通",
     "strong": "強い"
-  }
+  },
+  "Add Shop Category": "Add Shop Category",
+  "Add Cuisine": "Add Cuisine",
+  "custom": "Custom"
 }

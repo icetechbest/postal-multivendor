@@ -1103,5 +1103,8 @@
     "weak": "Слабый",
     "medium": "Средний",
     "strong": "Сильный"
-  }
+  },
+  "Add Shop Category": "Add Shop Category",
+  "Add Cuisine": "Add Cuisine",
+  "custom": "Custom"
 }

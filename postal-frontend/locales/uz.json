@@ -1103,5 +1103,8 @@
   "Prefered File size": "Afzal fayl hajmi",
   "Payment Required": "To'lov talab qilinadi",
   "Please complete your purchase to gain full access to the product": "Mahsulotga to'liq kirish uchun xaridingizni yakunlang",
-  "As commission rate is a %age value so it cannot exceed a max value of 100": "Komissiya stavkasi % qiymat bo'lgani uchun u 100 maksimal qiymatdan oshmasligi kerak"
+  "As commission rate is a %age value so it cannot exceed a max value of 100": "Komissiya stavkasi % qiymat bo'lgani uchun u 100 maksimal qiymatdan oshmasligi kerak",
+  "Add Shop Category": "Add Shop Category",
+  "Add Cuisine": "Add Cuisine",
+  "custom": "Custom"
 }

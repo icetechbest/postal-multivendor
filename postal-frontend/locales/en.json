@@ -1097,5 +1097,8 @@
     "weak": "Weak",
     "medium": "Medium",
     "strong": "Strong"
-  }
+  },
+  "Add Shop Category": "Add Shop Category",
+  "Add Cuisine": "Add Cuisine",
+  "custom": "Custom"
 }

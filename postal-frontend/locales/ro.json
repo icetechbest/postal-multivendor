@@ -1092,5 +1092,8 @@
   "Prefered File size": "Dimensiune fișier preferată",
   "Payment Required": "Plată necesară",
   "Please complete your purchase to gain full access to the product": "Completați achiziția pentru acces complet la produs",
-  "As commission rate is a %age value so it cannot exceed a max value of 100": "Deoarece rata comision este o valoare procentuală, nu poate depăși valoarea maximă de 100"
+  "As commission rate is a %age value so it cannot exceed a max value of 100": "Deoarece rata comision este o valoare procentuală, nu poate depăși valoarea maximă de 100",
+  "Add Shop Category": "Add Shop Category",
+  "Add Cuisine": "Add Cuisine",
+  "custom": "Custom"
 }

@@ -1103,5 +1103,8 @@
     "weak": "อ่อน",
     "medium": "ปานกลาง",
     "strong": "แข็งแรง"
-  }
+  },
+  "Add Shop Category": "Add Shop Category",
+  "Add Cuisine": "Add Cuisine",
+  "custom": "Custom"
 }
