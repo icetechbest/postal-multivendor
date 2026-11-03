@@ -173,11 +173,12 @@ export const adminRestaurantResolvers = {
       if (!input.image) throw new ValidationError('Restaurant image is required');
 
       const fields = await profileFields(input);
-      let coordinates: [number, number] = [0, 0];
-      if (input.location) {
-        if (!validateCoordinates(input.location.latitude, input.location.longitude)) throw new ValidationError('Invalid coordinates');
-        coordinates = [input.location.longitude, input.location.latitude];
+      // A restaurant without real coordinates can never appear in the app's nearby list
+      // (it would sit at 0,0 – far outside the delivery radius), so require a location.
+      if (!input.location || !validateCoordinates(input.location.latitude, input.location.longitude) || (input.location.latitude === 0 && input.location.longitude === 0)) {
+        throw new ValidationError('Restaurant location (latitude/longitude) is required');
       }
+      const coordinates: [number, number] = [input.location.longitude, input.location.latitude];
       const restaurant = await Restaurant.create({
         deliveryTime: 30,
         minimumOrder: 0,
