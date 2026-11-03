@@ -2,10 +2,14 @@ import Constants from 'expo-constants';
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, string | undefined>;
 
+// On a real phone `localhost` is the phone itself, so never default to it.
+const DEFAULT_SERVER_URL = 'https://postal-multivendor-production.up.railway.app';
+const DEFAULT_WS_SERVER_URL = 'wss://postal-multivendor-production.up.railway.app';
+
 export const SERVER_URL =
-  process.env.EXPO_PUBLIC_SERVER_URL || extra.serverUrl || 'http://localhost:8001';
+  process.env.EXPO_PUBLIC_SERVER_URL || extra.serverUrl || DEFAULT_SERVER_URL;
 export const WS_SERVER_URL =
-  process.env.EXPO_PUBLIC_WS_SERVER_URL || extra.wsServerUrl || 'ws://localhost:8001';
+  process.env.EXPO_PUBLIC_WS_SERVER_URL || extra.wsServerUrl || DEFAULT_WS_SERVER_URL;
 
 export const GRAPHQL_HTTP_URL = `${SERVER_URL.replace(/\/$/, '')}/graphql`;
 export const GRAPHQL_WS_URL = `${WS_SERVER_URL.replace(/\/$/, '')}/graphql`;

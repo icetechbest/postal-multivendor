@@ -134,7 +134,7 @@ export const DISPATCH_TABLE_COLUMNS = () => {
     if (ridersData) {
       const newRiderOptions = ridersData.riders.map((rider) => ({
         label: rider.name,
-        code: rider.name.toUpperCase(),
+        code: (rider.name ?? '').toUpperCase(),
         _id: rider._id,
       }));
       setRiderOptions(newRiderOptions); // Set the rider options

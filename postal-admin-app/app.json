@@ -27,6 +27,7 @@
         "backgroundColor": "#0f766e"
       },
       "permissions": [
+        "INTERNET",
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
         "POST_NOTIFICATIONS",

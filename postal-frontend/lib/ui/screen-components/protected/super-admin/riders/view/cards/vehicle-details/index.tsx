@@ -44,12 +44,12 @@ const VehicleDetails = ({ loading, rider }: IRiderDetailsProps) => {
               <Image
                 fill
                 src={
-                  rider?.licenseDetails?.image?.startsWith('http') // Check if it's an absolute URL
+                  rider?.vehicleDetails?.image?.startsWith('http') // Check if it's an absolute URL
                     ? rider?.vehicleDetails?.image
                     : `https://static.vecteezy.com/system/resources/previews/031/602/489/large_2x/blank-license-plate-icon-design-templates-free-vector.jpg` // Add the base URL if it's a relative path
                 }
                 alt="license image"
-                objectFit="cover"
+                className="object-cover"
               />
             </div>
           ) : (

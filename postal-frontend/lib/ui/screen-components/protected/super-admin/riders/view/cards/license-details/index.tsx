@@ -56,8 +56,8 @@ const LicenseDetails = ({ loading, rider }: IRiderDetailsProps) => {
               <Image
                 fill
                 src={
-                  rider?.vehicleDetails?.image?.startsWith('http') // Check if it's an absolute URL
-                    ? rider?.vehicleDetails?.image
+                  rider?.licenseDetails?.image?.startsWith('http') // Check if it's an absolute URL
+                    ? rider?.licenseDetails?.image
                     : `https://static.vecteezy.com/system/resources/previews/003/415/255/non_2x/drivers-license-a-plastic-identity-card-outline-vector.jpg` // Add the base URL if it's a relative path
                 }
                 alt="license image"
