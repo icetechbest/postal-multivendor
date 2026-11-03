@@ -207,7 +207,7 @@ export const adminTypeDefs = `#graphql
   type RestaurantYearlyStats { salesAmount: [Float!]! ordersCount: [Int!]! }
   type PaymentBreakdownData { total_orders: Int total_sales: Float total_sales_without_delivery: Float total_delivery_fee: Float }
   type PaymentBreakdownEntry { _type: String data: PaymentBreakdownData }
-  type PaymentMethodBreakdown { all: PaymentBreakdownEntry cod: PaymentBreakdownEntry card: PaymentBreakdownEntry }
+  type PaymentMethodBreakdown { all: [PaymentBreakdownEntry!]! cod: [PaymentBreakdownEntry!]! card: [PaymentBreakdownEntry!]! }
   type VendorStoreDetails { _id: ID restaurantName: String totalOrders: Int totalSales: Float pickUpCount: Int deliveryCount: Int }
   type VendorStatsCard { totalRestaurants: Int! totalOrders: Int! totalSales: Float! totalDeliveries: Int! }
   type LiveMonitorData { online_stores: Int! cancelled_orders: Int! delayed_orders: Int! ratings: Float! }

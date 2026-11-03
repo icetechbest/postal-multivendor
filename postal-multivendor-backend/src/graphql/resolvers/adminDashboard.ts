@@ -106,15 +106,16 @@ export const adminDashboardResolvers = {
       const range = dateRange(null, args.starting_date, args.ending_date);
       const rows = await Order.aggregate([
         { $match: { restaurant: oid(args.restaurant, 'restaurant'), orderStatus: { $in: DONE }, ...(range ? { createdAt: range } : {}) } },
-        { $group: { _id: { $cond: [{ $eq: ['$paymentMethod', 'COD'] }, 'COD', 'CARD'] }, orders: { $sum: 1 }, sales: { $sum: '$orderAmount' }, delivery: { $sum: '$deliveryCharges' } } },
+        { $group: { _id: { method: { $cond: [{ $eq: ['$paymentMethod', 'COD'] }, 'COD', 'CARD'] }, pickup: { $eq: ['$isPickedUp', true] } }, orders: { $sum: 1 }, sales: { $sum: '$orderAmount' }, delivery: { $sum: '$deliveryCharges' } } },
       ]);
-      const entry = (type: string, keys: string[]) => {
-        const picked = rows.filter((r) => keys.includes(r._id));
+      const entry = (type: string, methods: string[], pickup?: boolean) => {
+        const picked = rows.filter((r) => methods.includes(r._id.method) && (pickup === undefined || r._id.pickup === pickup));
         const sales = picked.reduce((a, r) => a + r.sales, 0);
         const delivery = picked.reduce((a, r) => a + r.delivery, 0);
         return { _type: type, data: { total_orders: picked.reduce((a, r) => a + r.orders, 0), total_sales: round2(sales + delivery), total_sales_without_delivery: round2(sales), total_delivery_fee: round2(delivery) } };
       };
-      return { all: entry('all', ['COD', 'CARD']), cod: entry('cod', ['COD']), card: entry('card', ['CARD']) };
+      const group = (methods: string[]) => [entry('all', methods), entry('isPickedUp', methods, true), entry('isNotPickedUp', methods, false)];
+      return { all: group(['COD', 'CARD']), cod: group(['COD']), card: group(['CARD']) };
     },
 
     getStoreDetailsByVendorId: async (_parent: unknown, args: any, context: AuthContext) => {
