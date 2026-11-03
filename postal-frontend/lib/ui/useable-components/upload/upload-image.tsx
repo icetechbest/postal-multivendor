@@ -122,17 +122,25 @@ function CustomUploadImageComponent({
         } else {
           throw new Error('No image URL returned');
         }
-      } catch (error) {
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        // Extract the real reason (GraphQL error, network error, or plain message)
+        const reason: string =
+          error?.graphQLErrors?.[0]?.message ||
+          error?.networkError?.result?.errors?.[0]?.message ||
+          error?.networkError?.message ||
+          error?.message ||
+          'Unknown error';
         onSetImageUrl(name, '');
         showToast({
           type: 'error',
           title: title,
-          message: `${fileTypes.includes('video/webm') || fileTypes.includes('video/mp4') ? t('File') : t('Image')} ${t('Upload Failed')}`,
-          duration: 2500,
+          message: `${fileTypes.includes('video/webm') || fileTypes.includes('video/mp4') ? t('File') : t('Image')} ${t('Upload Failed')}: ${reason}`,
+          duration: 6000,
         });
         setImageValidationErr({
           bool: true,
-          msg: 'Upload failed',
+          msg: reason,
         });
         setImageFile('');
       } finally {
