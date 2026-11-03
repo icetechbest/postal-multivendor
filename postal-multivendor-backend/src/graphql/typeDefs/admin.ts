@@ -130,7 +130,7 @@ export const adminTypeDefs = `#graphql
     updateSupportTicketStatus(input: UpdateSupportTicketInput!): SupportTicket!
 
     updateWithdrawReqStatus(id: ID!, status: String!): WithdrawUpdateResponse!
-    createWithdrawRequest(requestAmount: Float!, restaurantId: ID): WithdrawRequest!
+    createWithdrawRequest(requestAmount: Float!, restaurantId: ID, userId: String): WithdrawRequest!
   }
 
   extend type Subscription {
@@ -219,9 +219,9 @@ export const adminTypeDefs = `#graphql
   type PlatformEarnings { marketplaceCommission: Float deliveryCommission: Float tax: Float platformFee: Float totalEarnings: Float }
   type RiderEarnings { riderId: User deliveryFee: Float tip: Float totalEarnings: Float }
   type StoreEarnings { storeId: Restaurant orderAmount: Float totalEarnings: Float }
-  type Earning { _id: ID! orderId: String orderType: String paymentMethod: String createdAt: Date updatedAt: Date platformEarnings: PlatformEarnings riderEarnings: RiderEarnings storeEarnings: StoreEarnings }
+  type Earning { _id: ID! orderId: String orderType: String paymentMethod: String createdAt: Date updatedAt: Date platformEarnings: PlatformEarnings riderEarnings: RiderEarnings storeEarnings: StoreEarnings grandTotalEarnings: GrandTotalEarnings }
   type GrandTotalEarnings { platformTotal: Float riderTotal: Float storeTotal: Float }
-  type EarningsData { earnings: [Earning!]! grandTotalEarnings: GrandTotalEarnings }
+  type EarningsData { earnings: [Earning!]! grandTotalEarnings: GrandTotalEarnings message: String }
   type EarningsResponse { success: Boolean! message: String data: EarningsData pagination: PaginationTotal }
   type BankDetails { accountName: String bankName: String accountNumber: String accountCode: String }
   type TransactionRecord { _id: ID! amountCurrency: String status: String transactionId: String userType: String userId: String amountTransferred: Float createdAt: Date toBank: BankDetails rider: User store: Restaurant }

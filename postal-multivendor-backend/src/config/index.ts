@@ -28,6 +28,15 @@ interface Config {
     password: string;
     from: string;
   };
+  whatsapp: {
+    token: string;
+    phoneNumberId: string;
+    otpTemplate: string;
+    templateLanguage: string;
+    apiVersion: string;
+    defaultCountryCode: string;
+    otpButton: boolean;
+  };
   twilio: {
     accountSid: string;
     authToken: string;
@@ -127,6 +136,15 @@ const config: Config = {
     user: process.env.EMAIL_USER || '',
     password: process.env.EMAIL_PASSWORD || '',
     from: process.env.EMAIL_FROM || 'noreply@postal.local',
+  },
+  whatsapp: {
+    token: process.env.WHATSAPP_TOKEN || '',
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+    otpTemplate: process.env.WHATSAPP_OTP_TEMPLATE || '',
+    templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'en_US',
+    apiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
+    defaultCountryCode: process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || '20',
+    otpButton: process.env.WHATSAPP_OTP_BUTTON !== 'false',
   },
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID || '',

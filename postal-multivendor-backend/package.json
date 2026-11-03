@@ -18,7 +18,9 @@
     "verify:admin-contract": "tsx scripts/verify-admin-contract.ts",
     "test:smoke": "tsx scripts/integration-smoke.ts",
     "test:login": "tsx scripts/verify-login.ts",
-    "test:phone-login": "tsx scripts/verify-phone-login.ts"
+    "test:phone-login": "tsx scripts/verify-phone-login.ts",
+    "validate:clients": "tsx scripts/validate-client-docs.ts ../store-app/lib && tsx scripts/validate-client-docs.ts ../rider-app/lib",
+    "test:app-compat": "npm run build && node --test test/app-compat.test.js"
   },
   "keywords": [
     "food-delivery",

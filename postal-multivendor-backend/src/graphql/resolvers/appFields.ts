@@ -7,6 +7,7 @@ import { Review } from '../../models/Review';
 import { User } from '../../models/User';
 import { Zone } from '../../models/Zone';
 import { Address } from '../../models/Address';
+import { ChatMessage } from '../../models/ChatMessage';
 import { AuthContext } from '../../middleware/auth';
 import config from '../../config';
 import { getReviewData, idOf } from './appHelpers';
@@ -53,6 +54,13 @@ export const appFieldResolvers: Record<string, any> = {
       return Restaurant.find({ _id: { $in: values }, isActive: true });
     },
     zone: async (parent: any) => parent.zone?._id ? parent.zone : parent.zone ? Zone.findById(parent.zone) : null,
+    timeZone: (parent: any) => parent.timeZone ?? null,
+    workSchedule: (parent: any) =>
+      (parent.workSchedule || []).map((day: any) => ({
+        day: day.day,
+        enabled: Boolean(day.enabled),
+        slots: (day.slots || []).map((slot: any) => ({ startTime: slot.startTime ?? null, endTime: slot.endTime ?? null })),
+      })),
   },
   Address: {
     id: (parent: any) => idOf(parent._id || parent.id),
@@ -115,6 +123,20 @@ export const appFieldResolvers: Record<string, any> = {
     completionTime: (parent: any) => parent.completionTime || parent.completedAt || null,
     isRinged: (parent: any) => Boolean(parent.isRinged),
     isRiderRinged: (parent: any) => Boolean(parent.isRiderRinged),
+    // The store/rider apps read `chat` straight off an order. Messages are stored in
+    // ChatMessage; expose the latest 50 as the app's flat Chat shape.
+    chat: async (parent: any) => {
+      if (Array.isArray(parent.chat)) return parent.chat;
+      const orderId = idOf(parent._id || parent.id);
+      if (!orderId) return [];
+      const messages = await ChatMessage.find({ order: orderId }).sort({ createdAt: 1 }).limit(50);
+      return messages.map((message: any) => ({
+        user: message.user?.name || message.user?.id || '',
+        message: message.message,
+        images: [],
+        isActive: true,
+      }));
+    },
   },
   OrderItem: {
     id: (parent: any) => idOf(parent._id || parent.id),

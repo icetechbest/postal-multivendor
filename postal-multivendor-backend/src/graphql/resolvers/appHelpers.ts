@@ -183,3 +183,29 @@ export const restaurantList = (restaurants: any[]) => {
   }));
   return { offers: [], sections, restaurants };
 };
+
+/** Resolve the dispatch zone for an order from its restaurant. */
+export const orderZoneId = async (order: any): Promise<string> => {
+  const restaurantId = idOf(order?.restaurant);
+  if (!restaurantId) return '';
+  const restaurant = await Restaurant.findById(restaurantId).select('zone');
+  return idOf((restaurant as any)?.zone);
+};
+
+/** Push an assignment change to a rider's live queue (origin: "new" | "remove"). */
+export const publishRiderAssignment = async (orderId: any, riderId: any, origin: 'new' | 'remove'): Promise<void> => {
+  const order = await getPopulatedOrder(orderId);
+  await pubsub.publish(`RIDER_ASSIGN_${idOf(riderId)}`, {
+    subscriptionAssignRider: { order, origin },
+  });
+};
+
+/** Push an unassigned order into (origin "new") or out of (origin "remove") a zone feed. */
+export const publishZoneOrder = async (orderId: any, origin: 'new' | 'remove'): Promise<void> => {
+  const order = await getPopulatedOrder(orderId);
+  const zoneId = await orderZoneId(order);
+  if (!zoneId) return;
+  await pubsub.publish(`ZONE_ORDERS_${zoneId}`, {
+    subscriptionZoneOrders: { zoneId, origin, order },
+  });
+};

@@ -45,8 +45,10 @@ export const deliveryFilter = (orderType?: string | null): Record<string, any> |
 const earningsMatch = async (args: any, context: AuthContext) => {
   const match: Record<string, any> = { orderStatus: { $in: DONE } };
   const and: any[] = [];
-  const userType = args.userType && args.userType !== 'ALL' ? args.userType : null;
-  const userId = cleanId(args.userId);
+  // Riders may only read their own earnings, regardless of what they send.
+  const isRider = context.user?.role === 'RIDER';
+  const userType = isRider ? 'RIDER' : args.userType && args.userType !== 'ALL' ? args.userType : null;
+  const userId = isRider ? context.user!.userId : cleanId(args.userId);
   const stores = await scopedStoreIds(context);
 
   if (userType === 'RIDER') match.rider = userId ? new Types.ObjectId(assertObjectId(userId, 'rider')) : { $exists: true, $ne: null };
@@ -62,7 +64,11 @@ const earningsMatch = async (args: any, context: AuthContext) => {
   if (typeFilter) and.push(typeFilter);
   if (args.paymentMethod && args.paymentMethod !== 'ALL') match.paymentMethod = args.paymentMethod;
   if (args.search) match.orderId = { $regex: escapeRegex(args.search), $options: 'i' };
-  const range = dateRange(null, args.dateFilter?.starting_date, args.dateFilter?.ending_date);
+  const range = dateRange(
+    null,
+    args.dateFilter?.starting_date ?? args.dateFilter?.startDate,
+    args.dateFilter?.ending_date ?? args.dateFilter?.endDate
+  );
   if (range) match.createdAt = range;
   if (and.length) match.$and = and;
   return match;
@@ -137,9 +143,9 @@ export const adminUserResolvers = {
     },
 
     earnings: async (_parent: unknown, args: any, context: AuthContext) => {
-      requireRole(context, ['ADMIN', 'STAFF', 'VENDOR']);
+      requireRole(context, ['ADMIN', 'STAFF', 'VENDOR', 'RIDER']);
       const match = await earningsMatch(args, context);
-      const p = pageParams(args.pagination?.pageNo, args.pagination?.pageSize, 10);
+      const p = pageParams(args.pagination?.pageNo ?? args.pagination?.page, args.pagination?.pageSize ?? args.pagination?.limit, 10);
       const [orders, total, sums] = await Promise.all([
         Order.find(match).populate('restaurant', 'name username commissionRate').populate('rider', 'name username').sort({ createdAt: -1 }).skip(p.skip).limit(p.limit),
         Order.countDocuments(match),
@@ -159,36 +165,49 @@ export const adminUserResolvers = {
         ]),
       ]);
       const sum = sums[0] || { commission: 0, tax: 0, orderAmount: 0, rider: 0 };
+      const grandTotalEarnings = {
+        platformTotal: round2(sum.commission + sum.tax),
+        riderTotal: round2(sum.rider),
+        storeTotal: round2(sum.orderAmount - sum.commission),
+      };
       return {
         success: true,
         message: 'Earnings fetched',
         data: {
-          earnings: orders.map(earningRow),
-          grandTotalEarnings: {
-            platformTotal: round2(sum.commission + sum.tax),
-            riderTotal: round2(sum.rider),
-            storeTotal: round2(sum.orderAmount - sum.commission),
-          },
+          // The mobile apps read grandTotalEarnings from each row; expose the
+          // same aggregate on every row so both shapes keep working.
+          earnings: orders.map((order) => ({ ...earningRow(order), grandTotalEarnings })),
+          grandTotalEarnings,
+          message: 'Earnings fetched',
         },
         pagination: { total },
       };
     },
 
     transactionHistory: async (_parent: unknown, args: any, context: AuthContext) => {
-      requireRole(context, ['ADMIN', 'STAFF', 'VENDOR']);
+      requireRole(context, ['ADMIN', 'STAFF', 'VENDOR', 'RIDER']);
       const filter: Record<string, any> = {};
-      if (args.userType && args.userType !== 'ALL') filter.userType = args.userType;
+      if (context.user!.role === 'RIDER') {
+        filter.userType = 'RIDER';
+        filter.userId = context.user!.userId;
+      } else if (args.userType && args.userType !== 'ALL') filter.userType = args.userType;
       const stores = await scopedStoreIds(context);
       const userId = cleanId(args.userId);
-      if (stores) {
+      if (context.user!.role === 'RIDER') {
+        // already scoped above
+      } else if (stores) {
         if (userId) await assertStoreAccess(userId, context);
         filter.userType = 'STORE';
         filter.userId = userId ? userId : { $in: stores.map(String) };
       } else if (userId) filter.userId = userId;
       if (args.search) filter.transactionId = { $regex: escapeRegex(args.search), $options: 'i' };
-      const range = dateRange(null, args.dateFilter?.starting_date, args.dateFilter?.ending_date);
+      const range = dateRange(
+        null,
+        args.dateFilter?.starting_date ?? args.dateFilter?.startDate,
+        args.dateFilter?.ending_date ?? args.dateFilter?.endDate
+      );
       if (range) filter.createdAt = range;
-      const p = pageParams(args.pagination?.pageNo, args.pagination?.pageSize, 10);
+      const p = pageParams(args.pagination?.pageNo ?? args.pagination?.page, args.pagination?.pageSize ?? args.pagination?.limit, 10);
       const [data, total] = await Promise.all([
         Transaction.find(filter).populate('rider').populate('store').sort({ createdAt: -1 }).skip(p.skip).limit(p.limit),
         Transaction.countDocuments(filter),
@@ -375,7 +394,9 @@ export const adminUserResolvers = {
     },
 
     // ---------- withdrawals
-    createWithdrawRequest: async (_parent: unknown, args: { requestAmount: number; restaurantId?: string }, context: AuthContext) => {
+    createWithdrawRequest: async (_parent: unknown, args: { requestAmount: number; restaurantId?: string; userId?: string }, context: AuthContext) => {
+      // `userId` is accepted for mobile-app compatibility but never trusted;
+      // the authenticated principal is always the source of truth.
       requireRole(context, ['VENDOR', 'RIDER']);
       const amount = round2(args.requestAmount);
       if (!(amount > 0)) throw new ValidationError('Request amount must be greater than zero');
@@ -433,6 +454,12 @@ export const adminUserResolvers = {
 };
 
 export const adminUserFields = {
+  EarningsData: {
+    message: (parent: any) => parent?.message ?? 'Earnings fetched',
+  },
+  Earning: {
+    grandTotalEarnings: (parent: any) => parent?.grandTotalEarnings ?? null,
+  },
   User: {
     status: (parent: any) => parent.status || (parent.isActive === false ? 'INACTIVE' : 'ACTIVE'),
     assigned: async (parent: any) => parent.role === 'RIDER' && Boolean(await Order.exists({ rider: parent._id, orderStatus: { $in: ['ASSIGNED', 'PICKED'] } })),

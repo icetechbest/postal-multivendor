@@ -1,4 +1,5 @@
 import { adminTypeDefs } from './admin';
+import { appCompatTypeDefs } from './appCompat';
 
 const baseTypeDefs = `#graphql
   scalar Date
@@ -59,16 +60,17 @@ const baseTypeDefs = `#graphql
     login(email: String, password: String, type: String!, appleId: String, name: String, notificationToken: String): AuthPayload!
     """Phone-number-only sign-in / sign-up. Verifies the OTP sent by
     sendOtpToPhoneNumber and creates the customer account on first use."""
+    restaurantLogin(username: String, password: String, notificationToken: String): RestaurantLoginResponse!
     riderLogin(username: String, password: String, notificationToken: String, timeZone: String): AuthPayload!
     loginWithPhone(phone: String!, otp: String!, name: String, notificationToken: String): AuthPayload!
     createUser(userInput: UserInput!): AuthPayload!
     refreshToken(refreshToken: String!): AuthPayload!
     updateUser(updateUserInput: UpdateUserInput!): User!
     changePassword(oldPassword: String!, newPassword: String!): Boolean!
-    forgotPassword(email: String!): Result!
+    forgotPassword(email: String!, otp: String): Result!
     resetPassword(password: String!, email: String!, token: String): Result!
-    sendOtpToEmail(email: String!): Result!
-    sendOtpToPhoneNumber(phone: String!): Result!
+    sendOtpToEmail(email: String!, otp: String): Result!
+    sendOtpToPhoneNumber(phone: String!, otp: String): Result!
     verifyOtp(phone: String, email: String, otp: String!): Result!
     ownerLogin(email: String!, password: String!): AuthPayload!
     emailExist(email: String!): User
@@ -88,8 +90,8 @@ const baseTypeDefs = `#graphql
     updateOrderStatus(id: ID!, status: String!, reason: String): Order!
     assignRider(id: String, orderId: String, riderId: String!): Order!
     abortOrder(id: String!, reason: String): Order!
-    cancelOrder(id: ID!, reason: String!): Order!
-    reviewOrder(reviewInput: ReviewInput!): Order!
+    cancelOrder(id: ID, _id: String, reason: String!): Order!
+    reviewOrder(reviewInput: ReviewInput, order: String, rating: Int, description: String): Order!
     createAddress(addressInput: AddressInput!): User!
     editAddress(addressInput: AddressInput!): User!
     deleteAddress(id: ID!): User!
@@ -115,7 +117,7 @@ const baseTypeDefs = `#graphql
     editRider(riderInput: RiderInput!): User!
     deleteRider(id: String!): User!
     toggleAvailablity(id: String!): User!
-    updateRiderLocation(latitude: Float!, longitude: Float!): User!
+    updateRiderLocation(latitude: String, longitude: String): User!
     sendChatMessage(message: ChatMessageInput!, orderId: ID!): ChatResponse!
     createActivity(groupId: String!, module: String!, screenPath: String!, type: String!, details: String!): Boolean!
   }
@@ -695,6 +697,13 @@ const baseTypeDefs = `#graphql
   type RiderCreds {
     riderUsername: String
     riderPassword: String
+    restaurantUsername: String
+    restaurantPassword: String
+  }
+
+  type RestaurantLoginResponse {
+    token: String!
+    restaurantId: String!
   }
 
   type AuthPayload {
@@ -973,4 +982,4 @@ const baseTypeDefs = `#graphql
   }
 `;
 
-export const typeDefs = baseTypeDefs + '\n' + adminTypeDefs;
+export const typeDefs = baseTypeDefs + '\n' + adminTypeDefs + '\n' + appCompatTypeDefs;

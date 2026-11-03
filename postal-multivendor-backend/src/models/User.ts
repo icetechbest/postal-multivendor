@@ -48,6 +48,14 @@ export interface IUser extends Document {
   bussinessDetails?: Record<string, unknown>;
   licenseDetails?: Record<string, unknown>;
   vehicleDetails?: Record<string, unknown>;
+  /** IANA timezone reported by the rider app (e.g. "Asia/Riyadh"). */
+  timeZone?: string;
+  /** Weekly availability configured from the rider app. */
+  workSchedule?: Array<{
+    day: string;
+    enabled?: boolean;
+    slots?: Array<{ startTime?: string; endTime?: string }>;
+  }>;
   sessionResetAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -136,6 +144,15 @@ const userSchema = new Schema<IUser>(
     bussinessDetails: Schema.Types.Mixed,
     licenseDetails: Schema.Types.Mixed,
     vehicleDetails: Schema.Types.Mixed,
+    timeZone: String,
+    workSchedule: [
+      {
+        _id: false,
+        day: String,
+        enabled: { type: Boolean, default: false },
+        slots: [{ _id: false, startTime: String, endTime: String }],
+      },
+    ],
     sessionResetAt: { type: Date, select: false },
     image: String,
     accountNumber: String,

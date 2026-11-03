@@ -15,14 +15,14 @@ import { User } from '../../models/User';
 import { Zone } from '../../models/Zone';
 import config from '../../config';
 import { AuthContext, requireAuth, requireRider } from '../../middleware/auth';
-import { sendEmail, sendSms } from '../../services/notifications';
+import { sendEmail, sendOtpMessage } from '../../services/notifications';
 import { pubsub } from '../../services/pubsub';
 import { comparePassword, generateOTP, generateOrderId, hashPassword } from '../../utils/crypto';
 import { sanitizeUser } from '../../utils/sanitize';
 import { AuthenticationError, AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../../utils/errors';
 import { generateRefreshToken, generateToken, verifyRefreshToken } from '../../utils/jwt';
 import { validateEmail, validatePassword } from '../../utils/validation';
-import { distanceKm, ensureOrderAccess, getPopulatedOrder, getUser, idOf, pointInPolygon, publishOrderPlaced, publishOrderUpdate, validCoordinates } from './appHelpers';
+import { distanceKm, ensureOrderAccess, getPopulatedOrder, getUser, idOf, pointInPolygon, publishOrderPlaced, publishOrderUpdate, publishRiderAssignment, publishZoneOrder, validCoordinates } from './appHelpers';
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 const normalizeTarget = (value: string) => value.includes('@') ? value.trim().toLowerCase() : value.trim();
@@ -87,7 +87,7 @@ const issueOtp = async (rawTarget: string, channel: 'email' | 'phone'): Promise<
   );
   const body = `Your Postal verification code is ${otp}. It expires in ${config.otp.expiryMinutes} minutes.`;
   if (channel === 'email') await sendEmail(target, 'Your Postal verification code', body);
-  else await sendSms(target, body);
+  else await sendOtpMessage(target, otp, config.otp.expiryMinutes);
   return 'Verification code sent';
 };
 
@@ -163,7 +163,11 @@ const updateOrderStatus = async (id: string, status: string, reason: string | un
     order.paidAmount = order.total;
   }
   await order.save();
-  return publishOrderUpdate(order._id, 'updateOrderStatus');
+  const updated = await publishOrderUpdate(order._id, 'updateOrderStatus');
+  if (!order.rider && ['PENDING', 'ACCEPTED'].includes(normalized)) {
+    await publishZoneOrder(order._id, 'new');
+  }
+  return updated;
 };
 
 const abortOrder = async (id: string, reason: string | undefined, context: AuthContext) => {
@@ -246,6 +250,26 @@ export const appMutationResolvers = {
    * The account is created on first successful verification, so sign-up and
    * sign-in share the same flow. No email or password is involved.
    */
+  restaurantLogin: async (
+    _parent: unknown,
+    { username, password, notificationToken }: { username?: string; password?: string; notificationToken?: string }
+  ) => {
+    const name = username?.trim();
+    if (!name || !password) throw new ValidationError('Username and password are required');
+    const restaurant = await Restaurant.findOne({ username: name }).select('+password');
+    if (!restaurant || !restaurant.password || !(await comparePassword(password, restaurant.password))) {
+      throw new AuthenticationError('Invalid username or password (INVALID_CREDENTIALS)');
+    }
+    // The store app talks to the same vendor-protected API, so it signs in as the store's owner.
+    const owner = await User.findById(restaurant.owner);
+    if (!owner || !owner.isActive) throw new AuthenticationError('Account is deactivated');
+    if (notificationToken) {
+      owner.notificationToken = notificationToken;
+      await owner.save();
+    }
+    const token = generateToken({ userId: idOf(owner._id), email: owner.email, role: owner.role });
+    return { token, restaurantId: idOf(restaurant._id) };
+  },
   riderLogin: async (
     _parent: unknown,
     { username, password, notificationToken }: { username?: string; password?: string; notificationToken?: string; timeZone?: string }
@@ -615,7 +639,9 @@ export const appMutationResolvers = {
       ...Array.from(quantities.entries()).map(([foodId, quantity]) => Food.findByIdAndUpdate(foodId, { $inc: { orderCount: quantity } })),
       Restaurant.findByIdAndUpdate(restaurant._id, { $inc: { totalOrders: 1 } }),
     ]);
-    return publishOrderPlaced(order._id);
+    const placed = await publishOrderPlaced(order._id);
+    if (order.orderStatus !== 'AWAITING_ADMIN') await publishZoneOrder(order._id, 'new');
+    return placed;
   },
   updateOrderStatus: async (_parent: unknown, { id, status, reason }: { id: string; status: string; reason?: string }, context: AuthContext) =>
     updateOrderStatus(id, status, reason, context),
@@ -628,28 +654,37 @@ export const appMutationResolvers = {
     if (order.orderStatus === 'AWAITING_ADMIN') throw new ValidationError('This order is waiting for admin confirmation');
     const rider = await User.findOne({ _id: riderId, role: 'RIDER', isActive: true });
     if (!rider) throw new ValidationError('Invalid rider');
+    const previousRider = idOf(order.rider);
     order.rider = rider._id;
     order.orderStatus = 'ASSIGNED';
     order.riderAssignedAt = new Date();
     order.assignedAt = order.riderAssignedAt;
     await order.save();
-    return publishOrderUpdate(order._id, 'assignRider');
+    const updated = await publishOrderUpdate(order._id, 'assignRider');
+    await publishRiderAssignment(order._id, rider._id, 'new');
+    // Tell the previously assigned rider to drop the order from their list.
+    if (previousRider && previousRider !== idOf(rider._id)) await publishRiderAssignment(order._id, previousRider, 'remove');
+    await publishZoneOrder(order._id, 'remove');
+    return updated;
   },
   abortOrder: async (_parent: unknown, { id, reason }: { id: string; reason?: string }, context: AuthContext) => abortOrder(id, reason, context),
-  cancelOrder: async (_parent: unknown, { id, reason }: { id: string; reason: string }, context: AuthContext) => abortOrder(id, reason, context),
-  reviewOrder: async (_parent: unknown, { reviewInput }: { reviewInput: any }, context: AuthContext) => {
+  cancelOrder: async (_parent: unknown, { id, _id, reason }: { id?: string; _id?: string; reason: string }, context: AuthContext) => abortOrder(id || _id || '', reason, context),
+  reviewOrder: async (_parent: unknown, args: { reviewInput?: any; order?: string; rating?: number; description?: string }, context: AuthContext) => {
     requireAuth(context);
-    const order = await Order.findById(reviewInput.order);
+    // Accept both the legacy `reviewInput` object and the flat argument shape
+    // used by the Store/Rider apps.
+    const input = args.reviewInput || { order: args.order, rating: args.rating, description: args.description };
+    const order = await Order.findById(input.order);
     if (!order) throw new NotFoundError('Order');
     if (idOf(order.user) !== context.user!.userId) throw new AuthorizationError();
     if (!['DELIVERED', 'COMPLETED'].includes(order.orderStatus)) throw new ValidationError('Order must be completed before review');
     if (order.isReviewed) throw new ValidationError('Order already reviewed');
-    if (!Number.isInteger(reviewInput.rating) || reviewInput.rating < 1 || reviewInput.rating > 5) throw new ValidationError('Rating must be between 1 and 5');
+    if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) throw new ValidationError('Rating must be between 1 and 5');
     const review = await Review.create({
       order: order._id,
       restaurant: order.restaurant,
-      rating: reviewInput.rating,
-      description: reviewInput.description || '',
+      rating: input.rating,
+      description: input.description || '',
     });
     order.review = review._id;
     order.isReviewed = true;
@@ -665,12 +700,15 @@ export const appMutationResolvers = {
     }
     return getPopulatedOrder(order._id);
   },
-  updateRiderLocation: async (_parent: unknown, { latitude, longitude }: { latitude: number; longitude: number }, context: AuthContext) => {
+  updateRiderLocation: async (_parent: unknown, { latitude, longitude }: { latitude?: string | number; longitude?: string | number }, context: AuthContext) => {
     requireRider(context);
-    if (!validCoordinates(latitude, longitude)) throw new ValidationError('Invalid coordinates');
+    // The mobile apps send numeric strings; older callers send numbers.
+    const lat = typeof latitude === 'number' ? latitude : Number(latitude);
+    const lng = typeof longitude === 'number' ? longitude : Number(longitude);
+    if (!validCoordinates(lat, lng)) throw new ValidationError('Invalid coordinates');
     const rider = await User.findByIdAndUpdate(
       context.user!.userId,
-      { $set: { location: { type: 'Point', coordinates: [longitude, latitude] } } },
+      { $set: { location: { type: 'Point', coordinates: [lng, lat] } } },
       { new: true }
     );
     if (!rider) throw new NotFoundError('Rider');

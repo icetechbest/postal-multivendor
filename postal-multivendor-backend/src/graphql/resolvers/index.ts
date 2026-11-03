@@ -8,6 +8,7 @@ import { appQueryResolvers } from './appQueries';
 import { appMutationResolvers } from './appMutations';
 import { appSubscriptionResolvers } from './appSubscriptions';
 import { appFieldResolvers } from './appFields';
+import { appCompatResolvers } from './appCompat';
 import { adminConfigResolvers } from './adminConfig';
 import { adminCatalogResolvers, adminCatalogFields } from './adminCatalog';
 import { adminRestaurantResolvers, adminRestaurantFields } from './adminRestaurants';
@@ -75,6 +76,7 @@ export const resolvers: Record<string, any> = {
     ...catalogResolvers.Query,
     ...orderResolvers.Query,
     ...appQueryResolvers,
+    ...appCompatResolvers.Query,
   }),
   Mutation: mergeRoot('Mutation', {
     ...authResolvers.Mutation,
@@ -83,10 +85,12 @@ export const resolvers: Record<string, any> = {
     ...catalogResolvers.Mutation,
     ...orderResolvers.Mutation,
     ...appMutationResolvers,
+    ...appCompatResolvers.Mutation,
   }),
   Subscription: mergeRoot('Subscription', {
     ...orderResolvers.Subscription,
     ...appSubscriptionResolvers,
+    ...appCompatResolvers.Subscription,
   }),
   ...mergeFields(appFieldResolvers),
 };
