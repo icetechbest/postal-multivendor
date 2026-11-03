@@ -118,10 +118,11 @@ const restaurantSchema = new Schema<IRestaurant>(
       type: {
         type: String,
         enum: ['Polygon'],
-        default: 'Polygon',
+        default: undefined,
       },
       coordinates: {
         type: [[[Number]]],
+        default: undefined,
       },
     },
     username: String,
@@ -267,6 +268,14 @@ const restaurantSchema = new Schema<IRestaurant>(
 );
 
 // Indexes
+// A Polygon without coordinates is rejected by the 2dsphere index, so drop deliveryBounds unless it holds a real polygon.
+restaurantSchema.pre('validate', function () {
+  const bounds: any = this.get('deliveryBounds');
+  if (!bounds || !Array.isArray(bounds.coordinates) || bounds.coordinates.length === 0) {
+    this.set('deliveryBounds', undefined);
+  }
+});
+
 restaurantSchema.index({ location: '2dsphere' });
 restaurantSchema.index({ deliveryBounds: '2dsphere' });
 restaurantSchema.index({ owner: 1 });
