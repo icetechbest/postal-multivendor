@@ -112,6 +112,7 @@ function CustomUploadImageComponent({
         const imageUrl = data?.uploadImageToS3?.imageUrl;
         
         if (imageUrl) {
+          setImageValidationErr({ bool: false, msg: '' });
           onSetImageUrl(name, imageUrl);
           showToast({
             type: 'info',
@@ -122,33 +123,17 @@ function CustomUploadImageComponent({
         } else {
           throw new Error('No image URL returned');
         }
-      } catch (error: unknown) {
-        console.error('Upload error:', error);
-        // Extract the real reason (GraphQL error, network error, or plain message)
-        const err = error as {
-          graphQLErrors?: { message?: string }[];
-          networkError?: {
-            message?: string;
-            result?: { errors?: { message?: string }[] };
-          };
-          message?: string;
-        };
-        const reason: string =
-          err?.graphQLErrors?.[0]?.message ||
-          err?.networkError?.result?.errors?.[0]?.message ||
-          err?.networkError?.message ||
-          err?.message ||
-          'Unknown error';
+      } catch (error) {
         onSetImageUrl(name, '');
         showToast({
           type: 'error',
           title: title,
-          message: `${fileTypes.includes('video/webm') || fileTypes.includes('video/mp4') ? t('File') : t('Image')} ${t('Upload Failed')}: ${reason}`,
-          duration: 6000,
+          message: `${fileTypes.includes('video/webm') || fileTypes.includes('video/mp4') ? t('File') : t('Image')} ${t('Upload Failed')}`,
+          duration: 2500,
         });
         setImageValidationErr({
           bool: true,
-          msg: reason,
+          msg: 'Upload failed',
         });
         setImageFile('');
       } finally {

@@ -1,3 +1,4 @@
+import { imageUrlSchema } from './image-url';
 import * as Yup from 'yup';
 
 export const CuisineFormSchema = Yup.object().shape({
@@ -15,5 +16,5 @@ export const CuisineFormSchema = Yup.object().shape({
     label: Yup.string().required('Required'),
     code: Yup.string().required('Required'),
   }).required('Please choose one'),
-  image: Yup.string().url().required("Image is Required"),
+  image: imageUrlSchema().required("Image is Required"),
 });

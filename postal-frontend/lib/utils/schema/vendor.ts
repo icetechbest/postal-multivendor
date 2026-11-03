@@ -1,3 +1,4 @@
+import { imageUrlSchema } from './image-url';
 import * as Yup from 'yup';
 // import { PasswordErrors } from '../constants';
 import { IDropdownSelectItem } from '../interfaces';
@@ -35,7 +36,7 @@ export const VendorSchema = Yup.object().shape({
     .nullable()
     .oneOf([Yup.ref('password'), null], 'Password must match')
     .required('Required'),
-  image: Yup.string().url('Invalid image URL').required('Required'),
+  image: imageUrlSchema('Invalid image URL').required('Required'),
   phoneNumber: Yup.string()
     .required('Required')
     .min(5, 'Minimum 5 Numbers are Required'),
@@ -54,7 +55,7 @@ export const VendorSchemaForStoreForm = Yup.object().shape({
     .nullable()
     .oneOf([Yup.ref('password'), null], 'Password must match')
     .required('Required'),
-  image: Yup.string().url('Invalid image URL').required('Required'),
+  image: imageUrlSchema('Invalid image URL').required('Required'),
 });
 
 export const VendorEditSchema = Yup.object().shape({
@@ -123,7 +124,7 @@ export const VendorSchemaOnStoreCreate = Yup.object().shape({
     .nullable()
     .oneOf([Yup.ref('password'), null], 'Password must match')
     .required('Required'),
-  image: Yup.string().url('Invalid image URL').required('Required'),
+  image: imageUrlSchema('Invalid image URL').required('Required'),
   phoneNumber: Yup.string()
     .required('Required')
     .min(5, 'Minimum 5 Numbers are Required'),

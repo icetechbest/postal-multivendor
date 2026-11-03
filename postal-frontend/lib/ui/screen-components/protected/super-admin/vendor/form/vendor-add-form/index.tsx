@@ -208,6 +208,7 @@ export default function VendorAddForm({
                   handleSubmit,
                   isSubmitting,
                   setFieldValue,
+                  setFieldError,
                 }) => {
                   return (
                     <Form onSubmit={handleSubmit}>
@@ -347,7 +348,10 @@ export default function VendorAddForm({
                           maxFileWidth={1080}
                           maxFileSize={MAX_SQUARE_FILE_SIZE}
                           orientation="SQUARE"
-                          onSetImageUrl={setFieldValue}
+                          onSetImageUrl={(field: string, value: string) => {
+                            setFieldValue(field, value, false);
+                            setFieldError(field, undefined);
+                          }}
                           existingImageUrl={values.image}
                           showExistingImage={isEditingVendor ? true : false}
                           style={{
