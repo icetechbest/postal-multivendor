@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import { Configuration } from '../models/Configuration';
 import { CoinTransaction } from '../models/CoinTransaction';
 import { Order } from '../models/Order';
@@ -16,6 +17,9 @@ export const DEFAULT_COIN_SETTINGS: CoinSettings = {
   perCurrencyUnit: 0.1,
   coinValue: 0.5,
 };
+
+/** Normalises an id (ObjectId | string | unknown) into a typed ObjectId for Mongoose filters. */
+const toObjectId = (value: unknown): Types.ObjectId => new Types.ObjectId(String(value));
 
 const toNumber = (value: unknown, fallback: number): number => {
   const parsed = typeof value === 'number' ? value : Number(value);
@@ -52,7 +56,7 @@ export const calculateCoins = (orderAmount: number, settings: CoinSettings): num
  */
 export const awardCoinsForOrder = async (orderId: unknown): Promise<number> => {
   try {
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(toObjectId(orderId));
     if (!order || !['DELIVERED', 'COMPLETED'].includes(order.orderStatus)) return 0;
     if (order.coinsEarned > 0) return 0;
 
@@ -91,13 +95,13 @@ export const awardCoinsForOrder = async (orderId: unknown): Promise<number> => {
  * balance is too low (nothing is deducted in that case).
  */
 export const deductCoins = async (userId: unknown, coins: number): Promise<boolean> => {
-  const updated = await User.findOneAndUpdate({ _id: userId, coins: { $gte: coins } }, { $inc: { coins: -coins } }, { new: true });
+  const updated = await User.findOneAndUpdate({ _id: toObjectId(userId), coins: { $gte: coins } }, { $inc: { coins: -coins } }, { new: true });
   return Boolean(updated);
 };
 
 /** Puts coins back (used when placing the order fails after they were deducted). */
 export const returnCoins = async (userId: unknown, coins: number): Promise<void> => {
-  await User.updateOne({ _id: userId }, { $inc: { coins } });
+  await User.updateOne({ _id: toObjectId(userId) }, { $inc: { coins } });
 };
 
 /**
@@ -107,7 +111,7 @@ export const returnCoins = async (userId: unknown, coins: number): Promise<void>
 export const refundCoinsForOrder = async (orderId: unknown): Promise<number> => {
   try {
     const order = await Order.findOneAndUpdate(
-      { _id: orderId, orderStatus: 'CANCELLED', coinsUsed: { $gt: 0 }, coinsRefunded: { $ne: true } },
+      { _id: toObjectId(orderId), orderStatus: 'CANCELLED', coinsUsed: { $gt: 0 }, coinsRefunded: { $ne: true } },
       { $set: { coinsRefunded: true } },
       { new: true }
     );
