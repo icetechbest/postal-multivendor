@@ -15,6 +15,18 @@ export const DeliverytRateValidationSchema = Yup.object().shape({
   deliveryRate: Yup.number().required('required'),
 });
 
+export const CoinsValidationSchema = Yup.object().shape({
+  coinsEnabled: Yup.boolean(),
+  coinsPerCurrencyUnit: Yup.number()
+    .typeError('Must be a number')
+    .min(0, 'Must be 0 or more')
+    .required('required'),
+  coinValue: Yup.number()
+    .typeError('Must be a number')
+    .min(0, 'Must be 0 or more')
+    .required('required'),
+});
+
 export const TwilioValidationSchema = Yup.object().shape({
   twilioAccountSid: Yup.string().required('required'),
   twilioAuthToken: Yup.string().required('required'),

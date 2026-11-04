@@ -28,7 +28,7 @@ function PhoneOtp(props) {
     otpError,
     seconds,
     loading,
-    updateUserLoading,
+    loginLoading,
     onCodeFilled,
     resendOtp,
     currentTheme,
@@ -91,9 +91,9 @@ function PhoneOtp(props) {
               >
                 {t('enterOtp')}
               </TextDefault>
-              {/* <TextDefault H5 bold textColor={currentTheme.fontfourthColor}>
-                {phone}
-              </TextDefault> */}
+              <TextDefault H5 bold textColor={currentTheme.newFontcolor} style={alignment.MTsmall} isRTL>
+                {t('otpSentTo')} {phone}
+              </TextDefault>
             </View>
             <View>
               <OTPInputView
@@ -126,14 +126,13 @@ function PhoneOtp(props) {
             </View>
           </View>
           <View>
-            {loading ||
-              (updateUserLoading && (
-                <Spinner
-                  backColor={currentTheme.themeBackground}
-                  spinnerColor={currentTheme.main}
-                  size='large'
-                />
-              ))}
+            {loginLoading && (
+              <Spinner
+                backColor={currentTheme.themeBackground}
+                spinnerColor={currentTheme.main}
+                size='large'
+              />
+            )}
           </View>
           <View style={styles().btnContainer}>
             <View style={alignment.MBxSmall}>
@@ -148,7 +147,7 @@ function PhoneOtp(props) {
               </TextDefault>
             </View>
             <View>
-              {loading || updateUserLoading ? (
+              {loading ? (
                 <Spinner
                   backColor={currentTheme.color3}
                   spinnerColor={currentTheme.color3}

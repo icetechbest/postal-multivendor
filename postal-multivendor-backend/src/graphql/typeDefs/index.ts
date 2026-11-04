@@ -51,6 +51,7 @@ const baseTypeDefs = `#graphql
     reviewsByRestaurant(restaurant: String!): ReviewData!
     getCountryByIso(iso: String!): Country
     chat(order: ID!): [ChatMessage!]!
+    coinTransactions(limit: Int): [CoinTransaction!]!
     riders: [User!]!
     rider(id: String): User
     availableRiders(zone: ID): [User!]!
@@ -75,7 +76,7 @@ const baseTypeDefs = `#graphql
     ownerLogin(email: String!, password: String!): AuthPayload!
     emailExist(email: String!): User
     phoneExist(phone: String!): User
-    Deactivate(isActive: Boolean!, email: String!): User
+    Deactivate(isActive: Boolean!, email: String): User
     pushToken(token: String): User
     updateNotificationStatus(offerNotification: Boolean!, orderNotification: Boolean!, isOrderNotification: Boolean): User!
     createRestaurant(restaurant: RestaurantInput, owner: ID, restaurantInput: RestaurantInput): Restaurant!
@@ -86,7 +87,7 @@ const baseTypeDefs = `#graphql
     editFood(foodInput: FoodInput!): Restaurant!
     deleteFood(id: String!, restaurant: String, categoryId: String): Food!
     updateFoodOutOfStock(id: String!, restaurant: String, categoryId: String, isAvailable: Boolean): Boolean!
-    placeOrder(restaurant: String!, orderInput: [OrderInput!]!, paymentMethod: String!, couponCode: String, tipping: Float!, taxationAmount: Float!, address: AddressInput!, orderDate: String!, isPickedUp: Boolean!, deliveryCharges: Float!, instructions: String): Order!
+    placeOrder(restaurant: String!, orderInput: [OrderInput!]!, paymentMethod: String!, couponCode: String, tipping: Float!, taxationAmount: Float!, address: AddressInput!, orderDate: String!, isPickedUp: Boolean!, deliveryCharges: Float!, instructions: String, coinsToUse: Int): Order!
     updateOrderStatus(id: ID!, status: String!, reason: String): Order!
     assignRider(id: String, orderId: String, riderId: String!): Order!
     abortOrder(id: String!, reason: String): Order!
@@ -142,6 +143,7 @@ const baseTypeDefs = `#graphql
     emailIsVerified: Boolean
     phoneVerified: Boolean
     emailVerified: Boolean
+    coins: Int
     userType: String
     role: String
     isActive: Boolean
@@ -353,6 +355,9 @@ const baseTypeDefs = `#graphql
     isPickedUp: Boolean
     isRinged: Boolean
     isRiderRinged: Boolean
+    coinsEarned: Int
+    coinsUsed: Int
+    coinsDiscount: Float
     instructions: String
     zone: Zone
     selectedPrepTime: Int
@@ -492,6 +497,9 @@ const baseTypeDefs = `#graphql
     cloudinaryUploadUrl: String
     cloudinaryApiKey: String
     vapidKey: String
+    coinsEnabled: Boolean
+    coinsPerCurrencyUnit: Float
+    coinValue: Float
   }
 
   type Taxation {
@@ -575,6 +583,16 @@ const baseTypeDefs = `#graphql
     id: ID!
     message: String
     user: ChatUser
+    createdAt: Date
+  }
+
+  type CoinTransaction {
+    _id: ID!
+    type: String!
+    coins: Int!
+    orderAmount: Float
+    note: String
+    order: ID
     createdAt: Date
   }
 

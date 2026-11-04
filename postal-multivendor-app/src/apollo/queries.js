@@ -327,6 +327,7 @@ export const profile = `
             name
             phone
             phoneIsVerified
+            coins
             email
             emailIsVerified
             notificationToken
@@ -401,6 +402,7 @@ export const order = `query Order($id:String!){
     }
     paymentMethod
     orderAmount
+    coinsEarned
     orderDate
     expectedTime
     isPickedUp
@@ -507,10 +509,13 @@ export const getConfiguration = `query Configuration{
     currencySymbol
     deliveryRate
     twilioEnabled
+    androidClientID 
+    iOSClientID 
     appAmplitudeApiKey 
     mapTileUrl
     geocodingUrl
     routingUrl
+    expoClientID 
     customerAppSentryUrl 
     termsAndConditions 
     privacyPolicy
@@ -520,6 +525,9 @@ export const getConfiguration = `query Configuration{
     skipMobileVerification
     skipEmailVerification
     costType
+    coinsEnabled
+    coinsPerCurrencyUnit
+    coinValue
   }
 }`
 
@@ -920,6 +928,7 @@ export const orderFragment = `fragment NewOrder on Order {
   }
   paymentMethod
   paidAmount
+  coinsEarned
   orderAmount
   orderStatus
   orderDate
@@ -977,6 +986,17 @@ export const chat = `query Chat($order: ID!) {
       id
       name
     }
+    createdAt
+  }
+}`
+
+export const coinTransactions = `query CoinTransactions($limit: Int) {
+  coinTransactions(limit: $limit) {
+    _id
+    type
+    coins
+    orderAmount
+    note
     createdAt
   }
 }`

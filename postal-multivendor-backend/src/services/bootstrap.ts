@@ -15,7 +15,7 @@ export const bootstrapDatabase = async (): Promise<void> => {
   const configurationDefaults = {
     email: config.email.user,
     password: config.email.password,
-    emailName: 'Postal',
+    emailName: 'Genie',
     enableEmail: boolEnv('EMAIL_ENABLED', Boolean(config.email.user && config.email.password)),
     currency: process.env.CURRENCY || 'USD',
     currencySymbol: process.env.CURRENCY_SYMBOL || '$',

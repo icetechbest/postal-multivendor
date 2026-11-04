@@ -20,7 +20,6 @@ import {
 import gql from 'graphql-tag'
 import { scale, verticalScale } from '../../utils/scaling'
 import { FavouriteRestaurant } from '../../apollo/queries'
-import ChangePassword from './ChangePassword'
 import { theme } from '../../utils/themeColors'
 import UserContext from '../../context/User'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
@@ -139,12 +138,6 @@ function Profile(props) {
     <SafeAreaView
       style={{ flex: 1, backgroundColor: currentTheme.themeBackground }}
     >
-      <ChangePassword
-        modalVisible={modelVisible}
-        hideModal={() => {
-          setModalVisible(false)
-        }}
-      />
       <View style={styles(currentTheme).formContainer}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : null}

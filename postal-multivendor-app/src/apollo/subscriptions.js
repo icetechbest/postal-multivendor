@@ -7,6 +7,7 @@ export const subscriptionOrder = `subscription SubscriptionOrder($id:String!){
         }
         completionTime
         preparationTime
+        coinsEarned
     }
   }`
 

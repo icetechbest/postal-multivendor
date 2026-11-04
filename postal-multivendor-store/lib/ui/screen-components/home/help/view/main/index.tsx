@@ -40,7 +40,7 @@ export default function HelpMain() {
 
   const openWhatsAppChat = async () => {
     try {
-      const phoneNumber = "+1(307)776%E2%80%918999";
+      const phoneNumber = "+201220800288";
 
       if (Platform.OS === "android") {
         const androidUrl = `whatsapp://send?phone=${phoneNumber}`;

@@ -69,6 +69,7 @@ export const adminTypeDefs = `#graphql
     saveTwilioConfiguration(configurationInput: TwilioConfigurationInput!): Configuration!
     saveVerificationsToggle(configurationInput: VerificationConfigurationInput!): Configuration!
     saveCurrencyConfiguration(configurationInput: CurrencyConfigurationInput!): Configuration!
+    saveCoinsConfiguration(configurationInput: CoinsConfigurationInput!): Configuration!
 
     editAddon(addonInput: editAddonInput): Restaurant!
     deleteAddon(id: String!, restaurant: String!): Restaurant!
@@ -307,4 +308,5 @@ export const adminTypeDefs = `#graphql
   input TwilioConfigurationInput { twilioAccountSid: String twilioAuthToken: String twilioPhoneNumber: String twilioEnabled: Boolean twilioWhatsAppNumber: String }
   input VerificationConfigurationInput { skipEmailVerification: Boolean skipMobileVerification: Boolean skipWhatsAppOTP: Boolean }
   input CurrencyConfigurationInput { currency: String currencySymbol: String }
+  input CoinsConfigurationInput { coinsEnabled: Boolean coinsPerCurrencyUnit: Float coinValue: Float }
 `;

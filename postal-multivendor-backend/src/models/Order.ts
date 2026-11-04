@@ -44,6 +44,12 @@ export interface IOrder extends Document {
   review?: any;
   isReviewed: boolean;
   couponCode?: string;
+  /** Loyalty coins credited to the customer when the order was delivered. */
+  coinsEarned: number;
+  /** Coins the customer paid with, and the money they were worth at order time. */
+  coinsUsed: number;
+  coinsDiscount: number;
+  coinsRefunded?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -139,6 +145,10 @@ const orderSchema = new Schema<IOrder>({
   review: { type: Schema.Types.ObjectId, ref: 'Review' },
   isReviewed: { type: Boolean, default: false },
   couponCode: String,
+  coinsEarned: { type: Number, default: 0, min: 0 },
+  coinsUsed: { type: Number, default: 0, min: 0 },
+  coinsDiscount: { type: Number, default: 0, min: 0 },
+  coinsRefunded: { type: Boolean, default: false },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

@@ -4,15 +4,15 @@ import countryCallingCodes from '../screens/PhoneNumber/countryCodes'
 
 export const useCountryFromIP = () => {
   const [country, setCountry] = useState({
-    callingCode: ['972'],
-    cca2: 'IL',
-    currency: ['ILS'],
-    flag: 'flag-il',
-    name: 'Israel',
-    region: 'Asia',
-    subregion: 'Western Asia'
+    callingCode: ['20'],
+    cca2: 'EG',
+    currency: ['EGP'],
+    flag: 'flag-eg',
+    name: 'Egypt',
+    region: 'Africa',
+    subregion: 'Northern Africa'
   })
-  const [currentCountry, setCurrentCountry] = useState('IL')
+  const [currentCountry, setCurrentCountry] = useState('EG')
   const [ipAddress, setIpAddress] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)

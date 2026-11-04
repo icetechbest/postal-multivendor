@@ -1,6 +1,7 @@
 /* eslint-disable indent */
+import { getTipVariations } from '../../utils/tipping'
 import React, { useState, useEffect, useContext, useRef } from 'react'
-import { View, ScrollView, TouchableOpacity, StatusBar, Platform, Alert, TextInput, Dimensions } from 'react-native'
+import { View, ScrollView, TouchableOpacity, StatusBar, Platform, Alert, TextInput, Dimensions, Switch } from 'react-native'
 import { useMutation, useQuery } from '@apollo/client'
 import gql from 'graphql-tag'
 import { useSafeAreaInsets, initialWindowMetrics } from 'react-native-safe-area-context'
@@ -10,6 +11,7 @@ import { Modalize } from 'react-native-modalize'
 import { getTipping, orderFragment } from '../../apollo/queries'
 import { applyCoupon, placeOrder } from '../../apollo/mutations'
 import { scale } from '../../utils/scaling'
+import { calculateCoins, coinsToMoney, isCoinsEnabled } from '../../utils/coins'
 import { theme } from '../../utils/themeColors'
 import MapView from '../../components/Map'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
@@ -66,7 +68,7 @@ function Checkout(props) {
   )
 
   const configuration = useContext(ConfigurationContext)
-  const { isLoggedIn, profile, clearCart, restaurant: cartRestaurant, cart, cartCount, updateCart, isPickup, setIsPickup, instructions, coupon, setCoupon } = useContext(UserContext)
+  const { isLoggedIn, profile, refetchProfile, clearCart, restaurant: cartRestaurant, cart, cartCount, updateCart, isPickup, setIsPickup, instructions, coupon, setCoupon } = useContext(UserContext)
 
   const themeContext = useContext(ThemeContext)
   const { location } = useContext(LocationContext)
@@ -90,6 +92,8 @@ function Checkout(props) {
   const [tipAmount, setTipAmount] = useState('')
   const calenderModalRef = useRef(null)
   const [paymentMode, setPaymentMode] = useState('COD')
+  const [useCoins, setUseCoins] = useState(false)
+  const [coinsInput, setCoinsInput] = useState('')
 
   const { loading, data } = useRestaurant(cartRestaurant)
   console.log('data?.restaurant?._id', data?.restaurant?._id)
@@ -359,6 +363,10 @@ function Checkout(props) {
 
   async function onCompleted(data) {
     setOrderConfirmedTime(new Date())
+    // The coin balance changed (spent now, earned later): refresh it.
+    try {
+      refetchProfile && refetchProfile()
+    } catch (e) {}
     await Analytics.track(Analytics.events.ORDER_PLACED, {
       userId: data?.placeOrder.user._id,
       orderId: data?.placeOrder.orderId,
@@ -456,13 +464,37 @@ function Checkout(props) {
     return (itemTotal + deliveryAmount).toFixed(2)
   }
 
-  function calculateTotal() {
+  function calculateTotalBeforeCoins() {
     let total = 0
     const delivery = isPickup ? 0 : deliveryCharges
     total += +calculatePrice(delivery, true)
     total += +taxCalculation()
     total += +calculateTip()
-    return parseFloat(total).toFixed(2)
+    return total
+  }
+
+  // ----- paying with coins
+  const coinValue = Number(configuration?.coinValue ?? 0.5)
+  const coinsAvailable = Number(profile?.coins || 0)
+  const coinsEnabled = isCoinsEnabled(configuration) && coinValue > 0
+
+  function maxUsableCoins() {
+    if (!coinsEnabled) return 0
+    return Math.max(0, Math.min(coinsAvailable, Math.floor(calculateTotalBeforeCoins() / coinValue + 1e-9)))
+  }
+
+  function coinsToUse() {
+    if (!useCoins) return 0
+    const requested = Math.trunc(Number(coinsInput) || 0)
+    return Math.min(Math.max(requested, 0), maxUsableCoins())
+  }
+
+  function coinsDiscount() {
+    return Math.round(coinsToUse() * coinValue * 100) / 100
+  }
+
+  function calculateTotal() {
+    return parseFloat(Math.max(0, calculateTotalBeforeCoins() - coinsDiscount())).toFixed(2)
   }
 
   function validateOrder() {
@@ -495,14 +527,14 @@ function Checkout(props) {
       return false
     }
     if (profile?.phone?.length < 1) {
-      props?.navigation.navigate('PhoneNumber', { name: profile?.name, screen: 'Checkout' })
+      props?.navigation.navigate('CreateAccount')
       return false
     }
     if (profile.phone.length > 0 && !profile.phoneIsVerified) {
       FlashMessage({
         message: t('numberVerificationAlert')
       })
-      props?.navigation.navigate('PhoneNumber', { name: profile?.name, screen: 'Checkout' })
+      props?.navigation.navigate('CreateAccount')
       return false
     }
     return true
@@ -543,7 +575,8 @@ function Checkout(props) {
           orderDate: orderDate,
           isPickedUp: isPickup,
           deliveryCharges: isPickup ? 0 : deliveryCharges,
-          instructions
+          instructions,
+          coinsToUse: coinsToUse()
         }
 
         if (isPickup) {
@@ -757,6 +790,53 @@ function Checkout(props) {
                         />
                       </View>
                     </View>
+                    {coinsEnabled && coinsAvailable > 0 && (
+                      <View style={{ paddingHorizontal: scale(16), paddingVertical: scale(8) }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <View style={{ flex: 1, paddingRight: scale(8) }}>
+                            <TextDefault H5 bolder textColor={currentTheme.fontNewColor} isRTL>
+                              🪙 {t('payWithCoins')}
+                            </TextDefault>
+                            <TextDefault small textColor={currentTheme.fontSecondColor} isRTL>
+                              {t('coinsAvailableLabel', { coins: coinsAvailable, value: `${configuration.currencySymbol}${coinsToMoney(coinsAvailable, configuration).toFixed(2)}` })}
+                            </TextDefault>
+                          </View>
+                          <Switch
+                            value={useCoins}
+                            onValueChange={(value) => {
+                              setUseCoins(value)
+                              if (value && !coinsInput) setCoinsInput(String(maxUsableCoins()))
+                            }}
+                          />
+                        </View>
+                        {useCoins && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: scale(8) }}>
+                            <TextInput
+                              keyboardType='number-pad'
+                              placeholder={t('coinsToUse')}
+                              placeholderTextColor={currentTheme.inputPlaceHolder}
+                              value={coinsInput}
+                              onChangeText={(text) => {
+                                const digits = text.replace(/\D/g, '')
+                                setCoinsInput(digits === '' ? '' : String(Math.min(Number(digits), maxUsableCoins())))
+                              }}
+                              style={[styles(currentTheme).modalInput, { flex: 1 }]}
+                            />
+                            <TouchableOpacity activeOpacity={0.7} onPress={() => setCoinsInput(String(maxUsableCoins()))} style={{ marginLeft: scale(10) }}>
+                              <TextDefault bolder textColor={currentTheme.lightBlue}>
+                                {t('useMaxCoins')}
+                              </TextDefault>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {useCoins && coinsToUse() > 0 && (
+                          <TextDefault small bold textColor={currentTheme.fontSecondColor} style={{ marginTop: scale(4) }} isRTL>
+                            −{configuration.currencySymbol}
+                            {coinsDiscount().toFixed(2)}
+                          </TextDefault>
+                        )}
+                      </View>
+                    )}
                   </>
                 )}
                 <View style={[styles(currentTheme).horizontalLine2, { width: '92%', alignSelf: 'center' }]} />
@@ -824,7 +904,7 @@ function Checkout(props) {
                     </View>
                     {dataTip && (
                       <View style={styles(currentTheme).buttonInline}>
-                        {dataTip.tips.tipVariations.map((label, index) => (
+                        {getTipVariations(dataTip).map((label, index) => (
                           <TouchableOpacity
                             activeOpacity={0.7}
                             key={index}
@@ -919,6 +999,20 @@ function Checkout(props) {
                       </View>
                     </View>
                   )}
+                  {coinsToUse() > 0 && (
+                    <View>
+                      <View style={styles(currentTheme).horizontalLine2} />
+                      <View style={styles(currentTheme).billsec}>
+                        <TextDefault numberOfLines={1} textColor={currentTheme.fontFourthColor} normal bold>
+                          🪙 {t('coinsDiscountLabel')} ({coinsToUse()})
+                        </TextDefault>
+                        <TextDefault numberOfLines={1} textColor={currentTheme.fontFourthColor} normal bold>
+                          -{configuration.currencySymbol}
+                          {coinsDiscount().toFixed(2)}
+                        </TextDefault>
+                      </View>
+                    </View>
+                  )}
                   <View style={styles(currentTheme).horizontalLine2} />
                   <View style={styles(currentTheme).billsec}>
                     <TextDefault numberOfLines={1} textColor={currentTheme.fontFourthColor} H4 bolder>
@@ -929,6 +1023,16 @@ function Checkout(props) {
                       {calculateTotal()}
                     </TextDefault>
                   </View>
+                  {calculateCoins(calculatePrice(0, false), configuration) > 0 && (
+                    <View style={[styles(currentTheme).billsec, { marginTop: 6 }]}>
+                      <TextDefault textColor={currentTheme.fontFourthColor} normal bold>
+                        {t('coinsYouWillEarn')}
+                      </TextDefault>
+                      <TextDefault textColor={currentTheme.fontFourthColor} normal bold>
+                        🪙 {calculateCoins(calculatePrice(0, false), configuration)}
+                      </TextDefault>
+                    </View>
+                  )}
                 </View>
 
                 <View style={[styles(currentTheme).termsContainer, styles().pT10, styles().mB10]}>

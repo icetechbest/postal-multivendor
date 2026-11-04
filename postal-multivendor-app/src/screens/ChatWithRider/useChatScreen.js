@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useLayoutEffect } from 'react'
+import React, { useState, useEffect, useContext, useLayoutEffect, useMemo, useCallback } from 'react'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
 import { theme } from '../../utils/themeColors'
 import { Ionicons, FontAwesome5, Entypo } from '@expo/vector-icons'
@@ -19,7 +19,11 @@ export const useChatScreen = ({ navigation, route }) => {
 
   const { t } = useTranslation()
   const { profile } = useUserContext()
-  const { subscribeToMore: subscribeToMessages, data: chatData } = useQuery(
+  const {
+    subscribeToMore: subscribeToMessages,
+    updateQuery: updateChatQuery,
+    data: chatData
+  } = useQuery(
     gql`
       ${chat}
     `,
@@ -29,6 +33,21 @@ export const useChatScreen = ({ navigation, route }) => {
       onError
     }
   )
+
+  // Adds a message to the cached conversation unless it is already there
+  // (the sender receives its own message both from the mutation and the subscription).
+  const appendMessage = useCallback(
+    (message) => {
+      if (!message?.id) return
+      updateChatQuery((prev) => {
+        const existing = prev?.chat || []
+        if (existing.some((item) => item.id === message.id)) return prev
+        return { ...prev, chat: [message, ...existing] }
+      })
+    },
+    [updateChatQuery]
+  )
+
   const [send] = useMutation(
     gql`
       ${sendChatMessage}
@@ -38,32 +57,35 @@ export const useChatScreen = ({ navigation, route }) => {
       onError
     }
   )
-  useEffect(() => {
-    if (chatData) {
-      setMessages(
-        chatData.chat.map(message => ({
+
+  // GiftedChat renders newest-first, the API returns oldest-first: sort once here.
+  const messages = useMemo(
+    () =>
+      [...(chatData?.chat || [])]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .map((message) => ({
           _id: message.id,
           text: message.message,
           createdAt: message.createdAt,
           user: {
-            _id: message.user.id,
-            name: message.user.name
+            _id: message.user?.id,
+            name: message.user?.name
           }
-        }))
-      )
-    }
-  }, [chatData])
+        })),
+    [chatData]
+  )
 
   function onCompleted({ sendChatMessage: messageResult }) {
     if (!messageResult?.success) {
-      Alert.alert('Error', messageResult.message)
+      Alert.alert('Error', messageResult?.message)
+      return
     }
+    appendMessage(messageResult.data)
   }
   function onError(error) {
     Alert.alert('Error', error.message)
   }
-  const [messages, setMessages] = useState([])
-  const [inputMessage, setInputMessage] = useState(null)
+  const [inputMessage, setInputMessage] = useState('')
   const [image, setImage] = useState([])
   const themeContext = useContext(ThemeContext)
   const currentTheme = theme[themeContext.ThemeValue]
@@ -123,37 +145,25 @@ export const useChatScreen = ({ navigation, route }) => {
         ${subscriptionNewMessage}
       `,
       variables: { order: orderId },
-
       updateQuery: (prev, { subscriptionData }) => {
-        if (!subscriptionData.data) return prev
-        return {
-          chat: [subscriptionData.data.subscriptionNewMessage, ...prev.chat]
-        }
+        const incoming = subscriptionData?.data?.subscriptionNewMessage
+        if (!incoming) return prev
+        const existing = prev?.chat || []
+        if (existing.some((item) => item.id === incoming.id)) return prev
+        return { ...prev, chat: [incoming, ...existing] }
       }
     })
     return unsubscribe
-  })
+  }, [orderId])
   const onSend = () => {
-    if (!inputMessage?.trim()) return
-    
-    const newMessage = {
-      _id: Date.now().toString(),
-      text: inputMessage.trim(),
-      createdAt: new Date(),
-      user: {
-        _id: profile._id,
-        name: profile.name
-      }
-    }
-    
-    // Optimistically update messages
-    setMessages(previousMessages => [newMessage, ...previousMessages])
-    
+    const text = inputMessage?.trim()
+    if (!text) return
+
     send({
       variables: {
         orderId: orderId,
         messageInput: {
-          message: inputMessage.trim(),
+          message: text,
           user: {
             id: profile._id,
             name: profile.name

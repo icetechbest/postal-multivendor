@@ -83,6 +83,10 @@ const getStoredLanguage = async (): Promise<void> => {
       lng: initialLang,
       fallbackLng: "en",
       resources: languageResources,
+      // Keys are plain English sentences (which may contain "." or ":"), not nested paths.
+      keySeparator: false,
+      nsSeparator: false,
+      interpolation: { escapeValue: false },
     });
 
     // Apply the initial language
@@ -103,6 +107,9 @@ if (Platform.OS === "ios") {
     lng: iosLang,
     fallbackLng: "en",
     resources: languageResources,
+    keySeparator: false,
+    nsSeparator: false,
+    interpolation: { escapeValue: false },
   });
 
   i18next.changeLanguage(iosLang);

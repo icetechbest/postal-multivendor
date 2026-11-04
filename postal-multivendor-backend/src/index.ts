@@ -96,7 +96,7 @@ const startServer = async () => {
       database: databaseReady ? 'connected' : 'disconnected',
     });
   });
-  app.get('/', (_req, res) => res.json({ name: 'Postal Multi-vendor API', graphql: '/graphql', health: '/health' }));
+  app.get('/', (_req, res) => res.json({ name: 'Genie Multi-vendor API', graphql: '/graphql', health: '/health' }));
 
   const corsOptions = { origin: config.env === 'production' ? config.cors.origin : true, credentials: true };
   const authenticationLimiter = rateLimit({

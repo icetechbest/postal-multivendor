@@ -31,6 +31,7 @@ import { isOpen } from '../../utils/customFunctions'
 import { FlashMessage } from '../../ui/FlashMessage/FlashMessage'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 
+import { getTipVariations } from '../../utils/tipping'
 import useNetworkStatus from '../../utils/useNetworkStatus'
 import ErrorView from '../../components/ErrorView/ErrorView'
 
@@ -96,7 +97,8 @@ function Cart(props) {
     if (tip) {
       setSelectedTip(null)
     } else if (dataTip && !selectedTip) {
-      setSelectedTip(dataTip.tips.tipVariations[1])
+      const variations = getTipVariations(dataTip)
+      setSelectedTip(variations[1] ?? variations[0] ?? null)
     }
   }, [tip, data])
 
@@ -104,8 +106,10 @@ function Cart(props) {
     let isSubscribed = true
     ;(async () => {
       if (data && data?.restaurant) {
-        const latOrigin = Number(data?.restaurant.location.coordinates[1])
-        const lonOrigin = Number(data?.restaurant.location.coordinates[0])
+        const coordinates = data?.restaurant?.location?.coordinates
+        if (!coordinates || !location) return
+        const latOrigin = Number(coordinates[1])
+        const lonOrigin = Number(coordinates[0])
         const latDest = Number(location.latitude)
         const longDest = Number(location.longitude)
         const distance = await calculateDistance(latOrigin, lonOrigin, latDest, longDest)
@@ -238,9 +242,11 @@ function Cart(props) {
   }
 
   async function didFocus() {
-    const { restaurant } = data
-    setSelectedRestaurant(restaurant)
-    setMinimumOrder(restaurant.minimumOrder)
+    const restaurant = data?.restaurant
+    if (restaurant) {
+      setSelectedRestaurant(restaurant)
+      setMinimumOrder(restaurant.minimumOrder)
+    }
     setLoadingData(false)
   }
 
@@ -323,12 +329,12 @@ function Cart(props) {
   const addons = restaurant?.addons
   const options = restaurant?.options
 
-  const foods = restaurant?.categories?.map((c) => c.foods.flat()).flat()
+  const foods = (restaurant?.categories || []).map((c) => (c?.foods || []).flat()).flat()
 
   function populateFood(cartItem) {
     const food = foods?.find((food) => food._id === cartItem._id)
     if (!food) return null
-    const variation = food.variations.find((variation) => variation._id === cartItem.variation._id)
+    const variation = (food.variations || []).find((variation) => variation._id === cartItem?.variation?._id)
     if (!variation) return null
 
     const title = `${food.title}${variation.title ? `(${variation.title})` : ''}`
@@ -336,29 +342,29 @@ function Cart(props) {
     const optionsTitle = []
     if (cartItem.addons) {
       cartItem.addons.forEach((addon) => {
-        const cartAddon = addons.find((add) => add._id === addon._id)
+        const cartAddon = (addons || []).find((add) => add._id === addon._id)
         if (!cartAddon) return null
-        addon.options.forEach((option) => {
-          const cartOption = options.find((opt) => opt._id === option._id)
+        ;(addon.options || []).forEach((option) => {
+          const cartOption = (options || []).find((opt) => opt._id === option._id)
           if (!cartOption) return null
           price += cartOption.price
           optionsTitle.push(cartOption.title)
         })
       })
     }
-    const populateAddons = addons.filter((addon) => food?.variations[0]?.addons?.includes(addon._id))
+    const populateAddons = (addons || []).filter((addon) => food?.variations?.[0]?.addons?.includes(addon._id))
     return {
       ...cartItem,
       optionsTitle,
       title: title,
-      price: price.toFixed(2),
+      price: Number(price).toFixed(2),
       image: food.image,
       addons: populateAddons
     }
   }
 
   let deliveryTime = Math.floor((orderDate - Date.now()) / 1000 / 60)
-  if (deliveryTime < 1) deliveryTime += restaurant?.deliveryTime
+  if (deliveryTime < 1) deliveryTime += restaurant?.deliveryTime || 0
   return (
     <>
       <View style={styles(currentTheme).mainContainer}>
@@ -412,7 +418,7 @@ function Cart(props) {
                 </View>
               </View>
               <View style={styles().suggestedItems}>
-                <WouldYouLikeToAddThese itemId={foods[0]._id} restaurantId={restaurant?._id} />
+                {foods[0]?._id ? <WouldYouLikeToAddThese itemId={foods[0]._id} restaurantId={restaurant?._id} /> : null}
               </View>
             </ScrollView>
 

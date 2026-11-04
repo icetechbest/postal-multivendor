@@ -1,83 +1,107 @@
-import React, { useLayoutEffect, useContext } from 'react'
-import { View, Image, TouchableOpacity, StatusBar } from 'react-native'
-import styles from './styles'
-import TextDefault from '../../components/Text/TextDefault/TextDefault'
-import { useTranslation } from 'react-i18next'
+import React, { useLayoutEffect } from 'react'
+import { View, Image, TouchableOpacity, StatusBar, Platform, KeyboardAvoidingView, ScrollView, ActivityIndicator } from 'react-native'
+import CountryPicker from 'react-native-country-picker-modal'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import useNetworkStatus from '../../utils/useNetworkStatus'
+import { useTranslation } from 'react-i18next'
+import styles from './styles'
+import phoneStyles from '../PhoneNumber/styles'
+import Spinner from '../../components/Spinner/Spinner'
+import TextDefault from '../../components/Text/TextDefault/TextDefault'
+import PhoneNumberInput from '../../components/PhoneNumberInput'
 import ErrorView from '../../components/ErrorView/ErrorView'
-import ThemeContext from '../../ui/ThemeContext/ThemeContext'
-import { theme } from '../../utils/themeColors'
+import useNetworkStatus from '../../utils/useNetworkStatus'
+import { scale } from '../../utils/scaling'
+import { useCreateAccount } from './useCreateAccount'
 
-/**
- * Welcome / entry screen.
- *
- * Sign-in and sign-up are phone-number only: there is no Google, Apple or
- * email/password option anymore. Tapping "Continue with phone number" opens
- * the phone screen in `auth` mode, which sends an OTP and then signs the
- * customer in (creating the account on first use).
- */
-const CreateAccount = (props) => {
+const CreateAccount = () => {
+  const { phone, setPhone, phoneError, setPhoneError, country, countryCode, onCountrySelect, isCountryLoading, loading, sendCode, continueAsGuest, themeContext, currentTheme, navigation } = useCreateAccount()
   const { t } = useTranslation()
-  const themeContext = useContext(ThemeContext)
-  const currentTheme = theme[themeContext.ThemeValue]
+  const { isConnected: connect } = useNetworkStatus()
 
   useLayoutEffect(() => {
-    props?.navigation.setOptions({
-      headerShown: false
-    })
-  }, [props?.navigation])
+    navigation.setOptions({ headerShown: false })
+  }, [navigation])
 
-  const goToPhoneAuth = () => {
-    props?.navigation.navigate('PhoneNumber', { mode: 'auth' })
-  }
-
-  const renderGuestButton = () => (
-    <TouchableOpacity activeOpacity={0.7} style={styles(currentTheme).guestButton} onPress={() => props?.navigation.navigate('Discovery')}>
-      <TextDefault H4 textColor={currentTheme.primary} center bold>
-        {t('continueAsGuest')}
-      </TextDefault>
-    </TouchableOpacity>
-  )
-
-  const { isConnected: connect } = useNetworkStatus()
   if (!connect) return <ErrorView refetchFunctions={[]} />
 
+  const field = phoneStyles(currentTheme)
+
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles(currentTheme).safeAreaViewStyles}>
+    <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles(currentTheme).safeAreaViewStyles}>
       <StatusBar backgroundColor='transparent' translucent barStyle={themeContext.ThemeValue === 'Dark' ? 'light-content' : 'dark-content'} />
+      <KeyboardAvoidingView style={styles().flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView style={styles().flex} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps='handled' showsVerticalScrollIndicator={false}>
+          <View style={styles().mainContainer}>
+            <View style={styles().gifContainer}>
+              <Image source={require('../../assets/gifs/login.gif')} style={styles().gifImage} resizeMode='cover' />
+            </View>
 
-      <View style={styles().mainContainer}>
-        {/* GIF Section */}
-        <View style={styles().gifContainer}>
-          <Image source={require('../../assets/gifs/login.gif')} style={styles().gifImage} resizeMode='cover' />
-        </View>
-
-        {/* Content Section */}
-        <View>
-          {/* Welcome Text */}
-          <View style={styles().welcomeSection}>
-            <TextDefault H1 bolder center textColor={currentTheme.newFontcolor} style={styles(currentTheme).mainTitle}>
-              {t('welcomeText')}
-            </TextDefault>
-            <TextDefault center H5 textColor={currentTheme.newFontcolor} style={styles().subTitle}>
-              {t('createAccountDesc')}
-            </TextDefault>
-          </View>
-
-          {/* Phone-only entry point */}
-          <View style={styles().buttonsContainer}>
-            <TouchableOpacity activeOpacity={0.7} style={styles(currentTheme).primaryBtn} onPress={goToPhoneAuth}>
-              <TextDefault H4 textColor={currentTheme.black} center bold>
-                {t('continueWithPhone')}
+            <View style={styles().welcomeSection}>
+              <TextDefault H1 bolder center textColor={currentTheme.newFontcolor} style={styles(currentTheme).mainTitle}>
+                {t('welcomeText')}
               </TextDefault>
-            </TouchableOpacity>
-            {renderGuestButton()}
+              <TextDefault center H5 textColor={currentTheme.newFontcolor} style={styles().subTitle}>
+                {t('phoneLoginDesc')}
+              </TextDefault>
+            </View>
+
+            <View style={styles().buttonsContainer}>
+              <View style={field.number}>
+                <View style={[field.textField, field.countryCode, { padding: Platform.OS === 'ios' ? scale(5) : scale(12) }]}>
+                  {isCountryLoading ? (
+                    <ActivityIndicator size='small' color={currentTheme.newFontcolor} />
+                  ) : (
+                    <>
+                      <CountryPicker countryCode={countryCode} onSelect={onCountrySelect} withAlphaFilter withFilter />
+                      <TextDefault textColor={currentTheme.newFontcolor} style={{ marginTop: Platform.OS === 'android' ? 8 : 10 }}>
+                        +{country?.callingCode?.[0]}
+                      </TextDefault>
+                    </>
+                  )}
+                </View>
+                <View style={[field.textField, field.phoneNumber, phoneError && field.errorInput]}>
+                  <View style={field.phoneField}>
+                    <PhoneNumberInput
+                      setError={setPhoneError}
+                      placeholder={t('phoneNumber')}
+                      placeholderTextColor={currentTheme.color6}
+                      style={field.phoneNo}
+                      countryCode={country?.callingCode?.[0]}
+                      value={phone}
+                      onChange={(value) => {
+                        setPhone(value)
+                        if (phoneError) setPhoneError(null)
+                      }}
+                    />
+                  </View>
+                </View>
+              </View>
+              {!!phoneError && (
+                <TextDefault bold textColor={currentTheme.textErrorColor} isRTL>
+                  {phoneError}
+                </TextDefault>
+              )}
+
+              <TouchableOpacity onPress={sendCode} activeOpacity={0.7} disabled={loading} style={field.btn}>
+                {loading ? (
+                  <Spinner size='small' backColor='transparent' spinnerColor={currentTheme.white} />
+                ) : (
+                  <TextDefault H4 textColor={currentTheme.color4} bold>
+                    {t('textWithCodeBtn')}
+                  </TextDefault>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity activeOpacity={0.7} style={styles(currentTheme).guestButton} onPress={continueAsGuest}>
+                <TextDefault H4 textColor={currentTheme.primary} center bold>
+                  {t('continueAsGuest')}
+                </TextDefault>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
-
 export default CreateAccount

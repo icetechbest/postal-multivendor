@@ -10,6 +10,7 @@ import { Tabs, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 const RootLayout = () => {
   const [tabKey, setTabKey] = useState(0);
@@ -67,6 +68,20 @@ const RootLayout = () => {
               width={25}
               height={25}
             />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="menu"
+        options={{
+          headerShown: true,
+          headerTitle: t("Menu"),
+          headerTitleAlign: "center",
+          headerStyle: { backgroundColor: appTheme.themeBackground },
+          headerTitleStyle: { color: appTheme.fontMainColor },
+          title: t("Menu"),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="restaurant-outline" size={25} color={color} />
           ),
         }}
       />

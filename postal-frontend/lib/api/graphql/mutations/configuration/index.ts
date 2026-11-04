@@ -200,3 +200,16 @@ export const SAVE_CURRENCY_CONFIGURATION = gql`
     }
   }
 `;
+
+export const SAVE_COINS_CONFIGURATION = gql`
+  mutation SAVE_COINS_CONFIGURATION(
+    $configurationInput: CoinsConfigurationInput!
+  ) {
+    saveCoinsConfiguration(configurationInput: $configurationInput) {
+      _id
+      coinsEnabled
+      coinsPerCurrencyUnit
+      coinValue
+    }
+  }
+`;

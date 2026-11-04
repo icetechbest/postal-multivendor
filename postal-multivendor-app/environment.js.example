@@ -9,6 +9,8 @@ const ENV = {
     development: {
         GRAPHQL_URL:'' ,
         SERVER_URL: '', // put / at the end of server url
+        IOS_CLIENT_ID_GOOGLE: "",
+        ANDROID_CLIENT_ID_GOOGLE: "",
         AMPLITUDE_API_KEY: "",
         // OpenStreetMap map services (no API key / no billing required)
         MAP_TILE_URL: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -18,6 +20,8 @@ const ENV = {
     production: {
        GRAPHQL_URL:'' ,
         SERVER_URL: '', // put / at the end of server url
+        IOS_CLIENT_ID_GOOGLE: "",
+        ANDROID_CLIENT_ID_GOOGLE: "",
         AMPLITUDE_API_KEY: "",
         // OpenStreetMap map services (no API key / no billing required)
         MAP_TILE_URL: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',

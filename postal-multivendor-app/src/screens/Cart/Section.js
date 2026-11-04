@@ -28,16 +28,18 @@ const Section = ({ itemId, restaurantId }) => {
   const { loading, error, data } = useQuery(RELATED_ITEMS, { variables: { itemId, restaurantId } })
   if (loading) return <View />
   if (error) return <View />
-  const { relatedItems } = data
+  const relatedItems = data?.relatedItems || []
   if (relatedItems.length < 1) return <View />
   const result = client.readQuery({ query: RESTAURANT, variables: { id: restaurantId } })
   const slicedItems = relatedItems.length > 3 ? relatedItems.slice(0, 3) : relatedItems
   const restaurant = result?.restaurant
   const renderItem = ({ item }) => {
     const food = client.readFragment({ id: `Food:${item}`, fragment: FOOD })
+    if (!food || !food.variations?.length) return null
     const imageUrl = food?.image && food?.image.trim() !== '' ? food?.image : IMAGE_LINK;
 
     const onAdd = () => {
+      if (!restaurant) return
       navigation.push('ItemDetail', {
         food: {
           ...food,

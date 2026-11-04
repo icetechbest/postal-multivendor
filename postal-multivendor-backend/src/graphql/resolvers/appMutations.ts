@@ -17,6 +17,9 @@ import config from '../../config';
 import { AuthContext, requireAuth, requireRider } from '../../middleware/auth';
 import { sendEmail, sendOtpMessage } from '../../services/notifications';
 import { pubsub } from '../../services/pubsub';
+import { sendPushNotification } from '../../services/push';
+import { awardCoinsForOrder, deductCoins, getCoinSettings, refundCoinsForOrder, returnCoins } from '../../services/coins';
+import { CoinTransaction } from '../../models/CoinTransaction';
 import { comparePassword, generateOTP, generateOrderId, hashPassword } from '../../utils/crypto';
 import { sanitizeUser } from '../../utils/sanitize';
 import { AuthenticationError, AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../../utils/errors';
@@ -85,8 +88,8 @@ const issueOtp = async (rawTarget: string, channel: 'email' | 'phone'): Promise<
     },
     { upsert: true, new: true }
   );
-  const body = `Your Postal verification code is ${otp}. It expires in ${config.otp.expiryMinutes} minutes.`;
-  if (channel === 'email') await sendEmail(target, 'Your Postal verification code', body);
+  const body = `Your Genie verification code is ${otp}. It expires in ${config.otp.expiryMinutes} minutes.`;
+  if (channel === 'email') await sendEmail(target, 'Your Genie verification code', body);
   else await sendOtpMessage(target, otp, config.otp.expiryMinutes);
   return 'Verification code sent';
 };
@@ -163,6 +166,8 @@ const updateOrderStatus = async (id: string, status: string, reason: string | un
     order.paidAmount = order.total;
   }
   await order.save();
+  if (['DELIVERED', 'COMPLETED'].includes(normalized)) await awardCoinsForOrder(order._id);
+  if (normalized === 'CANCELLED') await refundCoinsForOrder(order._id);
   const updated = await publishOrderUpdate(order._id, 'updateOrderStatus');
   if (!order.rider && ['PENDING', 'ACCEPTED'].includes(normalized)) {
     await publishZoneOrder(order._id, 'new');
@@ -182,6 +187,7 @@ const abortOrder = async (id: string, reason: string | undefined, context: AuthC
   order.reason = reason || 'Cancelled by customer';
   order.cancelledAt = new Date();
   await order.save();
+  await refundCoinsForOrder(order._id);
   return publishOrderUpdate(order._id, 'abortOrder');
 };
 
@@ -341,9 +347,10 @@ export const appMutationResolvers = {
   },
   emailExist: async (_parent: unknown, { email }: { email: string }) => User.findOne({ email: email.trim().toLowerCase() }),
   phoneExist: async (_parent: unknown, { phone }: { phone: string }) => User.findOne({ phone: phone.trim() }),
-  Deactivate: async (_parent: unknown, { isActive, email }: { isActive: boolean; email: string }, context: AuthContext) => {
+  Deactivate: async (_parent: unknown, { isActive, email }: { isActive: boolean; email?: string }, context: AuthContext) => {
     requireAuth(context);
-    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    // Phone-only customers have no email: they deactivate their own (authenticated) account.
+    const user = email?.trim() ? await User.findOne({ email: email.trim().toLowerCase() }) : await User.findById(context.user!.userId);
     if (!user) throw new NotFoundError('User');
     if (context.user!.role !== 'ADMIN' && idOf(user._id) !== context.user!.userId) throw new AuthorizationError();
     user.isActive = isActive;
@@ -604,12 +611,29 @@ export const appMutationResolvers = {
       deliveryCharges = Math.round(deliveryCharges * 100) / 100;
     }
     const tipping = Math.max(0, Number(args.tipping) || 0);
-    const total = Math.max(0, Math.round((orderAmount + deliveryCharges + tipping + taxationAmount - discount) * 100) / 100);
+    const totalBeforeCoins = Math.max(0, Math.round((orderAmount + deliveryCharges + tipping + taxationAmount - discount) * 100) / 100);
+
+    // Paying with coins: validate against the admin-controlled coin value and the customer's balance.
+    const coinsToUse = Math.trunc(Number(args.coinsToUse) || 0);
+    let coinsDiscount = 0;
+    if (coinsToUse < 0) throw new ValidationError('Invalid coins amount');
+    if (coinsToUse > 0) {
+      const coinSettings = await getCoinSettings();
+      if (!coinSettings.enabled || coinSettings.coinValue <= 0) throw new ValidationError('Coins cannot be used right now');
+      const maxCoins = Math.floor(totalBeforeCoins / coinSettings.coinValue + 1e-9);
+      if (coinsToUse > maxCoins) throw new ValidationError(`You can use at most ${maxCoins} coins on this order`);
+      coinsDiscount = Math.round(coinsToUse * coinSettings.coinValue * 100) / 100;
+    }
+    const total = Math.max(0, Math.round((totalBeforeCoins - coinsDiscount) * 100) / 100);
     const orderDate = new Date(args.orderDate);
     if (Number.isNaN(orderDate.getTime())) throw new ValidationError('Invalid order date');
     const paymentMethod = String(args.paymentMethod).toUpperCase();
     if (!['COD', 'CARD', 'HYP'].includes(paymentMethod)) throw new ValidationError('Unsupported payment method');
-    const order: any = await Order.create({
+    // Take the coins before creating the order (atomic, so two orders cannot spend the same coins).
+    if (coinsToUse > 0 && !(await deductCoins(context.user!.userId, coinsToUse))) throw new ValidationError('Not enough coins');
+    let order: any;
+    try {
+    order = await Order.create({
       orderId: generateOrderId(restaurant.orderPrefix),
       restaurant: restaurant._id,
       user: context.user!.userId,
@@ -638,7 +662,16 @@ export const appMutationResolvers = {
       estimatedDeliveryTime: new Date(orderDate.getTime() + restaurant.deliveryTime * 60_000),
       preparationTime: restaurant.deliveryTime,
       couponCode: args.couponCode || undefined,
+      coinsUsed: coinsToUse,
+      coinsDiscount,
     } as any);
+    } catch (error) {
+      if (coinsToUse > 0) await returnCoins(context.user!.userId, coinsToUse);
+      throw error;
+    }
+    if (coinsToUse > 0) {
+      await CoinTransaction.create({ user: context.user!.userId, order: order._id, type: 'REDEEM', coins: -coinsToUse, orderAmount: totalBeforeCoins, note: `Order ${order.orderId}` });
+    }
     await Promise.all([
       ...Array.from(quantities.entries()).map(([foodId, quantity]) => Food.findByIdAndUpdate(foodId, { $inc: { orderCount: quantity } })),
       Restaurant.findByIdAndUpdate(restaurant._id, { $inc: { totalOrders: 1 } }),
@@ -728,6 +761,27 @@ export const appMutationResolvers = {
     if (!sender) throw new NotFoundError('User');
     const chat = await ChatMessage.create({ order: order._id, message: message.message.trim(), user: { id: idOf(sender._id), name: sender.name } });
     await pubsub.publish(`CHAT_${orderId}`, { subscriptionNewMessage: chat });
+
+    // Let the other side know (customer <-> rider) so nobody has to switch to another app to coordinate.
+    try {
+      const senderId = idOf(sender._id);
+      const customerId = idOf(order.user);
+      const riderId = order.rider ? idOf(order.rider) : null;
+      const recipientId = senderId === customerId ? riderId : customerId;
+      if (recipientId) {
+        const recipient = await User.findById(recipientId);
+        if (recipient?.notificationToken) {
+          const preview = chat.message.length > 120 ? `${chat.message.slice(0, 117)}...` : chat.message;
+          void sendPushNotification(recipient.notificationToken, sender.name || 'New message', preview, {
+            type: 'chat',
+            orderId: idOf(order._id),
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('Chat push notification failed:', error instanceof Error ? error.message : error);
+    }
+
     return { success: true, message: 'Message sent', data: chat };
   },
   createActivity: async (_parent: unknown, args: any, context: AuthContext) => {

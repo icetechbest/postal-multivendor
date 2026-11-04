@@ -1,6 +1,7 @@
 import { Configuration } from '../../models/Configuration';
 import { Version } from '../../models/Version';
 import { AuthContext } from '../../middleware/auth';
+import { ValidationError } from '../../utils/errors';
 import { audit, definedOnly, requireSuperAdmin } from './adminHelpers';
 
 // Allow-lists keep each mutation from writing fields outside its own group.
@@ -20,6 +21,7 @@ const groups: Record<string, string[]> = {
   saveTwilioConfiguration: ['twilioAccountSid', 'twilioAuthToken', 'twilioPhoneNumber', 'twilioEnabled', 'twilioWhatsAppNumber'],
   saveVerificationsToggle: ['skipEmailVerification', 'skipMobileVerification', 'skipWhatsAppOTP'],
   saveCurrencyConfiguration: ['currency', 'currencySymbol'],
+  saveCoinsConfiguration: ['coinsEnabled', 'coinsPerCurrencyUnit', 'coinValue'],
 };
 
 // Fields whose values are credentials: recorded as "changed" in the audit log, never with their value.
@@ -31,6 +33,11 @@ const saveGroup = (name: string) => async (_parent: unknown, { configurationInpu
   const updates: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(definedOnly(configurationInput))) {
     if (allowed.includes(key)) updates[key] = value;
+  }
+  for (const key of ['coinsPerCurrencyUnit', 'coinValue']) {
+    if (key in updates && (typeof updates[key] !== 'number' || !Number.isFinite(updates[key]) || (updates[key] as number) < 0)) {
+      throw new ValidationError(`${key} must be a number greater than or equal to 0`);
+    }
   }
   const configuration = await Configuration.findOneAndUpdate(
     { key: 'default' },

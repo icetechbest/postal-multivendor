@@ -241,7 +241,7 @@ const ChatScreen = ({ navigation, route }) => {
           autoFocus: true
         }}
         renderTime={renderTime}
-        renderActions={renderActions}
+        renderActions={() => null}
         renderInputToolbar={renderInputToolbar}
         renderAccessory={image.length > 0 ? renderAccessory : null}
         text={inputMessage}

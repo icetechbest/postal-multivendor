@@ -1,65 +1,64 @@
-import { useState, useContext } from 'react'
+import { useState, useContext, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
 import gql from 'graphql-tag'
-import { updateUser, sendOtpToPhoneNumber } from '../../apollo/mutations'
+import { updateUser } from '../../apollo/mutations'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
 import { theme } from '../../utils/themeColors'
 import { FlashMessage } from '../../ui/FlashMessage/FlashMessage'
 import { phoneRegex } from '../../utils/regex'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import UserContext from '../../context/User'
+import countryCallingCodes from './countryCodes'
+import { useIsFocused } from '@react-navigation/native'
+import ConfigurationContext from '../../context/Configuration'
 import { useTranslation } from 'react-i18next'
 import { useCountryFromIP } from '../../utils/useCountryFromIP'
 
 const UPDATEUSER = gql`
   ${updateUser}
 `
-const SEND_OTP_TO_PHONE = gql`
-  ${sendOtpToPhoneNumber}
-`
 
-/**
- * Phone number screen.
- *
- * Two modes:
- *  - `mode === 'auth'`: the phone number is the only way to sign in or create
- *    an account. We send an OTP and continue to the OTP screen, which calls
- *    the `loginWithPhone` mutation.
- *  - default (profile mode): the signed-in customer is attaching/updating the
- *    phone number on their existing account.
- */
-const usePhoneNumber = () => {
+const useRegister = () => {
   const { t, i18n } = useTranslation()
   const navigation = useNavigation()
   const route = useRoute()
-  const mode = route?.params?.mode
-  const isAuthMode = mode === 'auth'
   const [phone, setPhone] = useState('')
   const [phoneError, setPhoneError] = useState(null)
-  const { name, screen, prevScreen } = route?.params || {}
+  const configuration = useContext(ConfigurationContext)
+  const isFocused = useIsFocused()
+  const { name } = route?.params
+ 
 
   const {
-    country,
-    setCountry,
-    currentCountry: countryCode,
-    setCurrentCountry: setCountryCode,
-    isLoading: isCountryLoading
-  } = useCountryFromIP()
+      country,
+      setCountry,
+      currentCountry: countryCode,
+      setCurrentCountry: setCountryCode,
+      ipAddress,
+      isLoading: isCountryLoading,
+      error: countryError,
+      refetch
+    } = useCountryFromIP()
 
-  const onCountrySelect = (country) => {
+
+ 
+
+  const onCountrySelect = country => {
     setCountryCode(country.cca2)
     setCountry(country)
   }
-
   const { profile } = useContext(UserContext)
+  const { refetchProfile } = useContext(UserContext)
   const themeContext = useContext(ThemeContext)
-  const currentTheme = { isRTL: i18n.dir() === 'rtl', ...theme[themeContext.ThemeValue] }
+  const currentTheme = {isRTL : i18n.dir() === 'rtl', ...theme[themeContext.ThemeValue]}
 
-  const fullPhone = () => '+'.concat(country?.callingCode?.[0] ?? '').concat(phone ?? '')
+  const [mutate, { loading }] = useMutation(UPDATEUSER, {
+    onCompleted,
+    onError
+  })
 
   function validateCredentials() {
     let result = true
-    setPhoneError(null)
 
     if (!phone) {
       setPhoneError(t('mobileErr1'))
@@ -71,59 +70,62 @@ const usePhoneNumber = () => {
     return result
   }
 
+  async function onCompleted(data) {
+    let concatPhone = '+'.concat(country.callingCode[0] ?? "").concat(phone ?? "")
+    if (navigation && route && profile) {
+      if (configuration.twilioEnabled) {
+        FlashMessage({
+          message: 'Phone number has been added successfully!'
+        })
+        await refetchProfile()
+        navigation.navigate({
+          name: 'PhoneOtp',
+          merge: true,
+          params: {name, phone: concatPhone, screen: route?.params?.screen}
+        })
+      } else {
+        mutate({
+          variables: {
+            name: profile.name,
+            phone: concatPhone,
+            phoneIsVerified: true
+          }
+        })
+        if (isFocused) {
+          navigation.navigate({
+            name: 'Profile'
+          })
+        }
+      }
+    }
+  }
   function onError(error) {
     if (error.networkError) {
-      FlashMessage({ message: error.networkError.result.errors[0].message })
+      FlashMessage({
+        message: error.networkError.result.errors[0].message
+      })
     } else if (error.graphQLErrors) {
-      FlashMessage({ message: error.graphQLErrors[0].message })
-    } else {
-      FlashMessage({ message: t('somethingWentWrong') })
-    }
-  }
-
-  // ---- Profile mode: attach the phone number to the current account ----
-  function onUpdateCompleted() {
-    if (navigation && route && profile) {
-      navigation.navigate({
-        name: 'PhoneOtp',
-        merge: true,
-        params: { name, phone: fullPhone(), screen }
+      FlashMessage({
+        message: error.graphQLErrors[0].message
       })
     }
   }
 
-  const [mutate, { loading: updateLoading }] = useMutation(UPDATEUSER, {
-    onCompleted: onUpdateCompleted,
-    onError
-  })
-
-  // ---- Auth mode: send the OTP that will be verified by `loginWithPhone` ----
-  const [sendOtp, { loading: otpLoading }] = useMutation(SEND_OTP_TO_PHONE, {
-    onCompleted: () => {
-      navigation.navigate({
-        name: 'PhoneOtp',
-        merge: true,
-        params: { phone: fullPhone(), mode: 'auth', name, prevScreen }
-      })
-    },
-    onError
-  })
-
-  function registerAction() {
-    if (!validateCredentials()) return
-    if (isAuthMode) {
-      sendOtp({ variables: { phone: fullPhone() } })
-      return
-    }
+  async function mutateRegister() {
     mutate({
       variables: {
-        name: profile?.name,
-        phone: fullPhone(),
+        name: profile.name,
+        phone: '+'.concat(country.callingCode[0] ?? "").concat(phone ?? ""),
         phoneIsVerified: false
       }
     })
   }
 
+  function registerAction() {
+    if (validateCredentials()) {
+      mutateRegister()
+    }
+  }
   return {
     phone,
     setPhone,
@@ -133,12 +135,11 @@ const usePhoneNumber = () => {
     onCountrySelect,
     themeContext,
     currentTheme,
-    loading: isAuthMode ? otpLoading : updateLoading,
+    loading,
     registerAction,
     setPhoneError,
-    isCountryLoading,
-    isAuthMode
+    isCountryLoading
   }
 }
 
-export default usePhoneNumber
+export default useRegister

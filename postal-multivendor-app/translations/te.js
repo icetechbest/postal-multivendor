@@ -571,7 +571,7 @@ export const te = {
     none: 'ఏదీ లేదు',
     yourEmail: 'మీ ఈమెయిల్ ద్వారా సులభంగా లాగిన్ చేయండి!',
     yourEmailPassword: 'ప్రవేశం కోసం ఇప్పుడు మీ పాస్‌వర్డ్ నమోదు చేయండి!',
-    brandName: 'java',
+    brandName: 'Genie',
     welcomeText: 'ఎనాటెగాకు స్వాగతం',
     createAccountDesc:
       'ఉత్తమ రెస్టారెంట్లను ఆస్వాదించండి లేదా సమీపంలోని దుకాణాల నుండి మీకు కావలసినవి డెలివరీ చేయించుకోండి',
@@ -631,7 +631,7 @@ export const te = {
     Done: 'పూర్తయింది',
     addMessage: 'సందేశం జోడించండి',
     kindlyBeAdvisedText: 'దయచేసి గమనించండి, మీ సందేశం మీ ఆర్డర్‌ను డెలివరీ చేసే కొరియర్ భాగస్వామికి కూడా కనిపించవచ్చు.',
-    exploreYallaCities: 'java నగరాలను ఆనందించండి',
+    exploreYallaCities: 'Genie నగరాలను ఆనందించండి',
     Card: 'కార్డ్',
     lebelAlreadyExist: "'{{selectedLabel}}' లేబుల్ ఇప్పటికే ఉంది. దయచేసి వేరొకదాన్ని ఎంచుకోండి.",
     UpdateAvailable: 'నవీకరణ అందుబాటులో ఉంది',

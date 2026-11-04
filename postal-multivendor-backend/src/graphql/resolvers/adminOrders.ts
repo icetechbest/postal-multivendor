@@ -5,6 +5,7 @@ import { User } from '../../models/User';
 import { AuthContext, requireRole } from '../../middleware/auth';
 import { pubsub } from '../../services/pubsub';
 import { AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../../utils/errors';
+import { awardCoinsForOrder, refundCoinsForOrder } from '../../services/coins';
 import { ADMIN_PENDING_ORDERS_CHANNEL, AWAITING_ADMIN, ensureOrderAccess, getPopulatedOrder, idOf, notifyCustomerCancelled, publishOrderToRestaurant, publishOrderUpdate } from './appHelpers';
 import { assertObjectId, audit, cleanId, dateRange, escapeRegex, pageParams, requirePlatformReader } from './adminHelpers';
 
@@ -160,6 +161,7 @@ export const adminOrderResolvers = {
         throw new ConflictError(`Order is no longer awaiting confirmation (current status: ${current.orderStatus}). It may have been confirmed or rejected by someone else.`);
       }
       await audit(context, 'ADMIN_REJECT_ORDER', 'Order', id, { reason });
+      await refundCoinsForOrder(rejected._id);
       return notifyCustomerCancelled(rejected._id, reason, 'adminRejectOrder');
     },
     updateStatus: async (_parent: unknown, { id, orderStatus }: { id: string; orderStatus: string }, context: AuthContext) => {
@@ -198,6 +200,8 @@ export const adminOrderResolvers = {
         order.paidAmount = order.total;
       }
       await order.save();
+      if (['DELIVERED', 'COMPLETED'].includes(status)) await awardCoinsForOrder(order._id);
+      if (status === 'CANCELLED') await refundCoinsForOrder(order._id);
       return publishOrderUpdate(order._id, 'updateStatus');
     },
     assignRider: async (_parent: unknown, args: { id?: string; orderId?: string; riderId: string }, context: AuthContext) => {

@@ -8,6 +8,8 @@ export interface IUser extends Document {
   phoneVerified: boolean;
   emailVerified: boolean;
   phoneIsVerified: boolean;
+  /** Loyalty coins balance (customers). */
+  coins: number;
   emailIsVerified: boolean;
   role: 'USER' | 'VENDOR' | 'RIDER' | 'ADMIN' | 'STAFF';
   isActive: boolean;
@@ -159,6 +161,7 @@ const userSchema = new Schema<IUser>(
     currentWalletAmount: { type: Number, default: 0 },
     totalWalletAmount: { type: Number, default: 0 },
     withdrawnWalletAmount: { type: Number, default: 0 },
+    coins: { type: Number, default: 0, min: 0 },
     zone: {
       type: Schema.Types.ObjectId,
       ref: 'Zone',

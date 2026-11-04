@@ -23,7 +23,8 @@ const styles = (props = null) =>
     // GIF Container
     gifContainer: {
       flex: 1,
-      width: '100%'
+      width: '100%',
+      minHeight: scale(180)
     },
     gifImage: {
       width: '100%',
@@ -55,16 +56,6 @@ const styles = (props = null) =>
       gap: getResponsiveSize(scale(10))
     },
 
-    // Primary "Continue with phone number" button
-    primaryBtn: {
-      width: '100%',
-      height: getResponsiveSize(height * 0.07),
-      borderRadius: scale(30),
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: props !== null ? props?.main : '#90E36D'
-    },
-
     // Guest Button
     guestButton: {
       alignItems: 'center',
@@ -82,6 +73,11 @@ const styles = (props = null) =>
       borderRadius: scale(30),
       height: getResponsiveSize(height * 0.07)
     },
+    appleBtn: {
+      width: '100%',
+      height: getResponsiveSize(height * 0.07)
+    },
+
     safeAreaViewStyles: {
       flex: 1,
       backgroundColor: props !== null ? props?.themeBackground : '#FFF',

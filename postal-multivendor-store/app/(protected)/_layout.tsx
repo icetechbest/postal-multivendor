@@ -34,6 +34,7 @@ export default function ProtectedLayout() {
               options={{ headerShown: false }}
             />
             <Stack.Screen name="chat" options={{ headerShown: false }} />
+            <Stack.Screen name="menu-item" options={{ headerShown: false }} />
           </Stack>
           {/* <Stack.Screen
             name="bank-management"

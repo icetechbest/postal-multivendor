@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { Banner } from '../../models/Banner';
 import { Category } from '../../models/Category';
 import { ChatMessage } from '../../models/ChatMessage';
+import { CoinTransaction } from '../../models/CoinTransaction';
 import { Configuration } from '../../models/Configuration';
 import { Country } from '../../models/Country';
 import { Cuisine } from '../../models/Cuisine';
@@ -108,6 +109,11 @@ export const appQueryResolvers: Record<string, (...args: any[]) => any> = {
     if (!existing) throw new NotFoundError('Order');
     await ensureOrderAccess(existing, context);
     return ChatMessage.find({ order }).sort({ createdAt: 1 }).limit(500);
+  },
+  coinTransactions: async (_parent: unknown, { limit }: { limit?: number }, context: AuthContext) => {
+    requireAuth(context);
+    const capped = Math.min(Math.max(Math.trunc(limit || 50), 1), 200);
+    return CoinTransaction.find({ user: context.user!.userId }).sort({ createdAt: -1 }).limit(capped);
   },
   fetchCategoryDetailsByStoreIdForMobile: async (_parent: unknown, { storeId }: { storeId: string }) => {
     const categories = await Category.find({ restaurant: storeId, isActive: true }).sort({ title: 1 });

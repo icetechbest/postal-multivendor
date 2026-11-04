@@ -55,6 +55,9 @@ export const GET_CONFIGURATION = gql`
       skipMobileVerification
       costType
       vapidKey
+      coinsEnabled
+      coinsPerCurrencyUnit
+      coinValue
     }
   }
 `;

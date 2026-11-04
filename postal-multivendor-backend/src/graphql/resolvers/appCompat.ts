@@ -5,6 +5,7 @@ import { User } from '../../models/User';
 import { WithdrawRequest } from '../../models/WithdrawRequest';
 import { AuthContext, requireAuth, requireRole } from '../../middleware/auth';
 import { pubsub } from '../../services/pubsub';
+import { awardCoinsForOrder, refundCoinsForOrder } from '../../services/coins';
 import { AuthorizationError, NotFoundError, ValidationError } from '../../utils/errors';
 import { ensureRestaurantOwner, round2 } from './adminHelpers';
 import {
@@ -361,6 +362,8 @@ const updateOrderStatusRider = async (orderId: string, status: string, context: 
     order.paidAmount = order.total;
   }
   await order.save();
+  if (['DELIVERED', 'COMPLETED'].includes(normalized)) await awardCoinsForOrder(order._id);
+  if (normalized === 'CANCELLED') await refundCoinsForOrder(order._id);
   return publishOrderUpdate(order._id, 'updateOrderStatusRider');
 };
 

@@ -18,8 +18,8 @@ export const sendChatMessage = `mutation SendChatMessage($orderId: ID!, $message
   `
 
 export const placeOrder = `
-  mutation PlaceOrder($restaurant:String!,$orderInput:[OrderInput!]!,$paymentMethod:String!,$couponCode:String,$tipping:Float!, $taxationAmount: Float!,$address:AddressInput!, $orderDate: String!,$isPickedUp: Boolean!, $deliveryCharges: Float!, $instructions: String){
-    placeOrder(restaurant:$restaurant,orderInput: $orderInput,paymentMethod:$paymentMethod,couponCode:$couponCode,tipping:$tipping, taxationAmount: $taxationAmount, address:$address, orderDate: $orderDate,isPickedUp: $isPickedUp, deliveryCharges:$deliveryCharges, instructions: $instructions) {
+  mutation PlaceOrder($restaurant:String!,$orderInput:[OrderInput!]!,$paymentMethod:String!,$couponCode:String,$tipping:Float!, $taxationAmount: Float!,$address:AddressInput!, $orderDate: String!,$isPickedUp: Boolean!, $deliveryCharges: Float!, $instructions: String, $coinsToUse: Int){
+    placeOrder(restaurant:$restaurant,orderInput: $orderInput,paymentMethod:$paymentMethod,couponCode:$couponCode,tipping:$tipping, taxationAmount: $taxationAmount, address:$address, orderDate: $orderDate,isPickedUp: $isPickedUp, deliveryCharges:$deliveryCharges, instructions: $instructions, coinsToUse: $coinsToUse) {
       _id
       orderId
       restaurant{
@@ -327,8 +327,22 @@ export const sendOtpToPhoneNumber = `
     }
   }
   `
+export const loginWithPhone = `
+  mutation LoginWithPhone($phone: String!, $otp: String!, $name: String, $notificationToken: String) {
+    loginWithPhone(phone: $phone, otp: $otp, name: $name, notificationToken: $notificationToken) {
+      userId
+      token
+      tokenExpiration
+      isActive
+      name
+      email
+      phone
+      isNewUser
+    }
+  }
+  `
 export const Deactivate = `
-  mutation deactivated($isActive: Boolean!, $email: String!) {
+  mutation deactivated($isActive: Boolean!, $email: String) {
     Deactivate(isActive: $isActive,email: $email) {
       isActive
     }
@@ -346,20 +360,6 @@ export const login = `
      phone
      isNewUser
    }
-  }
-  `
-export const loginWithPhone = `
-  mutation LoginWithPhone($phone: String!, $otp: String!, $name: String, $notificationToken: String) {
-    loginWithPhone(phone: $phone, otp: $otp, name: $name, notificationToken: $notificationToken) {
-      userId
-      token
-      tokenExpiration
-      isActive
-      name
-      email
-      phone
-      isNewUser
-    }
   }
   `
 export const createUser = `

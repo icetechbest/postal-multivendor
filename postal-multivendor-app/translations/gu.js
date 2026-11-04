@@ -571,7 +571,7 @@ export const gu = {
   none: 'કંઈ નહીં',
   yourEmail: 'તમારા ઈમેલ દ્વારા સરળતાથી લૉગિન કરો!',
   yourEmailPassword: 'પ્રવેશ માટે હવે તમારો પાસવર્ડ દાખલ કરો!',
-  brandName: 'java',
+  brandName: 'Genie',
   welcomeText: 'એનાટેગામાં સ્વાગત',
   createAccountDesc:
     'શ્રેષ્ઠ રેસ્ટોરન્ટ્સનો આનંદ માણો અથવા નજીકની દુકાનોમાંથી તમને જોઈતું ડિલિવરી મેળવો',
@@ -631,7 +631,7 @@ export const gu = {
   Done: 'પૂર્ણ',
   addMessage: 'સંદેશ ઉમેરો',
   kindlyBeAdvisedText: 'કૃપા કરીને નોંધ લો કે તમારો સંદેશ તમારો ઓર્ડર ડિલિવર કરવા માટે જવાબદાર કુરિયર પાર્ટનરને પણ દેખાઈ શકે છે.',
-  exploreYallaCities: 'java શહેરો શોધો',
+  exploreYallaCities: 'Genie શહેરો શોધો',
   Card: 'કાર્ડ',
   lebelAlreadyExist: "'{{selectedLabel}}' લેબલ પહેલેથી જ અસ્તિત્વમાં છે. કૃપા કરીને અલગ એક પસંદ કરો.",
   UpdateAvailable: 'અપડેટ ઉપલબ્ધ',

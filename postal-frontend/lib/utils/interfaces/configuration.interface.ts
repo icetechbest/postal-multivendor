@@ -60,6 +60,9 @@ export interface IConfiguration {
   enableRestaurantDemo?: boolean;
   enableAdminDemo?: boolean;
   costType?: string;
+  coinsEnabled?: boolean;
+  coinsPerCurrencyUnit?: number;
+  coinValue?: number;
 }
 
 export interface IConfigurationUnresolved {

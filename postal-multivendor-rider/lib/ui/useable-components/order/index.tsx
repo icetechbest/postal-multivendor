@@ -321,7 +321,7 @@ const Order = ({
                   </Text>
                 </View>
 
-                {["PICKED"].includes(orderStatus) && (
+                {["ASSIGNED", "PICKED"].includes(orderStatus) && (
                   <View className="flex-row items-center gap-x-2">
                     <TouchableOpacity
                       onPress={() => {

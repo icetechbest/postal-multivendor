@@ -5,8 +5,6 @@ import { CardStyleInterpolators, createStackNavigator } from '@react-navigation/
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import navigationService from './navigationService'
 import * as Notifications from 'expo-notifications'
-import ForgotPassword from '../screens/ForgotPassword/ForgotPassword'
-import SetYourPassword from '../screens/ForgotPassword/SetYourPassword'
 import CreateAccount from '../screens/CreateAccount/CreateAccount'
 import ItemDetail from '../screens/ItemDetail/ItemDetail'
 import MyOrders from '../screens/MyOrders/MyOrders'
@@ -37,10 +35,9 @@ import { LocationContext } from '../context/Location'
 import Reorder from '../screens/Reorder/Reorder'
 import Favourite from '../screens/Favourite/Favourite'
 import ChatScreen from '../screens/ChatWithRider/ChatScreen'
+import Coins from '../screens/Coins/Coins'
 import { DarkBackButton, RightButton } from '../components/Header/HeaderIcons/HeaderIcons'
 import PhoneOtp from '../screens/Otp/Phone/PhoneOtp'
-import ForgotPasswordOtp from '../screens/Otp/ForgotPassword/ForgetPasswordOtp'
-import PhoneNumber from '../screens/PhoneNumber/PhoneNumber'
 import { useApolloClient, gql } from '@apollo/client'
 import { myOrders } from '../apollo/queries'
 import Checkout from '../screens/Checkout/Checkout'
@@ -153,18 +150,13 @@ function MainNavigator() {
 
       {/* Authentication Login */}
       <NavigationStack.Screen name='CreateAccount' component={CreateAccount} />
-      {/* Phone-number-only auth: the Login route reuses the phone screen in auth mode */}
-      <NavigationStack.Screen name='Login' component={PhoneNumber} initialParams={{ mode: 'auth' }} />
-      <NavigationStack.Screen name='PhoneNumber' component={PhoneNumber} />
-      <NavigationStack.Screen name='ForgotPassword' component={ForgotPassword} />
-      <NavigationStack.Screen name='SetYourPassword' component={SetYourPassword} />
       <NavigationStack.Screen name='PhoneOtp' component={PhoneOtp} />
-      <NavigationStack.Screen name='ForgotPasswordOtp' component={ForgotPasswordOtp} />
       <NavigationStack.Screen name='SelectLocation' component={SelectLocation} options={SLIDE_RIGHT_WITH_CURVE_ANIM} />
       <NavigationStack.Screen name='AddNewAddress' component={AddNewAddress} />
       <NavigationStack.Screen name='SaveAddress' component={SaveAddress} />
       <NavigationStack.Screen name='Favourite' component={Favourite} options={SLIDE_RIGHT_WITH_CURVE_ANIM} />
       <NavigationStack.Screen name='ChatWithRider' component={ChatScreen} />
+      <NavigationStack.Screen name='Coins' component={Coins} options={SLIDE_RIGHT_WITH_CURVE_ANIM} />
       <NavigationStack.Screen name='Collection' component={Collection} options={SLIDE_RIGHT_WITH_CURVE_ANIM} />
       <NavigationStack.Screen name='MapSection' component={MapSection} options={SLIDE_UP_RIGHT_ANIMATION} />
       <NavigationStack.Screen name='Account' component={Account} options={SLIDE_RIGHT_WITH_CURVE_ANIM} />

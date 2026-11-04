@@ -6,6 +6,7 @@ import { User } from '../../models/User';
 import { AuthContext, requireAuth } from '../../middleware/auth';
 import { ValidationError, NotFoundError, AuthorizationError } from '../../utils/errors';
 import { generateOrderId } from '../../utils/crypto';
+import { awardCoinsForOrder, refundCoinsForOrder } from '../../services/coins';
 import { PubSub } from 'graphql-subscriptions';
 
 const pubsub = new PubSub();
@@ -362,6 +363,8 @@ export const orderResolvers = {
       }
 
       await order.save();
+      if (status === 'DELIVERED' || status === 'COMPLETED') await awardCoinsForOrder(order._id);
+      if (status === 'CANCELLED') await refundCoinsForOrder(order._id);
 
       const populatedOrder = await populateOrder(order._id);
       publishOrderUpdate(populatedOrder);
@@ -423,6 +426,7 @@ export const orderResolvers = {
       order.reason = reason;
       order.cancelledAt = new Date();
       await order.save();
+      await refundCoinsForOrder(order._id);
 
       const populatedOrder = await populateOrder(order._id);
       publishOrderUpdate(populatedOrder);

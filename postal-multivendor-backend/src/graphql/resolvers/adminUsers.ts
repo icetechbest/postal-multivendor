@@ -358,7 +358,7 @@ export const adminUserResolvers = {
       const body = args.notificationBody.trim();
       if (!body) throw new ValidationError('Notification body is required');
       const users = await User.find({ role: 'USER', isActive: true, isOfferNotification: { $ne: false }, notificationToken: { $exists: true, $ne: null } }).select('notificationToken').limit(5000);
-      const title = args.notificationTitle?.trim() || 'Postal';
+      const title = args.notificationTitle?.trim() || 'Genie';
       for (let i = 0; i < users.length; i += 50) {
         await Promise.allSettled(users.slice(i, i + 50).map((u) => sendPushNotification(u.notificationToken, title, body)));
       }

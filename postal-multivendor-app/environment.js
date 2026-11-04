@@ -4,6 +4,13 @@ import ConfigurationContext from './src/context/Configuration'
 
 export const isProduction = process.env.NODE_ENV === 'production'
 
+// Existing native IDs remain fallbacks; database configuration can override them.
+const GOOGLE_IDS = {
+  web: '650001300965-9ochl634tuvv6iguei6dl57jkmfto6r9.apps.googleusercontent.com',
+  android: '650001300965-ii3nafver2uiu4qat9gbde9rkmhmvj0j.apps.googleusercontent.com',
+  ios: '650001300965-dkji7jutv8gc5m4n7cdg3nft87sauhn7.apps.googleusercontent.com'
+}
+
 const trimTrailingSlash = value => value.replace(/\/+$/, '')
 const configuredServerUrl =
   process.env.EXPO_PUBLIC_SERVER_URL || Constants.expoConfig?.extra?.apiUrl || 'http://localhost:4000'
@@ -19,6 +26,9 @@ const useEnvVars = () => {
     WS_GRAPHQL_URL,
     SERVER_URL: SERVER_REST_URL,
     SERVER_REST_URL,
+    IOS_CLIENT_ID_GOOGLE: configuration?.iOSClientID || GOOGLE_IDS.ios,
+    ANDROID_CLIENT_ID_GOOGLE: configuration?.androidClientID || GOOGLE_IDS.android,
+    EXPO_CLIENT_ID: configuration?.expoClientID || GOOGLE_IDS.web,
     AMPLITUDE_API_KEY: configuration?.appAmplitudeApiKey,
     MAP_TILE_URL:
       configuration?.mapTileUrl ||

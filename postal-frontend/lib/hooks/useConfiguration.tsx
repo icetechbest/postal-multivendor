@@ -50,6 +50,9 @@ export const useConfiguration = () => {
   const PASSWORD = configuration?.password;
   const ENABLE_EMAIL = configuration?.enableEmail;
   const DELIVERY_RATE = configuration?.deliveryRate;
+  const COINS_ENABLED = configuration?.coinsEnabled ?? true;
+  const COINS_PER_CURRENCY_UNIT = configuration?.coinsPerCurrencyUnit ?? 0.1;
+  const COIN_VALUE = configuration?.coinValue ?? 0.5;
   const COST_TYPE = configuration?.costType || 'perKM';
   const TWILIO_ACCOUNT_SID = configuration?.twilioAccountSid;
   const TWILIO_AUTH_TOKEN = configuration?.twilioAuthToken;
@@ -96,6 +99,9 @@ export const useConfiguration = () => {
 
     // DELIVERY RATE
     DELIVERY_RATE,
+    COINS_ENABLED,
+    COINS_PER_CURRENCY_UNIT,
+    COIN_VALUE,
     COST_TYPE,
 
     // TWILIO

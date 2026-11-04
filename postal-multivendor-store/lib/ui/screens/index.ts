@@ -4,3 +4,5 @@ export { default as LanguageScreen } from "./language";
 export { default as ProfileScreen } from "./profile";
 export { default as WalletScreen } from "./wallet";
 
+export { default as MenuScreen } from "./menu";
+export { default as MenuItemScreen } from "./menu-item";

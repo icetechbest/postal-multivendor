@@ -279,7 +279,7 @@ function Account(props) {
   async function deactivatewithemail() {
     try {
       await deactivated({
-        variables: { isActive: false, email: profile?.email }
+        variables: { isActive: false, ...(profile?.email ? { email: profile.email } : {}) }
       })
       setDeleteModalVisible(false)
       await logout()
@@ -372,18 +372,16 @@ function Account(props) {
 
               <View style={styles(currentTheme).subContainer}>
                 <View>
-                  <ButtonContainer title={t('email')} detail={profile?.email} status={profile?.emailIsVerified ? 'verified' : 'notVerified'} onPress='null' />
+                  {!!profile?.email && (
+                    <>
+                      <ButtonContainer title={t('email')} detail={profile?.email} status={profile?.emailIsVerified ? 'verified' : 'notVerified'} onPress='null' />
+                      <View style={styles(currentTheme).line} />
+                    </>
+                  )}
+                  <ButtonContainer title={t('myCoins')} detail={`🪙 ${profile?.coins || 0}`} status='null' onPress={() => navigation.navigate('Coins')} />
                   <View style={styles(currentTheme).line} />
-                  <ButtonContainer
-                    title={t('phone')}
-                    detail={profile?.phone}
-                    status={profile?.phoneIsVerified ? 'verified' : 'notVerified'}
-                    onPress={() =>
-                      navigation.navigate('PhoneNumber', {
-                        prevScreen: 'Account'
-                      })
-                    }
-                  />
+                  {/* The phone number is the account identity (sign-in), so it is read-only here. */}
+                  <ButtonContainer title={t('phone')} detail={profile?.phone} status={profile?.phoneIsVerified ? 'verified' : 'notVerified'} onPress='null' />
                   <View style={styles(currentTheme).line} />
                   <ButtonContainer
                     title={t('name')}

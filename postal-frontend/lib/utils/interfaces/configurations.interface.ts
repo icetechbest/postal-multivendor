@@ -20,6 +20,12 @@ export interface IDeliveryRateForm {
   costType: string;
 }
 
+export interface ICoinsForm {
+  coinsEnabled: boolean;
+  coinsPerCurrencyUnit: number | '';
+  coinValue: number | '';
+}
+
 export interface ITwilioForm {
   twilioAccountSid: string | undefined;
   twilioAuthToken: string | undefined;

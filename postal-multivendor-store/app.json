@@ -22,7 +22,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos for license, vehicle plate and profile image. Please allow these to continue using the app."
+          "photosPermission": "The app accesses your photos so you can add pictures to your menu items, categories and profile.",
+          "cameraPermission": "The app uses the camera so you can take pictures of your menu items."
         }
       ],
       "expo-asset",
@@ -60,13 +61,6 @@
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.BLUETOOTH",
-        "android.permission.BLUETOOTH_ADMIN",
-        "android.permission.BLUETOOTH_CONNECT",
-        "android.permission.BLUETOOTH_SCAN",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.postal.restaurant",
@@ -81,10 +75,10 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "90894ccf-a37b-4c65-9b07-c02e1399c9c8"
+        "projectId": "d03948f6-c3c3-4512-bdfc-c1d7d84d95f7"
       }
     },
-    "owner": "eyadwaelll",
+    "owner": "iceey443",
     "runtimeVersion": {
       "policy": "appVersion"
     },

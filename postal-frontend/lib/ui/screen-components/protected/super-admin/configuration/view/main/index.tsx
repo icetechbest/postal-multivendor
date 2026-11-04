@@ -11,6 +11,7 @@ import FirebaseAdminAddForm from '../../add-form/firebase-admin';
 import AppConfigAddForm from '../../add-form/app-config';
 import VerificationAddForm from '../../add-form/verification';
 import CurrencyAddForm from '../../add-form/currency';
+import CoinsAddForm from '../../add-form/coins';
 import AppVersionAddForm from '../../add-form/app-versions';
 
 const ConfigMain = () => {
@@ -19,6 +20,7 @@ const ConfigMain = () => {
       <NodeMailerAddForm />
       <CurrencyAddForm />
       <DeliveryRateAddForm />
+      <CoinsAddForm />
       <TwilioAddForm />
       <SentryAddForm />
       <GoogleApiAddForm />
