@@ -8,11 +8,12 @@ import { Order } from '../../models/Order';
 import { RestaurantOption } from '../../models/Option';
 import { IRestaurant, Restaurant } from '../../models/Restaurant';
 import { User } from '../../models/User';
+import { Zone } from '../../models/Zone';
 import { AuthContext, requireAuth, requireRole } from '../../middleware/auth';
 import { hashPassword } from '../../utils/crypto';
 import { AuthorizationError, NotFoundError, ValidationError } from '../../utils/errors';
 import { validatePassword, validateCoordinates } from '../../utils/validation';
-import { idOf } from './appHelpers';
+import { idOf, pointInPolygon } from './appHelpers';
 import { assertObjectId, audit, cleanId, definedOnly, ensureRestaurantOwner, escapeRegex, pageParams, requirePlatformReader, requireSuperAdmin } from './adminHelpers';
 
 const slugify = (name: string) => name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'restaurant';
@@ -355,6 +356,9 @@ export const adminRestaurantResolvers = {
           restaurant.deliveryBounds = { type: 'Polygon', coordinates: args.bounds } as any;
         }
       }
+      // Link the restaurant to the zone that contains its pin (the wizard has no zone picker).
+      const zoneDoc = (await Zone.find({ isActive: true })).find((z) => pointInPolygon(longitude, latitude, z.location.coordinates));
+      if (zoneDoc) restaurant.zone = zoneDoc._id as any;
       await restaurant.save();
       return response('Delivery bounds and location updated', restaurant);
     },

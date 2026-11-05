@@ -582,7 +582,22 @@ riderLogin: async (
     const coordinates = addressCoordinates(args.address);
     const isPickup = Boolean(args.isPickedUp);
     if (!isPickup) {
-      const zone = await Zone.findOne({ _id: restaurant.zone, isActive: true });
+      let zone = restaurant.zone ? await Zone.findOne({ _id: restaurant.zone, isActive: true }) : null;
+      if (!zone) {
+        // Restaurants created from the dashboard wizard have no zone assigned.
+        // Fall back to an active zone that contains the restaurant's pin (or, failing that,
+        // the customer's address) and remember it on the restaurant.
+        const zones = await Zone.find({ isActive: true });
+        const [rLng, rLat] = restaurant.location?.coordinates || [];
+        zone =
+          zones.find((z) => rLng !== undefined && pointInPolygon(rLng, rLat, z.location.coordinates)) ||
+          zones.find((z) => pointInPolygon(coordinates[0], coordinates[1], z.location.coordinates)) ||
+          null;
+        if (zone) {
+          restaurant.zone = zone._id as any;
+          await restaurant.save();
+        }
+      }
       if (!zone) throw new ValidationError('Restaurant delivery zone is unavailable');
       if (!pointInPolygon(coordinates[0], coordinates[1], zone.location.coordinates)) throw new ValidationError('Address is outside the delivery zone');
       if (restaurant.deliveryBounds?.coordinates?.length && !pointInPolygon(coordinates[0], coordinates[1], restaurant.deliveryBounds.coordinates)) {
