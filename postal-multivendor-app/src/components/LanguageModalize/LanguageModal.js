@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { View, Modal, TouchableOpacity, Pressable, ScrollView, Dimensions } from 'react-native'
 import * as Localization from 'expo-localization'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import i18next from 'i18next'
+import { applyLanguage } from '../../utils/language'
 import { useTranslation } from 'react-i18next'
 import { Feather } from '@expo/vector-icons'
 
@@ -70,14 +70,11 @@ const LanguageModal = ({ modalVisible, setModalVisible, currentTheme, showCrossB
       const availableLanguageCodes = languageTypes.map((lang) => lang.code)
 
       // Determine which language to use
-      let languageToUse = 'en' // Default to English
+      let languageToUse = 'ar' // Default to Arabic
 
       if (storedLanguageCode) {
         // Use stored language if it's valid
         languageToUse = storedLanguageCode
-      } else if (availableLanguageCodes.includes(systemLanguageCode)) {
-        // Use system language if it's available
-        languageToUse = systemLanguageCode
       }
 
       // Find the index and name of the language
@@ -99,13 +96,8 @@ const LanguageModal = ({ modalVisible, setModalVisible, currentTheme, showCrossB
       const languageCode = languageTypes[languageInd].code
       const languageVal = languageTypes[languageInd].value
 
-      // Save language preferences
-      await AsyncStorage.setItem('postal-language', languageCode)
-      await AsyncStorage.setItem('postal-language-name', languageVal)
-
-      // Change app language
-      i18next.changeLanguage(languageCode)
       languageNameSetter(languageVal)
+      await applyLanguage(languageCode, languageVal)
     } catch (error) {
       console.error('Error during language selection:', error)
     } finally {

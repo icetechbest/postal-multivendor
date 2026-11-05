@@ -13,6 +13,12 @@ import {
   offsetLimitPagination
 } from '@apollo/client/utilities'
 import { WebSocketLink } from '@apollo/client/link/ws'
+import { RetryLink } from '@apollo/client/link/retry'
+import { onError } from '@apollo/client/link/error'
+import NetInfo from '@react-native-community/netinfo'
+import i18next from 'i18next'
+import { showMessage } from 'react-native-flash-message'
+import { describeError } from '../utils/describeError'
 import useEnvVars from '../../environment'
 import { useContext } from 'react'
 import { LocationContext } from '../context/Location'
@@ -63,8 +69,28 @@ const setupApollo = () => {
     }
   })
 
+  // A request that hangs on a weak connection would leave the screen spinning forever:
+  // give up after 30s so the user gets an error/retry instead.
+  const fetchWithTimeout = (uri, options) => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 30000)
+    return fetch(uri, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer))
+  }
+
   const httpLink = createHttpLink({
-    uri: GRAPHQL_URL
+    uri: GRAPHQL_URL,
+    fetch: fetchWithTimeout
+  })
+
+  // Transient network failures are retried quietly (queries only: re-sending a
+  // mutation such as placeOrder could be applied twice).
+  const retryLink = new RetryLink({
+    delay: { initial: 400, max: 3000, jitter: true },
+    attempts: (count, operation, error) => {
+      if (!error || count >= 3) return false
+      const def = getMainDefinition(operation.query)
+      return def.kind === 'OperationDefinition' && def.operation === 'query'
+    }
   })
 
   const wsLink = new WebSocketLink({
@@ -76,6 +102,30 @@ const setupApollo = () => {
         return { authorization: token ? `Bearer ${token}` : '' }
       }
     }
+  })
+
+  // Tells the user WHY a request failed (offline / server down / timeout ...), once every 8s.
+  // Sits outside the retry link, so it only fires after the retries have been used up.
+  let lastNetworkErrorAt = 0
+  const errorReporter = onError(({ networkError, operation }) => {
+    if (!networkError) return
+    const now = Date.now()
+    if (now - lastNetworkErrorAt < 8000) return
+    lastNetworkErrorAt = now
+    const show = (isConnected) => {
+      try {
+        const reason = describeError({ networkError }, i18next.t.bind(i18next), { isConnected })
+        showMessage({
+          message: reason,
+          description: operation?.operationName || undefined,
+          type: 'danger',
+          duration: 5000
+        })
+      } catch (e) {}
+    }
+    NetInfo.fetch()
+      .then((state) => show(state.isConnected !== false && state.isInternetReachable !== false))
+      .catch(() => show(undefined))
   })
 
   const request = async operation => {
@@ -115,8 +165,11 @@ const setupApollo = () => {
   }, wsLink)
 
   const client = new ApolloClient({
-    link: concat(ApolloLink.from([terminatingLink, requestLink]), httpLink),
+    link: concat(ApolloLink.from([terminatingLink, requestLink, errorReporter, retryLink]), httpLink),
     cache,
+    defaultOptions: {
+      watchQuery: { fetchPolicy: 'cache-and-network', nextFetchPolicy: 'cache-first' }
+    },
     resolvers: {}
   })
 

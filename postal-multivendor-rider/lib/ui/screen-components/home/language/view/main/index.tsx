@@ -7,6 +7,7 @@ import {
 import { LANGUAGES } from "@/lib/utils/constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18next, { changeLanguage } from "i18next";
+import { syncLayoutDirection } from "@/lib/utils/rtl";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -30,9 +31,7 @@ export default function LanguageMain() {
   const handleSetCurrentLanguage = async () => {
     try {
       const lng = await AsyncStorage.getItem("postal-language");
-      if (lng) {
-        setIsSelected(lng);
-      }
+      setIsSelected(lng || "ar");
     } catch (error) {
       console.log({ error });
     }
@@ -41,7 +40,8 @@ export default function LanguageMain() {
     try {
       setIsChangingLang(true);
       await AsyncStorage.setItem("postal-language", isSelected);
-      changeLanguage(isSelected);
+      await changeLanguage(isSelected);
+      syncLayoutDirection(isSelected);
       setIsChangingLang(false);
     } catch (e) {
       console.log(e);

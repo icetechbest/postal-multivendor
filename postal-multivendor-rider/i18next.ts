@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Localization from "expo-localization";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
-import { Platform } from "react-native";
+
+import { syncLayoutDirection } from "./lib/utils/rtl";
 
 // Import language files
 import { en } from "./languages/en";
@@ -76,8 +76,9 @@ export const languageResources: { [key: string]: { translation: object } } = {
 const getStoredLanguage = async (): Promise<void> => {
   try {
     const storedLang = await AsyncStorage.getItem("postal-language");
-    const deviceLang = Localization.getLocales()[0]?.languageCode || "en";
-    const initialLang = storedLang || deviceLang;
+    // Arabic by default; a language the user picked is remembered.
+    const initialLang =
+      storedLang && storedLang in languageResources ? storedLang : "ar";
 
     await i18next.use(initReactI18next).init({
       lng: initialLang,
@@ -87,6 +88,7 @@ const getStoredLanguage = async (): Promise<void> => {
 
     // Apply the initial language
     await i18next.changeLanguage(initialLang);
+    syncLayoutDirection(initialLang);
   } catch (error) {
     console.log("Error initializing language:", error);
   }
@@ -94,18 +96,5 @@ const getStoredLanguage = async (): Promise<void> => {
 
 // Initialize language
 getStoredLanguage();
-
-// Additional iOS-specific configuration (if necessary)
-if (Platform.OS === "ios") {
-  const iosLang = Localization.getLocales()[0]?.languageCode || "en";
-
-  i18next.use(initReactI18next).init({
-    lng: iosLang,
-    fallbackLng: "en",
-    resources: languageResources,
-  });
-
-  i18next.changeLanguage(iosLang);
-}
 
 export default i18next;

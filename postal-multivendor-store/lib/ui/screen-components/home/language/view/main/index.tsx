@@ -43,7 +43,8 @@ export default function LanguageMain() {
 
       setIsChangingLang(true);
       await AsyncStorage.setItem("lang", isSelected);
-      changeLanguage(isSelected);
+      await changeLanguage(isSelected);
+      syncLayoutDirection(isSelected);
       setIsChangingLang(false);
     } catch (e) {
       console.error(e);

@@ -33,6 +33,39 @@ const styles = (props = null, hasActiveOrders = false) =>
       height: scale(90)
     },
 
+    hero: {
+      backgroundColor: props != null ? props?.newheaderColor : '#F0B400',
+      paddingHorizontal: scale(20),
+      paddingTop: scale(8),
+      paddingBottom: scale(52),
+      gap: scale(14)
+    },
+    heroRow: {
+      flexDirection: props?.isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      gap: scale(10)
+    },
+    heroTexts: {
+      flex: 1
+    },
+    heroSearch: {
+      height: scale(48),
+      borderRadius: scale(24),
+      backgroundColor: '#000',
+      flexDirection: props?.isRTL ? 'row-reverse' : 'row',
+      alignItems: 'center',
+      gap: scale(10),
+      paddingHorizontal: scale(18)
+    },
+    heroSearchText: {
+      flex: 1
+    },
+    panel: {
+      backgroundColor: props != null ? props?.themeBackground : '#FFF',
+      paddingTop: scale(8),
+      paddingBottom: scale(24),
+      minHeight: scale(500)
+    },
     screenBackground: {
       backgroundColor: props != null ? props?.themeBackground : '#FFF'
       // ...alignment.PBlarge

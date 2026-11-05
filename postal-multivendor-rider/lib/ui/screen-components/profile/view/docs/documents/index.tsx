@@ -30,13 +30,13 @@ export default function DocumentsSection({
             {t("Driving License")}
           </Text>
           <TouchableOpacity onPress={() => setIsFormOpened("LICENSE_FORM")}>
-            <Text className="font-semibold text-[#0EA5E9]">
+            <Text className="font-semibold text-[#F0B400]">
               {dataProfile?.licenseDetails ? t("Update") : t("Add")}
             </Text>
           </TouchableOpacity>
         </View>
         <View
-          className={`${dataProfile?.licenseDetails ? "bg-[#E0F2FE]" : "bg-[#FEE2E2]"} p-2 border rounded-3xl border-[#E0F2FE]`}
+          className={`${dataProfile?.licenseDetails ? "bg-[#FFF6D6]" : "bg-[#FEE2E2]"} p-2 border rounded-3xl border-[#FFF6D6]`}
         >
           <Text
             className={`${dataProfile?.licenseDetails ? "text-[#0D99FF]" : "text-[#991B1B]"} font-semibold`}
@@ -53,13 +53,13 @@ export default function DocumentsSection({
             {t("Vehicle Plate")}
           </Text>
           <TouchableOpacity onPress={() => setIsFormOpened("VEHICLE_FORM")}>
-            <Text className="font-semibold text-[#0EA5E9]">
+            <Text className="font-semibold text-[#F0B400]">
               {dataProfile?.vehicleDetails ? t("Update") : t("Add")}
             </Text>
           </TouchableOpacity>
         </View>
         <View
-          className={`${dataProfile?.vehicleDetails ? "bg-[#E0F2FE]" : "bg-[#FEE2E2]"} p-3 border rounded-3xl border-[#E0F2FE]`}
+          className={`${dataProfile?.vehicleDetails ? "bg-[#FFF6D6]" : "bg-[#FEE2E2]"} p-3 border rounded-3xl border-[#FFF6D6]`}
         >
           <Text
             className={`${dataProfile?.vehicleDetails ? "text-[#0D99FF]" : "text-[#991B1B]"} font-semibold`}

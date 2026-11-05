@@ -24,7 +24,7 @@ import { theme } from '../../../utils/themeColors'
 import { HeaderBackButton } from '@react-navigation/elements'
 import UserContext from '../../../context/User'
 
-const rippleColor = '#6FCF97'
+const rippleColor = '#F0B400'
 function BackButton(props) {
   const navigation = useNavigation()
   if (props?.icon === 'leftArrow') {

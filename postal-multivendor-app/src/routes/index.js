@@ -52,7 +52,8 @@ import Account from '../screens/Account/Account'
 import EditName from '../components/Account/EditName/EditName'
 import SearchScreen from '../screens/Search/SearchScreen'
 import UserContext from '../context/User'
-import { Easing, Platform } from 'react-native'
+import AuthContext from '../context/Auth'
+import { Easing, Platform, View } from 'react-native'
 import CategoryPage from '../components/SubCategoryPage/SubCategoryPage'
 // import HypCheckout from '../screens/Hyp/HypCheckout'
 import NewRestaurantDetailDesign from '../components/NewRestaurantDetailDesign/RestaurantDetailDesign'
@@ -61,6 +62,7 @@ import * as LocationImport from 'expo-location'
 
 const NavigationStack = createStackNavigator()
 const Location = createStackNavigator()
+const AuthNavigator = createStackNavigator()
 const Tab = createBottomTabNavigator()
 
 function MainNavigator() {
@@ -186,6 +188,16 @@ function LocationStack() {
   )
 }
 
+// Shown to anyone who is not signed in: nobody can reach the app before registering.
+function AuthStack() {
+  return (
+    <AuthNavigator.Navigator screenOptions={{ headerShown: false }}>
+      <AuthNavigator.Screen name='CreateAccount' component={CreateAccount} />
+      <AuthNavigator.Screen name='PhoneOtp' component={PhoneOtp} options={{ headerShown: true }} />
+    </AuthNavigator.Navigator>
+  )
+}
+
 function BottomTabNavigator() {
   const themeContext = useContext(ThemeContext)
   const currentTheme = theme[themeContext.ThemeValue]
@@ -194,20 +206,35 @@ function BottomTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, size }) => {
           // synced with BottomTabIcon, make sure to have the same name as icon in BottomTabIcon
-          return <BottomTabIcon name={route.name.toLowerCase()} size={focused ? '28' : size} color={color} />
+          return (
+            <View style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: focused ? '#000' : 'transparent' }}>
+              <BottomTabIcon name={route.name.toLowerCase()} size={size} color={focused ? '#F0B400' : 'rgba(0,0,0,0.65)'} />
+            </View>
+          )
         },
+        // floating yellow pill, like the home design
+        tabBarShowLabel: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          paddingHorizontal: 15,
-          paddingVertical: 10,
-          paddingBottom: Platform.OS === 'ios' ? 25 : 15,
-          height: Platform.OS === 'ios' ? 90 : 70,
-          backgroundColor: currentTheme.cardBackground
+          marginHorizontal: 16,
+          marginBottom: Platform.OS === 'ios' ? 24 : 12,
+          height: 64,
+          borderRadius: 32,
+          borderTopWidth: 0,
+          paddingVertical: 0,
+          paddingHorizontal: 8,
+          backgroundColor: '#F0B400',
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOpacity: 0.25,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 3 }
         },
-        tabBarActiveTintColor: '#0EA5E9',
-        tabBarInactiveTintColor: currentTheme.fontNewColor,
-        tabBarLabelStyle: { fontSize: 12 },
+        tabBarItemStyle: { height: 64, paddingVertical: 0 },
+        tabBarActiveTintColor: '#000',
+        tabBarInactiveTintColor: 'rgba(0,0,0,0.65)',
         headerRight: () => <RightButton icon='cart' iconColor={currentTheme.iconColor} menuHeader={false} t={t} />
       })}
     >
@@ -261,6 +288,7 @@ function BottomTabNavigator() {
 function AppContainer() {
   const client = useApolloClient()
   const { permissionState, setPermissionState, location } = useContext(LocationContext)
+  const { token, tokenLoaded } = useContext(AuthContext)
   const lastNotificationResponse = Notifications.useLastNotificationResponse()
 
   const [isLoadingPermission, setIsLoadingPermission] = React.useState(true)
@@ -289,7 +317,6 @@ function AppContainer() {
   const init = async () => {
     try {
       const permission_state = await LocationImport.getForegroundPermissionsAsync()
-      console.log({permission_state})
 
       setPermissionState(permission_state)
       setIsLoadingPermission(false)
@@ -308,11 +335,8 @@ function AppContainer() {
     }
   }, [lastNotificationResponse])
 
-  console.log('-------------')
-  console.log('-------------')
-  console.log({ permissionState, location })
 
-  if (isLoadingPermission) return
+  if (isLoadingPermission || !tokenLoaded) return null
 
   return (
     <SafeAreaProvider>
@@ -321,7 +345,7 @@ function AppContainer() {
           navigationService.setGlobalRef(ref)
         }}
       >
-        {!permissionState?.granted || !location ? <LocationStack /> : <MainNavigator />}
+        {!token ? <AuthStack /> : !permissionState?.granted || !location ? <LocationStack /> : <MainNavigator />}
 
         {/* {<LocationStack />}
         <MainNavigator /> */}

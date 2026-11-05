@@ -7,6 +7,7 @@ import {
   split,
 } from '@apollo/client';
 import { onError } from '@apollo/client/link/error';
+import { RetryLink } from '@apollo/client/link/retry';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { print } from 'graphql';
@@ -16,7 +17,27 @@ import { GRAPHQL_HTTP_URL, GRAPHQL_WS_URL } from '../config';
 import { refreshAccessToken } from '../auth/session';
 import { getAccessToken } from '../auth/token-store';
 
-const httpLink = new HttpLink({ uri: GRAPHQL_HTTP_URL });
+/** Give up on a hung request after 30s so screens show an error/retry instead of spinning forever. */
+const fetchWithTimeout: typeof fetch = (input, init) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+};
+
+const httpLink = new HttpLink({ uri: GRAPHQL_HTTP_URL, fetch: fetchWithTimeout });
+
+/**
+ * Quietly retries queries that fail on a transient network error. Mutations are
+ * never retried: re-sending e.g. a status change or withdrawal could apply it twice.
+ */
+const retryLink = new RetryLink({
+  delay: { initial: 400, max: 3000, jitter: true },
+  attempts: (count, operation, error) => {
+    if (!error || count >= 3) return false;
+    const definition = getMainDefinition(operation.query);
+    return definition.kind === 'OperationDefinition' && definition.operation === 'query';
+  },
+});
 
 /** Attaches the in-memory access token to every HTTP operation. */
 const authLink = new ApolloLink((operation, forward) => {
@@ -79,7 +100,7 @@ const isSubscription = ({ query }: { query: unknown }): boolean => {
   );
 };
 
-const link = split(isSubscription, wsLink, ApolloLink.from([errorLink, authLink, httpLink]));
+const link = split(isSubscription, wsLink, ApolloLink.from([errorLink, authLink, retryLink, httpLink]));
 
 export const createApolloClient = (): ApolloClient<unknown> =>
   new ApolloClient({

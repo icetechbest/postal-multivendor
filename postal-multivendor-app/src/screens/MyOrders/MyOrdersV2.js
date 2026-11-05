@@ -10,6 +10,7 @@ import {
 import { Entypo } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ActiveOrders from '../../components/MyOrders/ActiveOrders'
+import { isPickupReceived } from '../../components/Main/ActiveOrders/ProgressBar'
 import Spinner from '../../components/Spinner/Spinner'
 import ConfigurationContext from '../../context/Configuration'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
@@ -28,7 +29,10 @@ import { HeaderBackButton } from '@react-navigation/elements'
 import { useTranslation } from 'react-i18next'
 
 const orderStatusActive = ['AWAITING_ADMIN', 'PENDING', 'PICKED', 'ACCEPTED', 'ASSIGNED']
+// A pickup order the customer already received is finished, not active.
+const isActiveOrder = (o) => orderStatusActive.includes(o.orderStatus) && !isPickupReceived(o)
 const orderStatusInactive = ['DELIVERED', 'COMPLETED']
+const isPastOrder = (o) => orderStatusInactive.includes(o.orderStatus) || isPickupReceived(o)
 
 function MyOrders(props) {
   const analytics = Analytics()
@@ -81,10 +85,10 @@ function MyOrders(props) {
     if (errorOrders) return <TextError text={errorOrders.message} />
     else {
       const hasActiveOrders =
-        orders.filter(o => orderStatusActive.includes(o.orderStatus)).length > 0
+        orders.filter(o => isActiveOrder(o)).length > 0
 
       const hasPastOrders =
-        orders.filter(o => orderStatusInactive.includes(o.orderStatus)).length >
+        orders.filter(o => isPastOrder(o)).length >
         0
       if (hasActiveOrders || hasPastOrders) return null
       return (
@@ -140,7 +144,7 @@ function MyOrders(props) {
         data={
           loadingOrders || errorOrders
             ? []
-            : orders.filter(o => orderStatusInactive.includes(o.orderStatus))
+            : orders.filter(o => isPastOrder(o))
         }
         showsVerticalScrollIndicator={false}
         style={styles(currentTheme).container}
@@ -149,16 +153,16 @@ function MyOrders(props) {
         ListHeaderComponent={
           <ActiveOrders
             showActiveHeader={
-              orders.filter(o => orderStatusActive.includes(o.orderStatus))
+              orders.filter(o => isActiveOrder(o))
                 .length > 0
             }
             showPastHeader={
-              orders.filter(o => orderStatusInactive.includes(o.orderStatus))
+              orders.filter(o => isPastOrder(o))
                 .length > 0
             }
             navigation={props?.navigation}
             activeOrders={orders.filter(o =>
-              orderStatusActive.includes(o.orderStatus)
+              isActiveOrder(o)
             )}
             loading={loadingOrders}
             error={errorOrders}

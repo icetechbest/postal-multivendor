@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Badge, Button, Card, ErrorState, Row, SectionTitle, SkeletonList } from '../../components/ui';
 import { useAuth } from '../../lib/auth/auth-context';
+import { describeError } from '../../lib/errors';
 import type { IRestaurant } from '../../lib/interfaces';
 import { useI18n } from '../../lib/i18n';
 import { useTheme } from '../../lib/theme';
@@ -62,7 +63,7 @@ export default function StoreDetailScreen() {
             })
             .catch((err: unknown) => {
               handleAuthError(err);
-              Alert.alert(t('common.error'));
+              Alert.alert(t('common.error'), describeError(err, t));
             });
         },
       },
@@ -81,7 +82,7 @@ export default function StoreDetailScreen() {
     return (
       <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
         <ErrorState
-          message={t('common.error')}
+          message={describeError(error, t)}
           onRetry={() => void refetch()}
           retryLabel={t('common.retry')}
         />

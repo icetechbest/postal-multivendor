@@ -12,7 +12,6 @@ import styles from './styles'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import ThemeContext from '../../ui/ThemeContext/ThemeContext'
 import { theme } from '../../utils/themeColors'
-import navigationOptions from './navigationOptions'
 import TextDefault from '../../components/Text/TextDefault/TextDefault'
 import { LocationContext } from '../../context/Location'
 import analytics from '../../utils/analytics'
@@ -27,6 +26,7 @@ import ErrorView from '../../components/ErrorView/ErrorView'
 import ActiveOrders from '../../components/Main/ActiveOrders/ActiveOrders'
 import MainLoadingUI from '../../components/Main/LoadingUI/MainLoadingUI'
 import TopBrandsLoadingUI from '../../components/Main/LoadingUI/TopBrandsLoadingUI'
+import HomeHeader from '../../components/Main/HomeHeader/HomeHeader'
 import Banner from '../../components/Main/Banner/Banner'
 import Spinner from '../../components/Spinner/Spinner'
 import CustomApartmentIcon from '../../assets/SVG/imageComponents/CustomApartmentIcon'
@@ -78,7 +78,7 @@ function Main(props) {
   const [citiesModalVisible, setCitiesModalVisible] = useState(false)
   const {
     data,
-    loading,
+    loading: loadingRestaurants,
     error,
     refetch: refetchRestaurants
   } = useQuery(RESTAURANTS, {
@@ -88,12 +88,16 @@ function Main(props) {
       shopType: null,
       ip: null
     },
-    fetchPolicy: 'network-only'
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first'
   })
+  // Show skeletons only when there is nothing cached to display yet.
+  const loading = loadingRestaurants && !data
 
   let filteredCuisines
   const { data: banners, refetch: refetchBanners } = useQuery(GET_BANNERS, {
-    fetchPolicy: 'network-only'
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first'
   })
   const { data: allCuisines } = useQuery(GET_CUISINES)
 
@@ -126,9 +130,9 @@ function Main(props) {
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor(currentTheme.newheaderColor)
+        StatusBar.setBackgroundColor(currentTheme.themeBackground)
       }
-      StatusBar.setBarStyle('dark-content')
+      StatusBar.setBarStyle(themeContext.ThemeValue === 'Dark' ? 'light-content' : 'dark-content')
     }, [currentTheme])
   )
   useEffect(() => {
@@ -138,15 +142,7 @@ function Main(props) {
     Track()
   }, [])
   useLayoutEffect(() => {
-    navigation.setOptions(
-      navigationOptions({
-        headerMenuBackground: currentTheme.themeBackground,
-        fontMainColor: currentTheme.darkBgFont,
-        iconColorPink: currentTheme.iconColor,
-        open: onOpen,
-        navigation
-      })
-    )
+    navigation.setOptions({ headerShown: false })
   }, [navigation, currentTheme])
 
   const onOpen = () => {
@@ -177,14 +173,9 @@ function Main(props) {
   }
 
   const setCurrentLocation = async () => {
-    console.log('Fetching current location...')
     setBusy(true)
 
     const { error, coords } = await getCurrentLocation()
-    console.log('getCurrentLocation result:', { error, coords })
-    console.log('coords', coords)
-    console.log('coords', coords.latitude)
-    console.log('coords', coords.longitude)
 
     if (!coords || !coords.latitude || !coords.longitude) {
       console.error('Invalid coordinates:', coords)
@@ -303,7 +294,8 @@ function Main(props) {
     </View>
   )
 
-  if (error) return <ErrorView />
+  // A failed background refresh must not hide what is already on screen.
+  if (error && !data) return <ErrorView error={error} refetchFunctions={[refetchRestaurants]} />
 
   // const filterCusinies = () => {
   //   if (data !== undefined) {
@@ -360,7 +352,9 @@ function Main(props) {
                       <ActivityIndicator size='large' color={currentTheme.spinnerColor} />
                     </View>
                   ) : restaurantorders?.length > 0 ? (
-                    <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}>
+                    <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={currentTheme.primary} colors={[currentTheme.primary]} />}>
+                      <HomeHeader onOpenLocation={onOpen} />
+                      <View style={styles(currentTheme).panel}>
                       <Banner banners={banners?.banners} />
                       <View style={{ gap: 16 }}>
                         <View>{isLoggedIn && recentOrderRestaurantsVar && recentOrderRestaurantsVar.length > 0 && <>{orderLoading || isRefreshing ? <MainLoadingUI /> : <MainRestaurantCard orders={sortRestaurantsByOpenStatus(recentOrderRestaurantsVar || [])} loading={orderLoading} error={orderError} title={'Order it again'} queryType='orderAgain' />}</>}</View>
@@ -437,6 +431,7 @@ function Main(props) {
                         <View>{orderLoading ? <MainLoadingUI /> : <MainRestaurantCard shopType='grocery' orders={sortRestaurantsByOpenStatus(mostOrderedGroceryStores || [])} loading={mostOrderedGroceryLoading} error={mostOrderedGroceryError} title={t('Top grocery picks')} queryType='topPicks' icon='store' selectedType='grocery' />}</View>
                       </View>
                       <View style={styles(currentTheme, hasActiveOrders).topBrandsMargin}>{orderLoading ? <TopBrandsLoadingUI /> : <TopBrands />}</View>
+                      </View>
                     </ScrollView>
                   ) : !location ? (
                     <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>

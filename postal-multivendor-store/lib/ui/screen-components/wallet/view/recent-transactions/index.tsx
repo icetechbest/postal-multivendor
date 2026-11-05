@@ -43,13 +43,13 @@ export default function RecentTransaction({
           }
           color={
             transaction.status === "TRANSFERRED"
-              ? "#90E36D"
+              ? "#F0B400"
               : transaction.status === "PAID"
                 ? "orange"
                 : transaction.status === "CANCELLED"
                   ? "red"
                   : transaction.status === "REQUESTED"
-                    ? "#0EA5E9"
+                    ? "#F0B400"
                     : "arrow-down-circle"
           }
         />
@@ -70,7 +70,7 @@ export default function RecentTransaction({
         style={{
           color:
             transaction.status === "REQUESTED"
-              ? "#0EA5E9"
+              ? "#F0B400"
               : appTheme.fontMainColor,
         }}
       >

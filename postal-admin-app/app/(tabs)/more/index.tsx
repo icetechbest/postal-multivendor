@@ -21,6 +21,7 @@ import {
 
 import { Badge, Button, Card, EmptyState, ListFooter, Screen, TextField } from '../../../components/ui';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { describeError } from '../../../lib/errors';
 import { WEB_ADMIN_URL } from '../../../lib/config';
 import type {
   ITicketUser,
@@ -75,7 +76,7 @@ export default function MoreScreen() {
         setBody('');
         Alert.alert(t('more.sent'));
       })
-      .catch(() => Alert.alert(t('common.error')))
+      .catch((err: unknown) => Alert.alert(t('common.error'), describeError(err, t)))
       .finally(() => setSending(false));
   }, [sendNotification, title, body, t]);
 

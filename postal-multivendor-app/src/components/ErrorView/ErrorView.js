@@ -6,8 +6,9 @@ import { theme } from '../../utils/themeColors';
 import { useTranslation } from 'react-i18next';
 import ErrorSvg from '../../assets/SVG/error';
 import useNetworkStatus from '../../utils/useNetworkStatus';
+import { describeError } from '../../utils/describeError';
 
-const ErrorView = ({ refetchFunctions = [] }) => {
+const ErrorView = ({ refetchFunctions = [], error }) => {
   const themeContext = useContext(ThemeContext);
   const currentTheme = theme[themeContext.ThemeValue];
   const { t } = useTranslation();
@@ -33,7 +34,7 @@ const ErrorView = ({ refetchFunctions = [] }) => {
         {t('somethingWentWrong')}
       </TextDefault>
       <TextDefault center H4 textColor={currentTheme.newFontcolor}>
-        {t('checkInternet')}
+        {error ? describeError(error, t, { isConnected }) : t('checkInternet')}
       </TextDefault>
     </ScrollView>
   );

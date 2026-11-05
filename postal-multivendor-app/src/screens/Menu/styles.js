@@ -191,7 +191,7 @@ const styles = (props = null) =>
       
     },
     seeAllBtn: {
-      backgroundColor: props != null ? props?.newButtonBackground : '#F3FFEE',
+      backgroundColor: props != null ? props?.newButtonBackground : '#FFF6D6',
       borderRadius: 4,
       paddingTop: 8,
       paddingBottom: 8,

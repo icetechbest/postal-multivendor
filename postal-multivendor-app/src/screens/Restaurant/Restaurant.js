@@ -1,4 +1,5 @@
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native'
+import { describeError } from '../../utils/describeError'
 import React, { useState, useContext, useEffect, useRef } from 'react'
 import { View, TouchableOpacity, Alert, StatusBar, Platform, Image, Dimensions, SectionList } from 'react-native'
 import Animated, { Extrapolation, interpolate, useSharedValue, Easing as EasingNode, withTiming, withRepeat, useAnimatedStyle, useAnimatedScrollHandler } from 'react-native-reanimated'
@@ -427,7 +428,7 @@ function Restaurant(props) {
       </View>
     )
   }
-  if (error) return <TextError text={JSON.stringify(error)} />
+  if (error && !data) return <TextError text={describeError(error, t)} />
   const restaurant = data.restaurant
   const allDeals = restaurant?.categories.filter((cat) => cat?.foods?.length)
   const deals = allDeals.map((c, index) => ({

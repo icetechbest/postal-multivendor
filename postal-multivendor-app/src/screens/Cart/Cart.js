@@ -60,7 +60,7 @@ function Cart(props) {
   const [orderDate, setOrderDate] = useState(new Date())
   const isCartEmpty = cart?.length === 0
   const cartLength = !isCartEmpty ? cart?.length : 0
-  const { loading, data } = useRestaurant(cartRestaurant)
+  const { loading, data } = useRestaurant(cartRestaurant, 'network-only')
 
   const { loading: loadingTip, data: dataTip } = useQuery(TIPPING, {
     fetchPolicy: 'network-only'

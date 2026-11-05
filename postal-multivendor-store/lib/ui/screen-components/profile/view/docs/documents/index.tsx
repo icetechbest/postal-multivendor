@@ -36,7 +36,7 @@ export default function DocumentsSection() {
             className="top-6"
             onPress={() => router.push("/bank-management")}
           >
-            <Text className="font-semibold text-[#0EA5E9]">
+            <Text className="font-semibold text-[#F0B400]">
               {dataProfile?.bussinessDetails?.accountNumber
                 ? t("Update")
                 : t("Add")}
@@ -44,7 +44,7 @@ export default function DocumentsSection() {
           </TouchableOpacity>
         </View>
         <View
-          className={`${dataProfile?.bussinessDetails?.accountNumber ? "bg-[#E0F2FE]" : "bg-[#FEE2E2]"} p-2 border rounded-3xl border-[#E0F2FE]`}
+          className={`${dataProfile?.bussinessDetails?.accountNumber ? "bg-[#FFF6D6]" : "bg-[#FEE2E2]"} p-2 border rounded-3xl border-[#FFF6D6]`}
         >
           <Text
             className={`${dataProfile?.bussinessDetails?.accountNumber ? "text-[#0D99FF]" : "text-[#991B1B]"} font-semibold`}

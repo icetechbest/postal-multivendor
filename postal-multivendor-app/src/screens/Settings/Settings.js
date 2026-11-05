@@ -1,3 +1,4 @@
+import { applyLanguage } from '../../utils/language'
 import React, { useState, useContext, useEffect, useRef } from 'react'
 import {
   AppState,
@@ -219,7 +220,7 @@ function Settings(props) {
         const langName = languageTypes[defLang].value
         languageNameSetter(langName)
       }
-      i18next.changeLanguage(lang)
+      await applyLanguage(lang, languageTypes[languageInd].value)
       modalVisibleSetter(false)
     } catch (error) {
       console.error('Error during language selection:', error)

@@ -20,7 +20,7 @@ const styles = (props = null) =>
       ...alignment.PxSmall
     },
     tagItem: {
-      backgroundColor: props !== null ? props?.main : '#90E36D',
+      backgroundColor: props !== null ? props?.main : '#F0B400',
       margin: scale(5),
       paddingVertical: scale(10),
       paddingHorizontal: scale(15),

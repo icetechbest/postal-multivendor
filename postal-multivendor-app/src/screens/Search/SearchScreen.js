@@ -88,15 +88,17 @@ const SearchScreen = () => {
     )
   }
 
-  const { data, refetch, networkStatus, loading, error } = useQuery(RESTAURANTS, {
+  const { data, refetch, networkStatus, loading: loadingRestaurants, error } = useQuery(RESTAURANTS, {
     variables: {
       longitude: location.longitude || null,
       latitude: location.latitude || null,
       shopType: null,
       ip: null
     },
-    fetchPolicy: 'network-only'
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first'
   })
+  const loading = loadingRestaurants && !data
 
   const { data: topRatedData } = useQuery(TOP_RATED_VENDORS, {
     variables: {

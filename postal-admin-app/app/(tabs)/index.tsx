@@ -11,6 +11,7 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native
 
 import { Card, ErrorState, Screen, SectionTitle, SkeletonList } from '../../components/ui';
 import { useAuth } from '../../lib/auth/auth-context';
+import { describeError } from '../../lib/errors';
 import type {
   IChartPoint,
   IDashboardUsers,
@@ -114,11 +115,12 @@ export default function HomeScreen() {
     );
   }
 
-  if (error) {
+  // A failed background refresh must not replace a dashboard that is already showing.
+  if (error && !(usersQuery.data && todayOrdersQuery.data)) {
     return (
       <Screen>
         <ErrorState
-          message={t('common.error')}
+          message={describeError(error, t)}
           onRetry={() => void onRefresh()}
           retryLabel={t('common.retry')}
         />

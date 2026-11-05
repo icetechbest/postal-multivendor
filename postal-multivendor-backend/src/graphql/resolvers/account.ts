@@ -102,7 +102,7 @@ export const accountResolvers = {
       const user = await User.findByIdAndUpdate(
         context.user!.userId,
         { $addToSet: { favouriteRestaurants: id } },
-        { new: true }
+        { returnDocument: 'after' }
       ).populate('addresses favouriteRestaurants');
       if (!user) throw new NotFoundError('User');
       return user;
@@ -133,7 +133,7 @@ export const accountResolvers = {
       const rider = await User.findOneAndUpdate(
         { _id, role: 'RIDER', isActive: true },
         { $set: updates },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       ).populate('zone');
       if (!rider) throw new NotFoundError('Rider');
       return rider;
@@ -144,7 +144,7 @@ export const accountResolvers = {
       const rider = await User.findOneAndUpdate(
         { _id: id, role: 'RIDER', isActive: true },
         { $set: { isActive: false, isAvailable: false } },
-        { new: true }
+        { returnDocument: 'after' }
       );
       if (!rider) throw new NotFoundError('Rider');
       return { message: 'Rider deleted successfully' };

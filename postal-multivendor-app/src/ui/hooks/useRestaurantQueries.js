@@ -1,5 +1,5 @@
 import { gql, useQuery } from '@apollo/client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   mostOrderedRestaurantsQuery,
   recentOrderRestaurantsQuery,
@@ -95,11 +95,14 @@ export const useRestaurantQueries = (queryType, location, selectedType) => {
 
   const { data, refetch, networkStatus, loading, error } = useQuery(query, {
     variables: queryVariables,
-    onCompleted: (data) => {
-      getResult(queryType, data, setRestaurantData, setAllData, selectedType)
-    },
-    fetchPolicy: 'network-only'
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first'
   })
+
+  // Runs for cached data too, so lists appear instantly and update when the network answers.
+  useEffect(() => {
+    if (data) getResult(queryType, data, setRestaurantData, setAllData, selectedType)
+  }, [data])
 
   const handleRefresh = () => {
     if (networkStatus === 7) {
@@ -120,7 +123,7 @@ export const useRestaurantQueries = (queryType, location, selectedType) => {
 
   return {
     restaurantData,
-    loading,
+    loading: loading && !data,
     error,
     refetch: handleRefresh,
     data,

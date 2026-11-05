@@ -126,7 +126,7 @@ const styles = (props = null) =>
     //   zIndex: 999
     // },
     // tab: {
-    //   backgroundColor: '#E4FFD9',
+    //   backgroundColor: '#FFF3C4',
     //   width: '48%',
     //   height: verticalScale(35),
     //   justifyContent: 'center',
@@ -135,7 +135,7 @@ const styles = (props = null) =>
     //   margin: scale(-10)
     // },
     // selectedTab: {
-    //   backgroundColor: props != null ? props.main : '#90EA93',
+    //   backgroundColor: props != null ? props.main : '#F0B400',
     //   borderRadius: scale(10)
     // },
     timingRow: {

@@ -17,6 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Badge, Button, Card, ErrorState, Row, SectionTitle, SkeletonList } from '../../components/ui';
 import { useAuth } from '../../lib/auth/auth-context';
+import { describeError } from '../../lib/errors';
+import { useFocusedPolling } from '../../lib/hooks/useFocusedPolling';
 import { ORDER_STATUSES, type TOrderStatus } from '../../lib/config';
 import type { IOrder, IRider } from '../../lib/interfaces';
 import { useI18n } from '../../lib/i18n';
@@ -34,12 +36,12 @@ export default function OrderDetailScreen() {
   const [riderPicker, setRiderPicker] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const { data, loading, error, refetch } = useQuery<{ order: IOrder }>(ORDER_BY_ID, {
+  const { data, loading, error, refetch, startPolling, stopPolling } = useQuery<{ order: IOrder }>(ORDER_BY_ID, {
     variables: { id },
     fetchPolicy: 'cache-and-network',
-    pollInterval: 20_000,
     skip: !id,
   });
+  useFocusedPolling(startPolling, stopPolling, 20_000);
 
   const { data: ridersData } = useQuery<{ riders: IRider[] }>(RIDERS, {
     fetchPolicy: 'cache-and-network',
@@ -78,7 +80,7 @@ export default function OrderDetailScreen() {
               })
               .catch((err: unknown) => {
                 handleAuthError(err);
-                Alert.alert(t('common.error'));
+                Alert.alert(t('common.error'), describeError(err, t));
               })
               .finally(() => setBusy(false));
           },
@@ -100,7 +102,7 @@ export default function OrderDetailScreen() {
         })
         .catch((err: unknown) => {
           handleAuthError(err);
-          Alert.alert(t('common.error'));
+          Alert.alert(t('common.error'), describeError(err, t));
         })
         .finally(() => setBusy(false));
     },
@@ -115,11 +117,11 @@ export default function OrderDetailScreen() {
     );
   }
 
-  if (error || !order) {
+  if (!order) {
     return (
       <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
         <ErrorState
-          message={t('common.error')}
+          message={describeError(error, t)}
           onRetry={() => void refetch()}
           retryLabel={t('common.retry')}
         />

@@ -21,7 +21,7 @@ import { mapStyle } from '../../utils/mapStyle'
 import { useTranslation } from 'react-i18next'
 import { HelpButton } from '../../components/Header/HeaderIcons/HeaderIcons'
 
-import { ProgressBar, checkStatus } from '../../components/Main/ActiveOrders/ProgressBar'
+import { ProgressBar, checkStatus, getOrderStatusText, isPickupReceived } from '../../components/Main/ActiveOrders/ProgressBar'
 import { useNavigation } from '@react-navigation/native'
 import { PriceRow } from '../../components/OrderDetail/PriceRow'
 import { ORDER_STATUS_ENUM } from '../../utils/enums'
@@ -260,7 +260,7 @@ function OrderDetail(props) {
             ...alignment.Pmedium
           }}
         >
-          <OrderStatusImage status={order?.orderStatus} />
+          <OrderStatusImage status={order?.orderStatus} isPickup={order?.isPickedUp} />
           {order?.orderStatus !== ORDER_STATUS_ENUM.DELIVERED && (
             <View
               style={{
@@ -269,10 +269,10 @@ function OrderDetail(props) {
                 justifyContent: 'space-between'
               }}
             >
-              {![ORDER_STATUS_ENUM.AWAITING_ADMIN, ORDER_STATUS_ENUM.PENDING, ORDER_STATUS_ENUM.CANCELLED, ORDER_STATUS_ENUM.CANCELLEDBYREST].includes(order?.orderStatus) && (
+              {![ORDER_STATUS_ENUM.AWAITING_ADMIN, ORDER_STATUS_ENUM.PENDING, ORDER_STATUS_ENUM.CANCELLED, ORDER_STATUS_ENUM.CANCELLEDBYREST].includes(order?.orderStatus) && !isPickupReceived(order) && (
                 <>
                   <TextDefault style={{ ...alignment.MTxSmall }} textColor={currentTheme.gray500} H5>
-                    {t('estimatedDeliveryTime')}
+                    {order?.isPickedUp ? t('estimatedPickupTime') : t('estimatedDeliveryTime')}
                   </TextDefault>
                   <TextDefault style={{ ...alignment.MTxSmall }} Regular textColor={currentTheme.gray900} H1 bolder>
                     {remainingTimeState}-{remainingTimeState + 5} {t('mins')}
@@ -282,7 +282,7 @@ function OrderDetail(props) {
               )}
               <TextDefault H5 style={{ ...alignment.Mmedium }} textColor={currentTheme.gray600} bold center>
                 {' '}
-                {t(checkStatus(order?.orderStatus)?.statusText)}
+                {t(getOrderStatusText(order))}
               </TextDefault>
             </View>
           )}
@@ -314,7 +314,7 @@ function OrderDetail(props) {
   )
 }
 
-export const OrderStatusImage = ({ status }) => {
+export const OrderStatusImage = ({ status, isPickup }) => {
   let imagePath = null
   switch (status) {
     case ORDER_STATUS_ENUM.AWAITING_ADMIN:
@@ -326,6 +326,10 @@ export const OrderStatusImage = ({ status }) => {
       break
     case ORDER_STATUS_ENUM.ASSIGNED:
       imagePath = require('../../assets/SVG/food-picked.json')
+      break
+    case ORDER_STATUS_ENUM.PICKED:
+      // Pickup order already received by the customer (there is no rider image for it).
+      if (isPickup) imagePath = require('../../assets/SVG/place-order.json')
       break
     case ORDER_STATUS_ENUM.COMPLETED:
       imagePath = require('../../assets/SVG/place-order.json')

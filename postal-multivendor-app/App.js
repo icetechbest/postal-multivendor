@@ -8,7 +8,8 @@ import * as Notifications from 'expo-notifications'
 import * as Updates from 'expo-updates'
 import React, { useEffect, useReducer, useRef, useState } from 'react'
 import { ActivityIndicator, BackHandler, I18nManager, LogBox, Platform, SafeAreaView, StatusBar, StyleSheet, Text, View, useColorScheme } from 'react-native'
-import FlashMessage from 'react-native-flash-message'
+import FlashMessage, { showMessage } from 'react-native-flash-message'
+import i18next from 'i18next'
 import 'react-native-gesture-handler'
 // import * as Sentry from '@sentry/react-native';
 import useEnvVars, { isProduction } from './environment'
@@ -59,6 +60,15 @@ try {
 if (!__DEV__ && global.ErrorUtils) {
   global.ErrorUtils.setGlobalHandler((error, isFatal) => {
     console.log('Unhandled JS error', isFatal ? '(fatal)' : '', error?.message)
+    // Say what happened instead of failing silently.
+    try {
+      showMessage({
+        message: i18next.t('errCrashTitle'),
+        description: `${error?.name ? error.name + ': ' : ''}${error?.message || ''}`,
+        type: 'danger',
+        duration: 6000
+      })
+    } catch (e) {}
   })
 }
 

@@ -1,3 +1,4 @@
+import { DEFAULT_LANGUAGE, getSavedLanguage } from './src/utils/language'
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import * as Localization from 'expo-localization';
@@ -76,7 +77,7 @@ i18next
   .use(initReactI18next)
   .init({
     compatibilityJSON: 'v3',
-    lng: 'en', // default language
+    lng: DEFAULT_LANGUAGE, // default language
     fallbackLng: 'en',
     resources: languageResources,
     interpolation: {
@@ -84,32 +85,19 @@ i18next
     },
   });
 
-// Async function to detect and set language
+// Detect the language: saved choice first, Arabic by default
 const detectAndSetLanguage = async () => {
   try {
-    const storedLanguage = await AsyncStorage.getItem('postal-language');
-    const systemLanguage = Localization?.locale?.split('-')[0];
-    const availableLanguages = Object.keys(languageResources);
-
-    // Prefer stored language if available, else system language if supported, else fallback to 'en'
-    let languageToUse = 'en';
-    if (storedLanguage && availableLanguages.includes(storedLanguage)) {
-      languageToUse = storedLanguage;
-    } else if (availableLanguages.includes(systemLanguage)) {
-      languageToUse = systemLanguage;
-    }
-
-    await i18next.changeLanguage(languageToUse);
-
-    // Optionally clear stored language keys if you want fresh detection next time
-    await AsyncStorage.removeItem('postal-language');
-    await AsyncStorage.removeItem('postal-language-name');
+    const languageToUse = await getSavedLanguage()
+    const available = Object.keys(languageResources)
+    const code = available.includes(languageToUse) ? languageToUse : DEFAULT_LANGUAGE
+    await i18next.changeLanguage(code)
   } catch (error) {
-    console.error('Error detecting or setting language:', error);
+    console.error('Error detecting or setting language:', error)
   }
-};
+}
 
-detectAndSetLanguage();
+detectAndSetLanguage()
 
 export default i18next;
 

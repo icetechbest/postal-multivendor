@@ -95,7 +95,7 @@ export const awardCoinsForOrder = async (orderId: unknown): Promise<number> => {
  * balance is too low (nothing is deducted in that case).
  */
 export const deductCoins = async (userId: unknown, coins: number): Promise<boolean> => {
-  const updated = await User.findOneAndUpdate({ _id: toObjectId(userId), coins: { $gte: coins } }, { $inc: { coins: -coins } }, { new: true });
+  const updated = await User.findOneAndUpdate({ _id: toObjectId(userId), coins: { $gte: coins } }, { $inc: { coins: -coins } }, { returnDocument: 'after' });
   return Boolean(updated);
 };
 
@@ -113,7 +113,7 @@ export const refundCoinsForOrder = async (orderId: unknown): Promise<number> => 
     const order = await Order.findOneAndUpdate(
       { _id: toObjectId(orderId), orderStatus: 'CANCELLED', coinsUsed: { $gt: 0 }, coinsRefunded: { $ne: true } },
       { $set: { coinsRefunded: true } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!order) return 0;
     await returnCoins(order.user, order.coinsUsed);

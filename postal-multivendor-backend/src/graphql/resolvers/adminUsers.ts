@@ -256,7 +256,7 @@ export const adminUserResolvers = {
     },
     updateUserNotes: async (_parent: unknown, { id, notes }: { id: string; notes: string }, context: AuthContext) => {
       requirePlatformReader(context);
-      const user = await User.findOneAndUpdate({ _id: assertObjectId(id, 'user'), role: 'USER' }, { notes: notes.slice(0, 2000) }, { new: true });
+      const user = await User.findOneAndUpdate({ _id: assertObjectId(id, 'user'), role: 'USER' }, { notes: notes.slice(0, 2000) }, { returnDocument: 'after' });
       if (!user) throw new NotFoundError('User');
       return user;
     },
@@ -336,7 +336,7 @@ export const adminUserResolvers = {
     },
     deleteRider: async (_parent: unknown, { id }: { id: string }, context: AuthContext) => {
       requireSuperAdmin(context);
-      const rider = await User.findOneAndUpdate({ _id: assertObjectId(id, 'rider'), role: 'RIDER', isActive: true }, { $set: { isActive: false, isAvailable: false, sessionResetAt: new Date() } }, { new: true });
+      const rider = await User.findOneAndUpdate({ _id: assertObjectId(id, 'rider'), role: 'RIDER', isActive: true }, { $set: { isActive: false, isAvailable: false, sessionResetAt: new Date() } }, { returnDocument: 'after' });
       if (!rider) throw new NotFoundError('Rider');
       await audit(context, 'deleteRider', 'Rider', id);
       return rider;
@@ -424,13 +424,13 @@ export const adminUserResolvers = {
       const next = status.toUpperCase();
       if (!['TRANSFERRED', 'CANCELLED'].includes(next)) throw new ValidationError('Status must be TRANSFERRED or CANCELLED');
       // Atomic claim so a request can only be settled once.
-      const request = await WithdrawRequest.findOneAndUpdate({ _id: assertObjectId(id, 'request'), status: 'REQUESTED' }, { $set: { status: next } }, { new: true });
+      const request = await WithdrawRequest.findOneAndUpdate({ _id: assertObjectId(id, 'request'), status: 'REQUESTED' }, { $set: { status: next } }, { returnDocument: 'after' });
       if (!request) throw new ValidationError('Withdraw request not found or already processed');
       if (next === 'TRANSFERRED') {
         const isRider = request.userType === 'RIDER';
         const owner: any = isRider
-          ? await User.findOneAndUpdate({ _id: request.rider, currentWalletAmount: { $gte: request.requestAmount } }, { $inc: { currentWalletAmount: -request.requestAmount, withdrawnWalletAmount: request.requestAmount } }, { new: true })
-          : await Restaurant.findOneAndUpdate({ _id: request.store, wallet: { $gte: request.requestAmount } }, { $inc: { wallet: -request.requestAmount, withdrawnWalletAmount: request.requestAmount } }, { new: true });
+          ? await User.findOneAndUpdate({ _id: request.rider, currentWalletAmount: { $gte: request.requestAmount } }, { $inc: { currentWalletAmount: -request.requestAmount, withdrawnWalletAmount: request.requestAmount } }, { returnDocument: 'after' })
+          : await Restaurant.findOneAndUpdate({ _id: request.store, wallet: { $gte: request.requestAmount } }, { $inc: { wallet: -request.requestAmount, withdrawnWalletAmount: request.requestAmount } }, { returnDocument: 'after' });
         if (!owner) {
           await WithdrawRequest.updateOne({ _id: request._id }, { $set: { status: 'REQUESTED' } });
           throw new ValidationError('Insufficient wallet balance to complete this transfer');

@@ -42,7 +42,7 @@ const saveGroup = (name: string) => async (_parent: unknown, { configurationInpu
   const configuration = await Configuration.findOneAndUpdate(
     { key: 'default' },
     { $set: updates, $setOnInsert: { key: 'default' } },
-    { new: true, upsert: true }
+    { returnDocument: 'after', upsert: true }
   );
   await audit(context, name, 'Configuration', configuration?._id, Object.keys(updates).map((key) => (secretFields.has(key) ? `${key}: [redacted]` : key)));
   return configuration;
@@ -65,7 +65,7 @@ export const adminConfigResolvers = {
           if (typeof value === 'string') set[`${key}.${platform}`] = value;
         }
       }
-      await Version.findOneAndUpdate({ key: 'default' }, { $set: set, $setOnInsert: { key: 'default' } }, { upsert: true, new: true });
+      await Version.findOneAndUpdate({ key: 'default' }, { $set: set, $setOnInsert: { key: 'default' } }, { upsert: true, returnDocument: 'after' });
       await audit(context, 'setVersions', 'Version', undefined, set);
       return true;
     },

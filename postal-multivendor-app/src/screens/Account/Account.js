@@ -194,9 +194,9 @@ function Account(props) {
       setselectedLanguage(lang)
     } else {
       // Find the language value based on the system language code
-      const matchedLanguage = languageTypes.find((langType) => langType.code === systemLangCode)
+      const matchedLanguage = languageTypes.find((langType) => langType.code === 'ar')
       // Set to the language value if found, otherwise default to 'English'
-      setselectedLanguage(matchedLanguage ? matchedLanguage.value : 'English')
+      setselectedLanguage(matchedLanguage ? matchedLanguage.value : 'العربية')
     }
   }
 

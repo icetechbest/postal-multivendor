@@ -73,7 +73,7 @@ export default class AppErrorBoundary extends React.Component<Props, State> {
           onPress={this.reset}
           style={{
             alignSelf: "center",
-            backgroundColor: "#A5C616",
+            backgroundColor: "#F0B400",
             borderRadius: 24,
             paddingHorizontal: 32,
             paddingVertical: 10,

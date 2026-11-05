@@ -130,7 +130,7 @@ export const adminSupportResolvers = {
       requireRole(context, ['ADMIN', 'STAFF']);
       const status = input.status.toLowerCase();
       if (!STATUSES.includes(status)) throw new ValidationError(`Status must be one of ${STATUSES.join(', ')}`);
-      const ticket = await SupportTicket.findByIdAndUpdate(assertObjectId(input.ticketId, 'ticket'), { $set: { status } }, { new: true }).populate('user');
+      const ticket = await SupportTicket.findByIdAndUpdate(assertObjectId(input.ticketId, 'ticket'), { $set: { status } }, { returnDocument: 'after' }).populate('user');
       if (!ticket) throw new NotFoundError('Ticket');
       return ticket;
     },

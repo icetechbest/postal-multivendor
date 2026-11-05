@@ -10,6 +10,7 @@ import { loginWithPhone, sendOtpToPhoneNumber } from '../../../apollo/mutations'
 import ThemeContext from '../../../ui/ThemeContext/ThemeContext'
 import { theme } from '../../../utils/themeColors'
 import { FlashMessage } from '../../../ui/FlashMessage/FlashMessage'
+import navigationService from '../../../routes/navigationService'
 import AuthContext from '../../../context/Auth'
 import analytics from '../../../utils/analytics'
 import { getApolloErrorMessage } from '../../../utils/phone'
@@ -84,12 +85,16 @@ const usePhoneOtp = () => {
           // Analytics must never block signing in.
         }
 
+        // Setting the token swaps the sign-in stack for the app itself.
         await setTokenAsync(result.token)
-        navigation.navigate({ name: 'Main', merge: true })
 
-        // New customers get a default name; invite them to set a real one.
+        // New customers get a default name; invite them to set a real one once the app is up.
         if (result.isNewUser) {
-          navigation.navigate('EditName', { name: '', phone: result.phone })
+          setTimeout(() => {
+            try {
+              navigationService.navigate('EditName', { name: '', phone: result.phone })
+            } catch (e) {}
+          }, 800)
         }
       } catch (error) {
         const message = getApolloErrorMessage(error, error?.message)

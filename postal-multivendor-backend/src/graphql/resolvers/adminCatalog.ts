@@ -220,7 +220,7 @@ export const adminCatalogResolvers = {
     },
     deleteAddon: async (_parent: unknown, { id, restaurant }: { id: string; restaurant: string }, context: AuthContext) => {
       const owner = await loadRestaurant(restaurant, context);
-      const addon = await Addon.findOneAndUpdate({ _id: assertObjectId(id, 'addon'), restaurant: owner._id, isActive: true }, { isActive: false }, { new: true });
+      const addon = await Addon.findOneAndUpdate({ _id: assertObjectId(id, 'addon'), restaurant: owner._id, isActive: true }, { isActive: false }, { returnDocument: 'after' });
       if (!addon) throw new NotFoundError('Addon');
       await Food.updateMany({ restaurant: owner._id }, { $pull: { 'variations.$[].addons': addon._id } });
       return owner;
@@ -239,7 +239,7 @@ export const adminCatalogResolvers = {
       const option = await RestaurantOption.findOneAndUpdate(
         { _id: id, restaurant: restaurant._id, isActive: true },
         { $set: definedOnly({ title: input.title?.trim(), description: input.description, price: input.price }) },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
       if (!option) throw new NotFoundError('Option');
       await Addon.updateMany(
@@ -251,7 +251,7 @@ export const adminCatalogResolvers = {
     },
     deleteOption: async (_parent: unknown, { id, restaurant }: { id: string; restaurant: string }, context: AuthContext) => {
       const owner = await loadRestaurant(restaurant, context);
-      const option = await RestaurantOption.findOneAndUpdate({ _id: assertObjectId(id, 'option'), restaurant: owner._id, isActive: true }, { isActive: false }, { new: true });
+      const option = await RestaurantOption.findOneAndUpdate({ _id: assertObjectId(id, 'option'), restaurant: owner._id, isActive: true }, { isActive: false }, { returnDocument: 'after' });
       if (!option) throw new NotFoundError('Option');
       await Addon.updateMany({ restaurant: owner._id }, { $pull: { options: { _id: option._id } } });
       return owner;
@@ -331,7 +331,7 @@ export const adminCatalogResolvers = {
     editBanner: async (_parent: unknown, { bannerInput }: { bannerInput: any }, context: AuthContext) => {
       requireSuperAdmin(context);
       const { _id, ...fields } = bannerInput;
-      const banner = await Banner.findByIdAndUpdate(assertObjectId(_id, 'banner'), { $set: definedOnly(fields) }, { new: true, runValidators: true });
+      const banner = await Banner.findByIdAndUpdate(assertObjectId(_id, 'banner'), { $set: definedOnly(fields) }, { returnDocument: 'after', runValidators: true });
       if (!banner) throw new NotFoundError('Banner');
       await audit(context, 'editBanner', 'Banner', banner._id);
       return banner;
@@ -359,7 +359,7 @@ export const adminCatalogResolvers = {
       requireSuperAdmin(context);
       const { _id, ...fields } = cuisineInput;
       try {
-        const cuisine = await Cuisine.findByIdAndUpdate(assertObjectId(_id, 'cuisine'), { $set: definedOnly({ ...fields, name: fields.name?.trim() }) }, { new: true, runValidators: true });
+        const cuisine = await Cuisine.findByIdAndUpdate(assertObjectId(_id, 'cuisine'), { $set: definedOnly({ ...fields, name: fields.name?.trim() }) }, { returnDocument: 'after', runValidators: true });
         if (!cuisine) throw new NotFoundError('Cuisine');
         await audit(context, 'editCuisine', 'Cuisine', cuisine._id);
         return cuisine;
@@ -391,7 +391,7 @@ export const adminCatalogResolvers = {
       requireSuperAdmin(context);
       const { _id, ...fields } = dto || {};
       try {
-        const shopType = await ShopType.findByIdAndUpdate(assertObjectId(_id, 'shop type'), { $set: definedOnly({ ...fields, name: fields.name?.trim() }) }, { new: true, runValidators: true });
+        const shopType = await ShopType.findByIdAndUpdate(assertObjectId(_id, 'shop type'), { $set: definedOnly({ ...fields, name: fields.name?.trim() }) }, { returnDocument: 'after', runValidators: true });
         if (!shopType) throw new NotFoundError('Shop type');
         await audit(context, 'updateShopType', 'ShopType', shopType._id);
         return shopType;

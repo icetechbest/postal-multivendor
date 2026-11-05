@@ -67,6 +67,9 @@ export const UserProvider = (props) => {
 
   function onError(error) {
     console.log('error context user', error.message)
+    // An expired / invalid token sends the user back to the sign-in screen.
+    const unauthenticated = error?.graphQLErrors?.some((e) => e?.extensions?.code === 'UNAUTHENTICATED')
+    if (unauthenticated) logout()
   }
   async function onCompleted(data) {
     const { _id: userId, name, email, phone } = data?.profile

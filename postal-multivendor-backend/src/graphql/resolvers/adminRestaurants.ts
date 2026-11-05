@@ -304,7 +304,7 @@ export const adminRestaurantResolvers = {
     updateCommission: async (_parent: unknown, { id, commissionRate }: { id: string; commissionRate: number }, context: AuthContext) => {
       requireSuperAdmin(context);
       if (!(commissionRate >= 0 && commissionRate <= 100)) throw new ValidationError('Commission rate must be between 0 and 100');
-      const restaurant = await Restaurant.findByIdAndUpdate(assertObjectId(id, 'restaurant'), { commissionRate }, { new: true });
+      const restaurant = await Restaurant.findByIdAndUpdate(assertObjectId(id, 'restaurant'), { commissionRate }, { returnDocument: 'after' });
       if (!restaurant) throw new NotFoundError('Restaurant');
       await audit(context, 'updateCommission', 'Restaurant', id, { commissionRate });
       return restaurant;

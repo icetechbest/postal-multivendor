@@ -5,11 +5,11 @@ function setGlobalRef(ref) {
 }
 
 function navigate(path, props = {}) {
-  navObj.navigate(path, props)
+  if (navObj?.isReady()) navObj.navigate(path, props)
 }
 
 function goBack() {
-  navObj.goBack()
+  if (navObj?.isReady() && navObj.canGoBack()) navObj.goBack()
 }
 
 export default {

@@ -43,13 +43,13 @@ export const seedDemoData = async () => {
   const zone = await Zone.findOneAndUpdate(
     { title: 'Postal Demo Zone' },
     { $setOnInsert: { description: 'Demo delivery zone', tax: 0, location: { type: 'Polygon', coordinates: polygon }, isActive: true } },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   await rider.updateOne({ $set: { zone: zone._id, location: { type: 'Point', coordinates: [31.5600, 30.4183] } } });
   const cuisine = await Cuisine.findOneAndUpdate(
     { name: 'Postal Demo Cuisine' },
     { $setOnInsert: { description: 'Demo dishes', image: 'https://example.com/images/postal-cuisine.png', shopType: 'restaurant', isActive: true } },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   const restaurant = await Restaurant.findOneAndUpdate(
     { slug: 'postal-demo-restaurant' },
@@ -79,18 +79,18 @@ export const seedDemoData = async () => {
         isAvailable: true,
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   const category = await Category.findOneAndUpdate(
     { title: 'Postal Demo Mains' },
     { $setOnInsert: { description: 'Demo main dishes', image: 'https://example.com/images/postal-category.png', restaurant: restaurant._id, isActive: true } },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   await Restaurant.findByIdAndUpdate(restaurant._id, { $addToSet: { categories: category._id } });
   const subCategory = await SubCategory.findOneAndUpdate(
     { title: 'Postal Demo Bowls', parentCategoryId: category._id.toString() },
     { $setOnInsert: { isActive: true } },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   const addon = await Addon.findOneAndUpdate(
     { title: 'Postal Demo Extras' },
@@ -106,7 +106,7 @@ export const seedDemoData = async () => {
         isActive: true,
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   const food = await Food.findOne({ title: 'Postal Demo Bowl', restaurant: restaurant._id });
   const demoFood = food || await Food.create({

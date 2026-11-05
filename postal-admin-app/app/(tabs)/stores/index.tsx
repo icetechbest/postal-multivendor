@@ -14,6 +14,7 @@ import {
 
 import { Badge, EmptyState, ErrorState, ListFooter, Screen, TextField } from '../../../components/ui';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { describeError } from '../../../lib/errors';
 import { useDebouncedValue } from '../../../lib/hooks/useDebouncedValue';
 import type { IRestaurant, IRestaurantsPage } from '../../../lib/interfaces';
 import { useI18n } from '../../../lib/i18n';
@@ -97,7 +98,7 @@ export default function StoresScreen() {
                 })
                 .catch((err: unknown) => {
                   handleAuthError(err);
-                  Alert.alert(t('common.error'));
+                  Alert.alert(t('common.error'), describeError(err, t));
                 });
             },
           },
@@ -124,7 +125,7 @@ export default function StoresScreen() {
     return (
       <Screen>
         <ErrorState
-          message={t('common.error')}
+          message={describeError(error, t)}
           onRetry={() => void refetch()}
           retryLabel={t('common.retry')}
         />

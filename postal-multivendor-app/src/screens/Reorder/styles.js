@@ -26,7 +26,7 @@ const styles = (props = null) =>
       margin: scale(10),
       paddingHorizontal: scale(50),
       paddingVertical: scale(15),
-      backgroundColor: props !== null ? props?.main : '#6FCF97',
+      backgroundColor: props !== null ? props?.main : '#F0B400',
       justifyContent: 'center',
       alignItems: 'center',
       borderRadius: scale(40)

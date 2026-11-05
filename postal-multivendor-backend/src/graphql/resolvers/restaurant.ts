@@ -226,7 +226,7 @@ export const restaurantResolvers = {
       const updatedRestaurant = await Restaurant.findByIdAndUpdate(
         _id,
         { $set: updates },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       ).populate('owner').populate('categories').populate('zone');
 
       return updatedRestaurant;

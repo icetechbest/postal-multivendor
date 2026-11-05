@@ -24,11 +24,14 @@ const styles = (props = null) =>
     gifContainer: {
       flex: 1,
       width: '100%',
-      minHeight: scale(180)
+      minHeight: scale(180),
+      backgroundColor: 'transparent',
+      paddingVertical: scale(16)
     },
     gifImage: {
       width: '100%',
-      height: '100%'
+      height: '100%',
+      backgroundColor: 'transparent'
     },
 
     // Welcome Section

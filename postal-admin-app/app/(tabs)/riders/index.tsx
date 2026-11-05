@@ -14,6 +14,8 @@ import {
 
 import { Badge, EmptyState, ErrorState, ListFooter, Screen } from '../../../components/ui';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { describeError } from '../../../lib/errors';
+import { useFocusedPolling } from '../../../lib/hooks/useFocusedPolling';
 import type { IRider } from '../../../lib/interfaces';
 import { useI18n } from '../../../lib/i18n';
 import { useTheme } from '../../../lib/theme';
@@ -31,10 +33,10 @@ export default function RidersScreen() {
   const { handleAuthError } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data, loading, error, refetch } = useQuery<{ riders: IRider[] }>(RIDERS, {
+  const { data, loading, error, refetch, startPolling, stopPolling } = useQuery<{ riders: IRider[] }>(RIDERS, {
     fetchPolicy: 'cache-and-network',
-    pollInterval: 30_000,
   });
+  useFocusedPolling(startPolling, stopPolling, 30_000);
 
   const riders = data?.riders ?? [];
 
@@ -67,7 +69,7 @@ export default function RidersScreen() {
     return (
       <Screen>
         <ErrorState
-          message={t('common.error')}
+          message={describeError(error, t)}
           onRetry={() => void refetch()}
           retryLabel={t('common.retry')}
         />

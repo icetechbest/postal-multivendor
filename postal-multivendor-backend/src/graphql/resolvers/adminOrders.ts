@@ -132,7 +132,7 @@ export const adminOrderResolvers = {
       const confirmed = await Order.findOneAndUpdate(
         { _id: id, orderStatus: AWAITING_ADMIN },
         { $set: { orderStatus: 'PENDING', adminConfirmedBy: context.user!.userId, adminConfirmedAt: new Date(), ...(note ? { adminNote: note } : {}) } },
-        { new: true }
+        { returnDocument: 'after' }
       );
       if (!confirmed) {
         const current = await Order.findById(id).select('orderStatus');
@@ -153,7 +153,7 @@ export const adminOrderResolvers = {
       const rejected = await Order.findOneAndUpdate(
         { _id: id, orderStatus: AWAITING_ADMIN },
         { $set: { orderStatus: 'CANCELLED', reason, cancelledAt: now, adminRejectedBy: context.user!.userId, adminRejectedAt: now } },
-        { new: true }
+        { returnDocument: 'after' }
       );
       if (!rejected) {
         const current = await Order.findById(id).select('orderStatus');

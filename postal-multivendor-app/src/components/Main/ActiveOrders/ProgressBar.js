@@ -62,6 +62,23 @@ export const checkStatus = status => {
   return obj[0]
 }
 
+// For a pickup order (isPickedUp) there is no rider: the restaurant marking the order
+// as PICKED (or later) means the customer already received it.
+export const isPickupReceived = (order) =>
+  !!order?.isPickedUp &&
+  [ORDER_STATUS_ENUM.PICKED, ORDER_STATUS_ENUM.DELIVERED, ORDER_STATUS_ENUM.COMPLETED].includes(order?.orderStatus)
+
+// Translation key for the status sentence, aware of pickup orders.
+export const getOrderStatusText = (order) => {
+  if (order?.isPickedUp) {
+    if (isPickupReceived(order)) return 'pickupReceivedOrder'
+    if ([ORDER_STATUS_ENUM.ACCEPTED, ORDER_STATUS_ENUM.ASSIGNED].includes(order?.orderStatus)) {
+      return 'pickupPreparingOrder'
+    }
+  }
+  return checkStatus(order?.orderStatus)?.statusText
+}
+
 export const ProgressBar = ({ currentTheme, item, customWidth, isPicked }) => {
   if (item.orderStatus === ORDER_STATUS_ENUM.CANCELLED) return null
   useSubscription(
@@ -75,11 +92,15 @@ export const ProgressBar = ({ currentTheme, item, customWidth, isPicked }) => {
   const width = customWidth !== undefined ? customWidth : defaultWidth
 
   // Filter statuses if isPicked is true
-  const filteredStatuses = isPicked
-    ? orderStatuses.filter((s) => s.key !== 'ASSIGNED' && s.key !== 'PICKED')
-    : orderStatuses;
-
-  const currentStatus = filteredStatuses.find((x) => x.key === item.orderStatus) || { status: 0 };
+  // Pickup orders: ASSIGNED counts as ACCEPTED, and PICKED (received) fills every bar.
+  let currentStatus
+  if (isPicked) {
+    if (isPickupReceived(item)) currentStatus = { status: 3 }
+    else if (item.orderStatus === 'ASSIGNED') currentStatus = { status: 2 }
+    else currentStatus = orderStatuses.find((x) => x.key === item.orderStatus) || { status: 0 }
+  } else {
+    currentStatus = orderStatuses.find((x) => x.key === item.orderStatus) || { status: 0 }
+  }
 
   // Set the total number of filled bars based on the isPicked prop
   const totalBars = isPicked ? 3 : 4;

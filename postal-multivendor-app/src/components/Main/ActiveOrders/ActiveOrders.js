@@ -11,7 +11,7 @@ import Spinner from '../../Spinner/Spinner'
 import { useTranslation } from 'react-i18next'
 import TextDefault from '../../Text/TextDefault/TextDefault'
 import { Modalize } from 'react-native-modalize'
-import { ProgressBar, checkStatus } from './ProgressBar'
+import { ProgressBar, checkStatus, getOrderStatusText, isPickupReceived } from './ProgressBar'
 import styles from './styles'
 import { ORDER_STATUS_ENUM } from '../../../utils/enums'
 import { calulateRemainingTime } from '../../../utils/customFunctions'
@@ -37,6 +37,7 @@ const ActiveOrders = ({ onActiveOrdersChange }) => {
   const activeOrders = orders.filter(
     (o) =>
       orderStatusActive.includes(o.orderStatus) &&
+      !isPickupReceived(o) &&
       (o?.paymentStatus === 'PAID' || o?.paymentMethod == 'COD')
   )
 
@@ -233,7 +234,7 @@ const ActiveOrders = ({ onActiveOrdersChange }) => {
           }}
         >
           <TextDefault Regular textColor={currentTheme.fontGrayNew}>
-            {t('estimatedDeliveryTime')}
+            {order?.isPickedUp ? t('estimatedPickupTime') : t('estimatedDeliveryTime')}
           </TextDefault>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity 
@@ -257,7 +258,7 @@ const ActiveOrders = ({ onActiveOrdersChange }) => {
           <TextDefault Regular textColor={currentTheme.gray900} H1 bolder isRTL>
             {remainingTime > 0 
               ? `${remainingTime}-${remainingTime + 5} ${t('mins')}`
-              : `${t('deliveringSoon')}`
+              : `${order?.isPickedUp ? t('pickupSoon') : t('deliveringSoon')}`
             }
           </TextDefault>
         </View>
@@ -275,7 +276,7 @@ const ActiveOrders = ({ onActiveOrdersChange }) => {
               style={styles(currentTheme).statusText}
               isRTL
             >
-              {t(checkStatus(order.orderStatus).statusText)}
+              {t(getOrderStatusText(order))}
             </TextDefault>
           </View>
         </View>

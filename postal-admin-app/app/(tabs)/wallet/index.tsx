@@ -18,6 +18,7 @@ import {
 
 import { Badge, Card, ErrorState, Screen, SectionTitle, SkeletonList } from '../../../components/ui';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { describeError } from '../../../lib/errors';
 import type {
   IEarningsResult,
   ITransactionPage,
@@ -93,7 +94,7 @@ export default function WalletScreen() {
               })
               .catch((err: unknown) => {
                 handleAuthError(err);
-                Alert.alert(t('common.error'));
+                Alert.alert(t('common.error'), describeError(err, t));
               });
           },
         },
@@ -106,7 +107,7 @@ export default function WalletScreen() {
     return (
       <Screen>
         <ErrorState
-          message={t('common.error')}
+          message={describeError(earningsQuery.error, t)}
           onRetry={() => void onRefresh()}
           retryLabel={t('common.retry')}
         />

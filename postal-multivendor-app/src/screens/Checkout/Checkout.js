@@ -1,4 +1,5 @@
 /* eslint-disable indent */
+import { describeError } from '../../utils/describeError'
 import { getTipVariations } from '../../utils/tipping'
 import React, { useState, useEffect, useContext, useRef } from 'react'
 import { View, ScrollView, TouchableOpacity, StatusBar, Platform, Alert, TextInput, Dimensions, Switch } from 'react-native'
@@ -95,7 +96,7 @@ function Checkout(props) {
   const [useCoins, setUseCoins] = useState(false)
   const [coinsInput, setCoinsInput] = useState('')
 
-  const { loading, data } = useRestaurant(cartRestaurant)
+  const { loading, data } = useRestaurant(cartRestaurant, 'network-only')
   console.log('data?.restaurant?._id', data?.restaurant?._id)
   const [loadingOrder, setLoadingOrder] = useState(false)
   const latOrigin = data?.restaurant?.location?.coordinates[1]
@@ -400,29 +401,20 @@ function Checkout(props) {
   }
   function onError(error) {
     setLoadingOrder(false)
-    if (error.graphQLErrors.length) {
-      if (error.graphQLErrors[0].message === "Sorry! we can't deliver to your address.") {
+    console.log('placeOrder failed', JSON.stringify({ message: error?.message, graphQL: error?.graphQLErrors, status: error?.networkError?.statusCode }))
+    const serverMessage = error?.graphQLErrors?.[0]?.message
+    if (serverMessage) {
+      // Address outside the delivery zone: offer to pick another address.
+      if (/can'?t deliver/i.test(serverMessage)) {
         setisModalVisible(true)
+      } else {
+        // Any other rejection from the server (closed, minimum, validation...): show the reason.
+        FlashMessage({ message: serverMessage, duration: 5000 })
       }
-    } else {
-      FlashMessage({
-        message: error.message
-      })
+      return
     }
-    if (error?.networkError) {
-      // console.log(`Network Error: ${networkError.message}`);
-      if (error?.networkError.statusCode === 502) {
-        // FlashMessage({
-        //   message: "Server is currently unavailable. Please try again later."
-        // })
-        console.log('Server is currently unavailable. Please try again later.')
-      }
-      if (error?.networkError.statusCode === 504) {
-        FlashMessage({
-          message: 'Request timed out. Please try again.'
-        })
-      }
-    }
+    // Network / server problems: say what happened (offline, server down, timeout ...).
+    FlashMessage({ message: describeError(error, t), duration: 5000 })
   }
 
   function calculateTip() {
@@ -500,7 +492,7 @@ function Checkout(props) {
   function validateOrder() {
     if (!data?.restaurant?.isAvailable || !isOpen(data?.restaurant)) {
       showAvailablityMessage()
-      return
+      return false
     }
     if (!cart.length) {
       FlashMessage({
@@ -516,7 +508,12 @@ function Checkout(props) {
       })
       return false
     }
-    if (!isPickup && !location._id) {
+    // placeOrder only needs the address text + coordinates (it does not use the saved address id),
+    // so the current GPS location is accepted too. Only a missing address blocks the order.
+    const hasDeliveryAddress = !!(location?.deliveryAddress && location?.latitude && location?.longitude)
+    if (!isPickup && !hasDeliveryAddress) {
+      // Delivery needs an address: say so, then open the address picker.
+      FlashMessage({ message: t('selectDeliveryAddress'), duration: 4000 })
       props?.navigation.navigate('CartAddress')
       return false
     }
@@ -526,7 +523,7 @@ function Checkout(props) {
       })
       return false
     }
-    if (profile?.phone?.length < 1) {
+    if (!profile?.phone || profile.phone.length < 1) {
       props?.navigation.navigate('CreateAccount')
       return false
     }
@@ -591,9 +588,9 @@ function Checkout(props) {
         } else {
           // For delivery, use the selected address
           orderVariables.address = {
-            label: location.label,
+            label: location.label || 'Other',
             deliveryAddress: location.deliveryAddress,
-            details: location.details,
+            details: location.details || '',
             longitude: '' + location.longitude,
             latitude: '' + location.latitude
           }
@@ -610,6 +607,11 @@ function Checkout(props) {
       }
     } catch (error) {
       console.error('Error placing order:', error)
+      setLoadingOrder(false)
+      // mutateOrder errors are already reported by onError; this covers anything thrown before/around it.
+      if (!error?.graphQLErrors && !error?.networkError) {
+        FlashMessage({ message: `${t('err_unknown')} (${error?.message || ''})`, duration: 5000 })
+      }
     }
   }
 

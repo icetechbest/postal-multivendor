@@ -1,4 +1,5 @@
 /* eslint-disable react/display-name */
+import { describeError } from '../../utils/describeError'
 import React, { useRef, useContext, useLayoutEffect, useState, useEffect } from 'react'
 import { View, SafeAreaView, TouchableOpacity, Animated, StatusBar, Platform, RefreshControl, Image, FlatList, ScrollView } from 'react-native'
 import { Modalize } from 'react-native-modalize'
@@ -54,14 +55,16 @@ function Main(props) {
   const currentTheme = theme[themeContext.ThemeValue]
   const { getCurrentLocation } = useLocation()
   const { getAddress } = useGeocoding()
-  const { data, refetch, networkStatus, loading, error } = useQuery(RESTAURANTS, {
+  const { data, refetch, networkStatus, loading: loadingRestaurants, error } = useQuery(RESTAURANTS, {
     variables: {
       longitude: location.longitude || null,
       latitude: location.latitude || null,
       ip: null
     },
-    fetchPolicy: 'network-only'
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first'
   })
+  const loading = loadingRestaurants && !data
   const [mutate, { loading: mutationLoading }] = useMutation(SELECT_ADDRESS, {
     onError
   })
@@ -269,7 +272,7 @@ function Main(props) {
     )
   }
 
-  if (error) return <TextError text={t('networkError')} />
+  if (error && !data) return <TextError text={describeError(error, t)} />
 
   if (loading || mutationLoading || loadingOrders) return loadingScreen()
 

@@ -114,7 +114,7 @@ const Item = ({ item, navigation, currentTheme, configuration }) => {
         <View style={styles(currentTheme).subContainer}>
           <View style={styles().orderDescriptionContainer}>
             <TextDefault h5 bold textColor={currentTheme.gray500} isRTL>
-              {t('estimatedDeliveryTime')}
+              {item?.isPickedUp ? t('estimatedPickupTime') : t('estimatedDeliveryTime')}
             </TextDefault>
           </View>
           <View style={styles().orderDescriptionContainer}>

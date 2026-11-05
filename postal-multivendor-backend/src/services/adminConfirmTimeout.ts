@@ -17,7 +17,7 @@ export const cancelExpiredAwaitingOrders = async (timeoutMinutes = config.orders
     const expired = await Order.findOneAndUpdate(
       { orderStatus: AWAITING_ADMIN, createdAt: { $lte: cutoff } },
       { $set: { orderStatus: 'CANCELLED', reason: ADMIN_CONFIRM_TIMEOUT_REASON, cancelledAt: now, adminRejectedAt: now } },
-      { new: true, sort: { createdAt: 1 } }
+      { returnDocument: 'after', sort: { createdAt: 1 } }
     );
     if (!expired) break;
     cancelled += 1;

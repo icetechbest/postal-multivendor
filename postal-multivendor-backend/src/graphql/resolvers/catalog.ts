@@ -74,7 +74,7 @@ export const catalogResolvers = {
       if (!food || !food.isActive) throw new NotFoundError('Food');
       await ensureRestaurantAccess(food.restaurant.toString(), context);
       const { _id, ...updates } = foodInput;
-      return Food.findByIdAndUpdate(_id, { $set: updates }, { new: true, runValidators: true }).populate(
+      return Food.findByIdAndUpdate(_id, { $set: updates }, { returnDocument: 'after', runValidators: true }).populate(
         'restaurant category variations.addons'
       );
     },
@@ -113,7 +113,7 @@ export const catalogResolvers = {
       const category = await Category.findOneAndUpdate(
         { _id, ...activeOnly },
         { $set: updates },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
       if (!category) throw new NotFoundError('Category');
       return category;
@@ -121,7 +121,7 @@ export const catalogResolvers = {
 
     deleteCategory: async (_: unknown, { id }: { id: string }, context: AuthContext) => {
       requireVendor(context);
-      const category = await Category.findOneAndUpdate({ _id: id, ...activeOnly }, { isActive: false }, { new: true });
+      const category = await Category.findOneAndUpdate({ _id: id, ...activeOnly }, { isActive: false }, { returnDocument: 'after' });
       if (!category) throw new NotFoundError('Category');
       await Food.updateMany({ category: id }, { $set: { isActive: false, isAvailable: false } });
       return { message: 'Category deleted successfully' };
@@ -141,7 +141,7 @@ export const catalogResolvers = {
       const addon = await Addon.findOneAndUpdate(
         { _id, ...activeOnly },
         { $set: updates },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
       if (!addon) throw new NotFoundError('Addon');
       return addon;
@@ -149,7 +149,7 @@ export const catalogResolvers = {
 
     deleteAddons: async (_: unknown, { id }: { id: string }, context: AuthContext) => {
       requireVendor(context);
-      const addon = await Addon.findOneAndUpdate({ _id: id, ...activeOnly }, { isActive: false }, { new: true });
+      const addon = await Addon.findOneAndUpdate({ _id: id, ...activeOnly }, { isActive: false }, { returnDocument: 'after' });
       if (!addon) throw new NotFoundError('Addon');
       return { message: 'Addon deleted successfully' };
     },
@@ -168,7 +168,7 @@ export const catalogResolvers = {
       if (!existing || !existing.isActive) throw new NotFoundError('Coupon');
       if (existing.restaurant) await ensureRestaurantAccess(existing.restaurant.toString(), context);
       if (updates.code) updates.code = updates.code.toUpperCase();
-      return Coupon.findByIdAndUpdate(_id, { $set: updates }, { new: true, runValidators: true }).populate('restaurant');
+      return Coupon.findByIdAndUpdate(_id, { $set: updates }, { returnDocument: 'after', runValidators: true }).populate('restaurant');
     },
 
     deleteCoupon: async (_: unknown, { id }: { id: string }, context: AuthContext) => {
@@ -207,7 +207,7 @@ export const catalogResolvers = {
       const zone = await Zone.findOneAndUpdate(
         { _id, ...activeOnly },
         { $set: updates },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
       if (!zone) throw new NotFoundError('Zone');
       return zone;
@@ -215,7 +215,7 @@ export const catalogResolvers = {
 
     deleteZone: async (_: unknown, { id }: { id: string }, context: AuthContext) => {
       requireAdmin(context);
-      const zone = await Zone.findOneAndUpdate({ _id: id, ...activeOnly }, { isActive: false }, { new: true });
+      const zone = await Zone.findOneAndUpdate({ _id: id, ...activeOnly }, { isActive: false }, { returnDocument: 'after' });
       if (!zone) throw new NotFoundError('Zone');
       await Restaurant.updateMany({ zone: id }, { $unset: { zone: 1 } });
       return { message: 'Zone deleted successfully' };

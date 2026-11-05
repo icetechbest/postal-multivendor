@@ -15,8 +15,10 @@ import {
 import { OrderRow } from '../../../components/order-row';
 import { EmptyState, ErrorState, ListFooter, Screen, TextField } from '../../../components/ui';
 import { useAuth } from '../../../lib/auth/auth-context';
+import { describeError } from '../../../lib/errors';
 import { ORDERS_POLL_INTERVAL, ORDER_STATUSES, type TOrderStatus } from '../../../lib/config';
 import { useDebouncedValue } from '../../../lib/hooks/useDebouncedValue';
+import { useFocusedPolling } from '../../../lib/hooks/useFocusedPolling';
 import type { IOrder, IOrdersPage } from '../../../lib/interfaces';
 import { useI18n } from '../../../lib/i18n';
 import { useTheme } from '../../../lib/theme';
@@ -42,13 +44,13 @@ export default function OrdersScreen() {
     [debouncedSearch, status],
   );
 
-  const { data, loading, error, refetch, fetchMore, networkStatus } = useQuery<{
+  const { data, loading, error, refetch, fetchMore, networkStatus, startPolling, stopPolling } = useQuery<{
     allOrdersPaginated: IOrdersPage;
   }>(ALL_ORDERS_PAGINATED, {
     variables,
     notifyOnNetworkStatusChange: true,
-    pollInterval: ORDERS_POLL_INTERVAL,
   });
+  useFocusedPolling(startPolling, stopPolling, ORDERS_POLL_INTERVAL);
 
   const page = data?.allOrdersPaginated;
   const orders = page?.orders ?? [];
@@ -139,7 +141,7 @@ export default function OrdersScreen() {
     return (
       <Screen>
         <ErrorState
-          message={t('common.error')}
+          message={describeError(error, t)}
           onRetry={() => void refetch()}
           retryLabel={t('common.retry')}
         />

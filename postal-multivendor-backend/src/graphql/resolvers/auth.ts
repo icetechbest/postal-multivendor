@@ -238,7 +238,7 @@ export const authResolvers = {
       const user = await User.findByIdAndUpdate(
         context.user!.userId,
         { $set: updateUserInput },
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
 
       if (!user) {
@@ -399,7 +399,7 @@ export const authResolvers = {
       const user = await User.findByIdAndUpdate(
         context.user!.userId,
         { isOrderNotification },
-        { new: true }
+        { returnDocument: 'after' }
       );
 
       if (!user) {

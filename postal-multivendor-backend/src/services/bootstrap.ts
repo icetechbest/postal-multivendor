@@ -52,7 +52,7 @@ export const bootstrapDatabase = async (): Promise<void> => {
   await Configuration.findOneAndUpdate(
     { key: 'default' },
     { $setOnInsert: { key: 'default', ...configurationDefaults } },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   await Version.findOneAndUpdate(
     { key: 'default' },

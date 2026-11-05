@@ -86,7 +86,7 @@ const issueOtp = async (rawTarget: string, channel: 'email' | 'phone'): Promise<
       },
       $unset: { verifiedAt: 1 },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   const body = `Your Genie verification code is ${otp}. It expires in ${config.otp.expiryMinutes} minutes.`;
   if (channel === 'email') await sendEmail(target, 'Your Genie verification code', body);
@@ -280,33 +280,78 @@ export const appMutationResolvers = {
     const token = generateToken({ userId: idOf(owner._id), email: owner.email, role: owner.role });
     return { token, restaurantId: idOf(restaurant._id) };
   },
-  riderLogin: async (
-    _parent: unknown,
-    { username, password, notificationToken }: { username?: string; password?: string; notificationToken?: string; timeZone?: string }
-  ) => {
-    const name = username?.trim();
-    if (!name || !password) throw new ValidationError('Username and password are required');
-    const user = await User.findOne({
-      role: 'RIDER',
-      $or: [{ username: name }, { username: name.toLowerCase() }, { email: name.toLowerCase() }],
-    }).select('+password');
-    if (!user || !user.password || !(await comparePassword(password, user.password))) {
-      throw new AuthenticationError('Invalid username or password');
-    }
-    if (!user.isActive) throw new AuthenticationError('Account is deactivated');
-    if (notificationToken) user.notificationToken = notificationToken;
-    return authPayload(user);
-  },
-  loginWithPhone: async (
-    _parent: unknown,
-    { phone, otp, name, notificationToken }: { phone: string; otp: string; name?: string; notificationToken?: string }
-  ) => {
-    const normalizedPhone = normalizeTarget(phone || '');
-    if (!normalizedPhone) throw new ValidationError('Phone number is required');
-    if (!otp) throw new ValidationError('Verification code is required');
+  
+riderLogin: async (
+  _parent: unknown,
+  {
+    username,
+    password,
+    notificationToken,
+  }: {
+    username?: string;
+    password?: string;
+    notificationToken?: string;
+    timeZone?: string;
+  }
+) => {
+  const name = username?.trim();
 
-    // Throws when the code is wrong/expired; also flips phoneVerified on an
-    // existing user when the target already has an account.
+  if (!name || !password) {
+    throw new ValidationError('Username and password are required');
+  }
+
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const user = await User.findOne({
+    role: 'RIDER',
+    $or: [
+      { username: name },
+      { username: { $regex: `^${escaped}$`, $options: 'i' } },
+      { email: { $regex: `^${escaped}$`, $options: 'i' } },
+    ],
+  }).select('+password');
+
+  if (
+    !user ||
+    !user.password ||
+    !(await comparePassword(password, user.password))
+  ) {
+    throw new AuthenticationError('Invalid username or password');
+  }
+
+  if (!user.isActive) {
+    throw new AuthenticationError('Account is deactivated');
+  }
+
+  if (notificationToken) {
+    user.notificationToken = notificationToken;
+    await user.save();
+  }
+
+  return authPayload(user);
+},
+
+
+  phoneLogin: async (
+    _parent: unknown,
+    {
+      phone,
+      otp,
+      name,
+      notificationToken,
+    }: {
+      phone: string;
+      otp: string;
+      name?: string;
+      notificationToken?: string;
+    }
+  ) => {
+    const normalizedPhone = normalizeTarget(phone);
+
+    if (!normalizedPhone || !otp) {
+      throw new ValidationError('Phone and OTP are required');
+    }
+
     await verifyOtpCode(normalizedPhone, otp);
 
     let user = await User.findOne({ phone: normalizedPhone });
@@ -321,18 +366,27 @@ export const appMutationResolvers = {
         phoneIsVerified: true,
         notificationToken,
       });
+
       isNewUser = true;
     } else {
       if (!user.phoneVerified) {
         user.phoneVerified = true;
         user.phoneIsVerified = true;
       }
-      // Let a brand-new account pick up the name entered during sign-up.
-      if (name?.trim() && (!user.name || user.name === 'Customer')) user.name = name.trim();
-      if (notificationToken) user.notificationToken = notificationToken;
+
+      if (name?.trim() && (!user.name || user.name === 'Customer')) {
+        user.name = name.trim();
+      }
+
+      if (notificationToken) {
+        user.notificationToken = notificationToken;
+      }
     }
 
-    if (!user.isActive) throw new AuthenticationError('Account is deactivated');
+    if (!user.isActive) {
+      throw new AuthenticationError('Account is deactivated');
+    }
+
     return authPayload(user, isNewUser);
   },
   refreshToken: async (_parent: unknown, { refreshToken }: { refreshToken: string }) => {
@@ -746,7 +800,7 @@ export const appMutationResolvers = {
     const rider = await User.findByIdAndUpdate(
       context.user!.userId,
       { $set: { location: { type: 'Point', coordinates: [lng, lat] } } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!rider) throw new NotFoundError('Rider');
     await pubsub.publish(`RIDER_LOCATION_${idOf(rider._id)}`, { subscriptionRiderLocation: rider });
