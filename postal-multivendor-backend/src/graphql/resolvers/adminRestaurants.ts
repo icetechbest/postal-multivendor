@@ -173,12 +173,14 @@ export const adminRestaurantResolvers = {
       if (!input.image) throw new ValidationError('Restaurant image is required');
 
       const fields = await profileFields(input);
-      // A restaurant without real coordinates can never appear in the app's nearby list
-      // (it would sit at 0,0 – far outside the delivery radius), so require a location.
-      if (!input.location || !validateCoordinates(input.location.latitude, input.location.longitude) || (input.location.latitude === 0 && input.location.longitude === 0)) {
-        throw new ValidationError('Restaurant location (latitude/longitude) is required');
+      // The dashboard wizard creates the store first and sets its pin in the next
+      // "Location" step (updateDeliveryBoundsAndLocation). So location is optional
+      // here, but if it is sent it must be valid.
+      const hasLocation = input.location && input.location.latitude != null && input.location.longitude != null;
+      if (hasLocation && !validateCoordinates(Number(input.location.latitude), Number(input.location.longitude))) {
+        throw new ValidationError('Restaurant location (latitude/longitude) is invalid');
       }
-      const coordinates: [number, number] = [input.location.longitude, input.location.latitude];
+      const coordinates: [number, number] = hasLocation ? [Number(input.location.longitude), Number(input.location.latitude)] : [0, 0];
       const restaurant = await Restaurant.create({
         deliveryTime: 30,
         minimumOrder: 0,
