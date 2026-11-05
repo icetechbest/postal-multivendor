@@ -6,7 +6,7 @@ import { AuthContext, requireRole } from '../../middleware/auth';
 import { pubsub } from '../../services/pubsub';
 import { AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../../utils/errors';
 import { awardCoinsForOrder, refundCoinsForOrder } from '../../services/coins';
-import { ADMIN_PENDING_ORDERS_CHANNEL, AWAITING_ADMIN, ensureOrderAccess, getPopulatedOrder, idOf, notifyCustomerCancelled, publishOrderToRestaurant, publishOrderUpdate } from './appHelpers';
+import { ADMIN_PENDING_ORDERS_CHANNEL, AWAITING_ADMIN, ensureOrderAccess, getPopulatedOrder, idOf, notifyCustomerCancelled, notifyRiderAssigned, publishOrderToRestaurant, publishOrderUpdate, publishRiderAssignment, publishZoneOrder } from './appHelpers';
 import { assertObjectId, audit, cleanId, dateRange, escapeRegex, pageParams, requirePlatformReader } from './adminHelpers';
 
 const STATUSES = ['AWAITING_ADMIN', 'PENDING', 'ACCEPTED', 'ASSIGNED', 'PICKED', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
@@ -214,12 +214,19 @@ export const adminOrderResolvers = {
       if (order.orderStatus === AWAITING_ADMIN) throw new ValidationError('This order is waiting for admin confirmation');
       const rider = await User.findOne({ _id: assertObjectId(args.riderId, 'rider'), role: 'RIDER', isActive: true });
       if (!rider) throw new ValidationError('Invalid rider');
+      const previousRider = idOf(order.rider);
       order.rider = rider._id as any;
       order.orderStatus = 'ASSIGNED';
       order.riderAssignedAt = new Date();
       order.assignedAt = order.riderAssignedAt;
       await order.save();
-      return publishOrderUpdate(order._id, 'assignRider');
+      const updated = await publishOrderUpdate(order._id, 'assignRider');
+      // Live-update the rider's queue and send a push so they see the order immediately.
+      await publishRiderAssignment(order._id, rider._id, 'new');
+      if (previousRider && previousRider !== idOf(rider._id)) await publishRiderAssignment(order._id, previousRider, 'remove');
+      await publishZoneOrder(order._id, 'remove');
+      if (previousRider !== idOf(rider._id)) await notifyRiderAssigned(order._id, rider._id);
+      return updated;
     },
   },
 

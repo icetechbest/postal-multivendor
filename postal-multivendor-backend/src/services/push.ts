@@ -31,9 +31,15 @@ export const sendPushNotification = async (token: string | undefined, title: str
       const response = await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: token, sound: 'default', title, body, data }),
+        body: JSON.stringify({ to: token, sound: 'default', title, body, data, channelId: 'default', priority: 'high' }),
       });
       if (!response.ok) console.warn(`Expo push returned HTTP ${response.status}`);
+      else {
+        // Expo answers 200 even when delivery fails (e.g. missing FCM credentials, DeviceNotRegistered).
+        const result: any = await response.json().catch(() => null);
+        const ticket = Array.isArray(result?.data) ? result.data[0] : result?.data;
+        if (ticket?.status === 'error') console.warn('Expo push error:', ticket.message, JSON.stringify(ticket.details || {}));
+      }
       return;
     }
     if (initializeFirebase()) {

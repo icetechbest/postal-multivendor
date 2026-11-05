@@ -200,6 +200,23 @@ export const publishRiderAssignment = async (orderId: any, riderId: any, origin:
   });
 };
 
+/** Push notification to a rider when an admin/vendor assigns an order to them. */
+export const notifyRiderAssigned = async (orderId: any, riderId: any): Promise<void> => {
+  try {
+    const [order, rider] = await Promise.all([getPopulatedOrder(orderId), User.findById(idOf(riderId)).select('notificationToken')]);
+    const token = (rider as any)?.notificationToken;
+    if (!token) return;
+    const restaurantName = (order.restaurant as any)?.name;
+    await sendPushNotification(token, 'طلب جديد لك', `تم تعيين الطلب ${order.orderId}${restaurantName ? ` من ${restaurantName}` : ''} لك`, {
+      _id: idOf(order._id),
+      orderId: String(order.orderId || ''),
+      status: String(order.orderStatus || ''),
+    });
+  } catch (error) {
+    console.warn('Rider assignment push failed:', error instanceof Error ? error.message : error);
+  }
+};
+
 /** Push an unassigned order into (origin "new") or out of (origin "remove") a zone feed. */
 export const publishZoneOrder = async (orderId: any, origin: 'new' | 'remove'): Promise<void> => {
   const order = await getPopulatedOrder(orderId);

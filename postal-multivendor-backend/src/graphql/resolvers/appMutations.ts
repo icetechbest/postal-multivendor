@@ -25,7 +25,7 @@ import { sanitizeUser } from '../../utils/sanitize';
 import { AuthenticationError, AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../../utils/errors';
 import { generateRefreshToken, generateToken, verifyRefreshToken } from '../../utils/jwt';
 import { validateEmail, validatePassword } from '../../utils/validation';
-import { distanceKm, ensureOrderAccess, getPopulatedOrder, getUser, idOf, pointInPolygon, publishOrderPlaced, publishOrderUpdate, publishRiderAssignment, publishZoneOrder, validCoordinates } from './appHelpers';
+import { distanceKm, ensureOrderAccess, getPopulatedOrder, getUser, idOf, notifyRiderAssigned, pointInPolygon, publishOrderPlaced, publishOrderUpdate, publishRiderAssignment, publishZoneOrder, validCoordinates } from './appHelpers';
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 const normalizeTarget = (value: string) => value.includes('@') ? value.trim().toLowerCase() : value.trim();
@@ -771,6 +771,7 @@ riderLogin: async (
     // Tell the previously assigned rider to drop the order from their list.
     if (previousRider && previousRider !== idOf(rider._id)) await publishRiderAssignment(order._id, previousRider, 'remove');
     await publishZoneOrder(order._id, 'remove');
+    if (previousRider !== idOf(rider._id)) await notifyRiderAssigned(order._id, rider._id);
     return updated;
   },
   abortOrder: async (_parent: unknown, { id, reason }: { id: string; reason?: string }, context: AuthContext) => abortOrder(id, reason, context),
