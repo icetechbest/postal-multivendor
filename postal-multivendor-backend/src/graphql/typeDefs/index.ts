@@ -63,6 +63,7 @@ const baseTypeDefs = `#graphql
     sendOtpToPhoneNumber and creates the customer account on first use."""
     restaurantLogin(username: String, password: String, notificationToken: String): RestaurantLoginResponse!
     riderLogin(username: String, password: String, notificationToken: String, timeZone: String): AuthPayload!
+    phoneLogin(phone: String!, otp: String!, name: String, notificationToken: String): AuthPayload!
     loginWithPhone(phone: String!, otp: String!, name: String, notificationToken: String): AuthPayload!
     createUser(userInput: UserInput!): AuthPayload!
     refreshToken(refreshToken: String!): AuthPayload!
