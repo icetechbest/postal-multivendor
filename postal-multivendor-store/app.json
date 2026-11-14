@@ -1,0 +1,89 @@
+{
+  "expo": {
+    "name": "جافا",
+    "slug": "postal-multivendor-restaurant",
+    "description": "جافا - تطبيق المطاعم لإدارة الطلبات.",
+    "version": "1.0.67",
+    "orientation": "portrait",
+    "icon": "./lib/assets/images/icon.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./lib/assets/images/black.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#000000"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos so you can add pictures to your menu items, categories and profile.",
+          "cameraPermission": "The app uses the camera so you can take pictures of your menu items."
+        }
+      ],
+      "expo-asset",
+      "expo-font",
+      "expo-localization",
+      "expo-secure-store",
+      "expo-web-browser"
+    ],
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.postal.restaurant",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "$(PRODUCT_NAME) uses your location for features like finding orders nearby and tracking customer orders!",
+        "UIBackgroundModes": [
+          "remote-notification",
+          "remote-notification"
+        ],
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIRequiresFullScreen": true,
+        "NSBluetoothAlwaysUsageDescription": "We use Bluetooth to connect to your thermal printer.",
+        "NSBluetoothPeripheralUsageDescription": "We use Bluetooth to connect to your thermal printer."
+      }
+    },
+    "android": {
+      "versionCode": 67,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.postal.restaurant",
+      "adaptiveIcon": {
+        "foregroundImage": "./lib/assets/images/appIcon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d8a47999-c2c3-4bd2-ba6e-e2bdc06ca161"
+      }
+    },
+    "owner": "",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": ""
+    }
+  }
+}

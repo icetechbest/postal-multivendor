@@ -1,0 +1,292 @@
+import mongoose, { Document, Schema } from 'mongoose';
+
+export interface ILocation {
+  type: string;
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+export interface IOpeningTime {
+  day: string;
+  times: Array<{
+    startTime: string[];
+    endTime: string[];
+  }>;
+}
+
+export interface IDeliveryBounds {
+  type: string;
+  coordinates: number[][][];
+}
+
+export interface IRestaurant extends Document {
+  name: string;
+  orderId?: string;
+  slug: string;
+  image: string;
+  logo?: string;
+  address: string;
+  location: ILocation;
+  deliveryBounds?: IDeliveryBounds;
+  username?: string;
+  password?: string;
+  orderPrefix: string;
+  deliveryTime: number;
+  minimumOrder: number;
+  salesTax: number;
+  isActive: boolean;
+  isAvailable: boolean;
+  commissionRate: number;
+  owner: mongoose.Types.ObjectId;
+  reviewCount: number;
+  reviewSum: number;
+  reviewAverage: number;
+  rating: number;
+  sections: string[];
+  enableNotification: boolean;
+  phone?: string;
+  restaurantUrl?: string;
+  keywords: string[];
+  tags: string[];
+  freeDelivery: boolean;
+  acceptVouchers: boolean;
+  categories: mongoose.Types.ObjectId[];
+  cuisines: string[];
+  openingTimes: IOpeningTime[];
+  zone: mongoose.Types.ObjectId;
+  shopType?: string;
+  deliveryFee: number;
+  bankDetails?: {
+    accountTitle: string;
+    accountNumber: string;
+    bankName: string;
+    iban?: string;
+    swiftCode?: string;
+  };
+  notificationToken?: string;
+  bussinessDetails?: Record<string, unknown>;
+  deliveryInfo?: { minDeliveryFee?: number; deliveryDistance?: number; deliveryFee?: number };
+  deliveryOptions?: { delivery?: boolean; pickup?: boolean };
+  boundType?: 'polygon' | 'circle';
+  circleBounds?: { radius?: number };
+  city?: string;
+  postCode?: string;
+  withdrawnWalletAmount: number;
+  clonedFrom?: mongoose.Types.ObjectId;
+  wallet: number;
+  totalOrders: number;
+  totalEarnings: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const restaurantSchema = new Schema<IRestaurant>(
+  {
+    name: {
+      type: String,
+      required: [true, 'Restaurant name is required'],
+      trim: true,
+    },
+    orderId: String,
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+    },
+    image: {
+      type: String,
+      required: [true, 'Restaurant image is required'],
+    },
+    logo: String,
+    address: {
+      type: String,
+      required: [true, 'Address is required'],
+    },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        required: true,
+        default: 'Point',
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+      },
+    },
+    deliveryBounds: {
+      type: {
+        type: String,
+        enum: ['Polygon'],
+        default: undefined,
+      },
+      coordinates: {
+        type: [[[Number]]],
+        default: undefined,
+      },
+    },
+    username: String,
+    password: {
+      type: String,
+      select: false,
+    },
+    orderPrefix: {
+      type: String,
+      required: true,
+      unique: true,
+      uppercase: true,
+    },
+    deliveryTime: {
+      type: Number,
+      required: true,
+      default: 30,
+      min: 0,
+    },
+    minimumOrder: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
+    },
+    salesTax: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
+    commissionRate: {
+      type: Number,
+      default: 10,
+      min: 0,
+      max: 100,
+    },
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    reviewCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    reviewAverage: { type: Number, default: 0, min: 0, max: 5 },
+    sections: { type: [String], default: [] },
+    enableNotification: { type: Boolean, default: true },
+    phone: String,
+    restaurantUrl: String,
+    keywords: { type: [String], default: [] },
+    tags: { type: [String], default: [] },
+    freeDelivery: { type: Boolean, default: false },
+    acceptVouchers: { type: Boolean, default: true },
+    reviewSum: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    rating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    categories: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Category',
+      },
+    ],
+    cuisines: { type: [String], default: [] },
+    openingTimes: [
+      {
+        day: String,
+        times: [
+          {
+            startTime: [String],
+            endTime: [String],
+          },
+        ],
+      },
+    ],
+    zone: {
+      type: Schema.Types.ObjectId,
+      ref: 'Zone',
+    },
+    shopType: String,
+    deliveryFee: {
+      type: Number,
+      default: 5,
+      min: 0,
+    },
+    bankDetails: {
+      accountTitle: String,
+      accountNumber: String,
+      bankName: String,
+      iban: String,
+      swiftCode: String,
+    },
+    notificationToken: String,
+    bussinessDetails: Schema.Types.Mixed,
+    deliveryInfo: {
+      minDeliveryFee: { type: Number, min: 0 },
+      deliveryDistance: { type: Number, min: 0 },
+      deliveryFee: { type: Number, min: 0 },
+    },
+    deliveryOptions: { delivery: { type: Boolean, default: true }, pickup: { type: Boolean, default: true } },
+    boundType: { type: String, enum: ['polygon', 'circle'], default: 'polygon' },
+    circleBounds: { radius: { type: Number, min: 0 } },
+    city: String,
+    postCode: String,
+    withdrawnWalletAmount: { type: Number, default: 0, min: 0 },
+    clonedFrom: { type: Schema.Types.ObjectId, ref: 'Restaurant', index: true },
+    wallet: {
+      type: Number,
+      default: 0,
+    },
+    totalOrders: {
+      type: Number,
+      default: 0,
+    },
+    totalEarnings: {
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+// Indexes
+// A Polygon without coordinates is rejected by the 2dsphere index, so drop deliveryBounds unless it holds a real polygon.
+restaurantSchema.pre('validate', function () {
+  const bounds: any = this.get('deliveryBounds');
+  if (!bounds || !Array.isArray(bounds.coordinates) || bounds.coordinates.length === 0) {
+    this.set('deliveryBounds', undefined);
+  }
+});
+
+restaurantSchema.index({ location: '2dsphere' });
+restaurantSchema.index({ deliveryBounds: '2dsphere' });
+restaurantSchema.index({ owner: 1 });
+restaurantSchema.index({ zone: 1 });
+restaurantSchema.index({ isActive: 1, isAvailable: 1 });
+restaurantSchema.index({ rating: -1 });
+
+// Virtual for calculating average rating
+restaurantSchema.virtual('averageRating').get(function () {
+  if (this.reviewCount === 0) return 0;
+  return this.reviewSum / this.reviewCount;
+});
+
+export const Restaurant = mongoose.model<IRestaurant>('Restaurant', restaurantSchema);

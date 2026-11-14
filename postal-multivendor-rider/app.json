@@ -1,0 +1,89 @@
+{
+  "expo": {
+    "name": "genie rider",
+    "description": "genie - تطبيق مندوبي التوصيل.",
+    "version": "1.1.67",
+    "slug": "food-delivery-rider-multivendor",
+    "orientation": "portrait",
+    "splash": {
+      "image": "./lib/assets/images/black.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#000000"
+    },
+    "icon": "./lib/assets/images/icon.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos for license, vehicle plate and profile image. Please allow these to continue using the app."
+        }
+      ],
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./lib/assets/images/appIcon.png",
+          "color": "#ffffff"
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ],
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.postal.rider",
+      "icon": "./lib/assets/images/icon.png",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "$(PRODUCT_NAME) uses your location for features like finding orders nearby and tracking customer orders!",
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "versionCode": 67,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.postal.rider",
+      "icon": "./lib/assets/images/appIcon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./lib/assets/images/appIcon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5509407c-f9d1-4fd9-84fa-75f8049f86a8"
+      }
+    },
+    "owner": ""
+  }
+}

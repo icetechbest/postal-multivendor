@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "version": ">= 27.2.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SERVER_URL": "https://postal-multivendor-production-573f.up.railway.app",
+        "EXPO_PUBLIC_WS_SERVER_URL": "wss://postal-multivendor-production-573f.up.railway.app"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SERVER_URL": "https://postal-multivendor-production-573f.up.railway.app",
+        "EXPO_PUBLIC_WS_SERVER_URL": "wss://postal-multivendor-production-573f.up.railway.app"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SERVER_URL": "https://postal-multivendor-production-573f.up.railway.app",
+        "EXPO_PUBLIC_WS_SERVER_URL": "wss://postal-multivendor-production-573f.up.railway.app"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

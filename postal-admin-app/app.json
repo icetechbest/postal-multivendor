@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "Postal Admin",
+    "slug": "postal-admin-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "postaladmin",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": {
+      "backgroundColor": "#0f766e",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.postal.admin",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Unlock the Postal admin app with Face ID."
+      }
+    },
+    "android": {
+      "package": "com.postal.admin",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f766e"
+      },
+      "permissions": [
+        "INTERNET",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "POST_NOTIFICATIONS",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#0f766e"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Unlock the Postal admin app with Face ID."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "ff46de1a-db38-45eb-80e8-1caefe2273b7"
+      }
+    }
+  }
+}

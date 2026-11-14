@@ -1,0 +1,182 @@
+import mongoose, { Document, Schema } from 'mongoose';
+
+export interface IOrder extends Document {
+  orderId: string;
+  restaurant: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
+  items: any[];
+  deliveryAddress: any;
+  orderAmount: number;
+  deliveryCharges: number;
+  tipping: number;
+  taxationAmount: number;
+  discount: number;
+  total: number;
+  paymentMethod: 'COD' | 'CARD' | 'HYP';
+  paidAmount: number;
+  orderStatus: 'AWAITING_ADMIN' | 'PENDING' | 'ACCEPTED' | 'ASSIGNED' | 'PICKED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
+  paymentStatus: 'PENDING' | 'PAID' | 'REFUNDED' | 'FAILED';
+  paymentReference?: string;
+  reason?: string;
+  adminConfirmedBy?: mongoose.Types.ObjectId;
+  adminConfirmedAt?: Date;
+  adminNote?: string;
+  adminRejectedBy?: mongoose.Types.ObjectId;
+  adminRejectedAt?: Date;
+  isActive: boolean;
+  isRinged: boolean;
+  isRiderRinged: boolean;
+  isPickedUp: boolean;
+  instructions?: string;
+  rider?: mongoose.Types.ObjectId;
+  riderAssignedAt?: Date;
+  assignedAt?: Date;
+  acceptedAt?: Date;
+  pickedAt?: Date;
+  deliveredAt?: Date;
+  completedAt?: Date;
+  cancelledAt?: Date;
+  estimatedDeliveryTime?: Date;
+  expectedTime?: Date;
+  completionTime?: Date;
+  orderDate?: Date;
+  preparationTime?: number;
+  review?: any;
+  isReviewed: boolean;
+  couponCode?: string;
+  /** Loyalty coins credited to the customer when the order was delivered. */
+  coinsEarned: number;
+  /** Coins the customer paid with, and the money they were worth at order time. */
+  coinsUsed: number;
+  coinsDiscount: number;
+  coinsRefunded?: boolean;
+  /** Rider payout for this order (delivery fee + tip) and the platform commission charged to the rider. */
+  riderEarning?: number;
+  riderCommission?: number;
+  riderSettledAt?: Date;
+  /** COD change that the rider credited to the customer's wallet instead of handing back cash. */
+  changeAmount?: number;
+  /** Part of the total paid from the customer's wallet (the rider only collects total - walletUsed). */
+  walletUsed?: number;
+  walletRefunded?: boolean;
+  changeAddedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const optionSnapshot = new Schema({
+  title: String,
+  description: String,
+  price: { type: Number, default: 0 },
+}, { _id: true });
+
+const addonSnapshot = new Schema({
+  title: String,
+  description: String,
+  quantityMinimum: { type: Number, default: 0 },
+  quantityMaximum: { type: Number, default: 1 },
+  options: { type: [optionSnapshot], default: [] },
+}, { _id: true });
+
+const orderItemSchema = new Schema({
+  food: { type: Schema.Types.ObjectId, ref: 'Food', required: true },
+  title: String,
+  description: String,
+  image: String,
+  quantity: { type: Number, required: true, min: 1 },
+  variation: {
+    _id: Schema.Types.ObjectId,
+    title: String,
+    price: Number,
+    discounted: Number,
+  },
+  addons: { type: [addonSnapshot], default: [] },
+  specialInstructions: String,
+  isActive: { type: Boolean, default: true },
+  isOutOfStock: { type: Boolean, default: false },
+  createdAt: Date,
+  updatedAt: Date,
+}, { _id: true });
+
+const orderSchema = new Schema<IOrder>({
+  orderId: { type: String, required: true, unique: true },
+  restaurant: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true },
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  items: { type: [orderItemSchema], default: [] } as any,
+  deliveryAddress: {
+    id: String,
+    label: String,
+    deliveryAddress: String,
+    details: String,
+    location: {
+      type: { type: String, enum: ['Point'], default: 'Point' },
+      coordinates: { type: [Number], default: [0, 0] },
+    },
+  },
+  orderAmount: { type: Number, required: true, min: 0 },
+  deliveryCharges: { type: Number, default: 0, min: 0 },
+  tipping: { type: Number, default: 0, min: 0 },
+  taxationAmount: { type: Number, default: 0, min: 0 },
+  discount: { type: Number, default: 0, min: 0 },
+  total: { type: Number, required: true, min: 0 },
+  paymentMethod: { type: String, enum: ['COD', 'CARD', 'HYP'], required: true },
+  paidAmount: { type: Number, default: 0, min: 0 },
+  orderStatus: {
+    type: String,
+    enum: ['AWAITING_ADMIN', 'PENDING', 'ACCEPTED', 'ASSIGNED', 'PICKED', 'DELIVERED', 'COMPLETED', 'CANCELLED'],
+    default: 'PENDING',
+  },
+  paymentStatus: { type: String, enum: ['PENDING', 'PAID', 'REFUNDED', 'FAILED'], default: 'PENDING' },
+  paymentReference: String,
+  reason: String,
+  adminConfirmedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  adminConfirmedAt: Date,
+  adminNote: String,
+  adminRejectedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  adminRejectedAt: Date,
+  isActive: { type: Boolean, default: true },
+  isRinged: { type: Boolean, default: false },
+  isRiderRinged: { type: Boolean, default: false },
+  isPickedUp: { type: Boolean, default: false },
+  instructions: String,
+  rider: { type: Schema.Types.ObjectId, ref: 'User' },
+  riderAssignedAt: Date,
+  assignedAt: Date,
+  acceptedAt: Date,
+  pickedAt: Date,
+  deliveredAt: Date,
+  completedAt: Date,
+  cancelledAt: Date,
+  estimatedDeliveryTime: Date,
+  expectedTime: Date,
+  completionTime: Date,
+  orderDate: Date,
+  preparationTime: Number,
+  review: { type: Schema.Types.ObjectId, ref: 'Review' },
+  isReviewed: { type: Boolean, default: false },
+  couponCode: String,
+  coinsEarned: { type: Number, default: 0, min: 0 },
+  coinsUsed: { type: Number, default: 0, min: 0 },
+  coinsDiscount: { type: Number, default: 0, min: 0 },
+  coinsRefunded: { type: Boolean, default: false },
+  riderEarning: { type: Number, min: 0 },
+  riderCommission: { type: Number, min: 0 },
+  riderSettledAt: Date,
+  changeAmount: { type: Number, min: 0 },
+  walletUsed: { type: Number, default: 0, min: 0 },
+  walletRefunded: { type: Boolean, default: false },
+  changeAddedAt: Date,
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+});
+
+orderSchema.index({ restaurant: 1, orderStatus: 1 });
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ rider: 1, orderStatus: 1 });
+orderSchema.index({ orderStatus: 1, createdAt: -1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ 'deliveryAddress.location': '2dsphere' });
+
+export const Order = mongoose.model<IOrder>('Order', orderSchema);
