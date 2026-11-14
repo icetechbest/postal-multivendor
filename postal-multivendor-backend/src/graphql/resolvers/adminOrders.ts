@@ -165,7 +165,8 @@ export const adminOrderResolvers = {
           walletUsed,
           ...(walletToReturn > 0 ? { paidAmount: Math.max(0, (current.paidAmount || 0) - walletToReturn) } : {}),
           ...(walletUsed > 0 && walletUsed >= total ? { paymentStatus: 'PAID' } : {}),
-          orderStatus: 'ASSIGNED',
+          // Status stays PENDING: the restaurant has not accepted yet. The rider is stored on the
+          // order but only sees it once the restaurant accepts (see acceptOrder in appCompat.ts).
           rider: rider._id,
           riderAssignedAt: now,
           assignedAt: now,
@@ -182,11 +183,9 @@ export const adminOrderResolvers = {
       await audit(context, 'ADMIN_CONFIRM_ORDER', 'Order', id, { note, rider: rider ? idOf(rider._id) : undefined, deliveryCharges: needsDispatch ? confirmed.deliveryCharges : undefined });
       // The restaurant only learns about the order now.
       await publishOrderToRestaurant(confirmed._id, 'adminConfirmOrder');
-      if (rider) {
-        await publishRiderAssignment(confirmed._id, rider._id, 'new');
-        await publishZoneOrder(confirmed._id, 'remove');
-        await notifyRiderAssigned(confirmed._id, rider._id);
-      }
+      // Take the order out of the zone feed so other riders can't grab it; the assigned rider is
+      // notified later, when the restaurant accepts.
+      if (rider) await publishZoneOrder(confirmed._id, 'remove');
       return getPopulatedOrder(confirmed._id);
     },
     adminRejectOrder: async (_parent: unknown, args: { id: string; reason: string }, context: AuthContext) => {
@@ -263,16 +262,17 @@ export const adminOrderResolvers = {
       await assertRiderCanTakeOrders(rider._id, 'admin');
       const previousRider = idOf(order.rider);
       order.rider = rider._id as any;
-      order.orderStatus = 'ASSIGNED';
+      const restaurantAccepted = order.orderStatus !== 'PENDING';
+      if (restaurantAccepted) order.orderStatus = 'ASSIGNED';
       order.riderAssignedAt = new Date();
       order.assignedAt = order.riderAssignedAt;
       await order.save();
       const updated = await publishOrderUpdate(order._id, 'assignRider');
       // Live-update the rider's queue and send a push so they see the order immediately.
-      await publishRiderAssignment(order._id, rider._id, 'new');
+      if (restaurantAccepted) await publishRiderAssignment(order._id, rider._id, 'new');
       if (previousRider && previousRider !== idOf(rider._id)) await publishRiderAssignment(order._id, previousRider, 'remove');
       await publishZoneOrder(order._id, 'remove');
-      if (previousRider !== idOf(rider._id)) await notifyRiderAssigned(order._id, rider._id);
+      if (restaurantAccepted && previousRider !== idOf(rider._id)) await notifyRiderAssigned(order._id, rider._id);
       return updated;
     },
   },

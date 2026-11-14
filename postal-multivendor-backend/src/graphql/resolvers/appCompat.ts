@@ -13,6 +13,7 @@ import {
   ensureOrderAccess,
   getPopulatedOrder,
   idOf,
+  notifyRiderAssigned,
   orderZoneId,
   publishOrderUpdate,
   publishRiderAssignment,
@@ -256,7 +257,13 @@ const acceptOrder = async (orderId: string, time: string | undefined, context: A
   order.acceptedAt = order.acceptedAt || new Date();
   order.preparationTime = Number.isFinite(minutes) ? Math.round(minutes) : 0;
   await order.save();
-  return publishOrderUpdate(order._id, 'acceptOrder');
+  const updated = await publishOrderUpdate(order._id, 'acceptOrder');
+  // An admin may have pre-assigned a rider; they only see the order once the restaurant accepts.
+  if (order.rider) {
+    await publishRiderAssignment(order._id, order.rider, 'new');
+    await notifyRiderAssigned(order._id, order.rider);
+  }
+  return updated;
 };
 
 const orderPickedUp = async (orderId: string, context: AuthContext) => {
@@ -348,7 +355,7 @@ const updateOrderStatusRider = async (orderId: string, status: string, context: 
   // (Admins keep full control.) Re-sending the current status is a harmless no-op.
   if (context.user!.role === 'RIDER') {
     if (order.orderStatus === normalized) return publishOrderUpdate(order._id, 'updateOrderStatusRider');
-    const allowed: Record<string, string[]> = { PICKED: ['ASSIGNED'], DELIVERED: ['PICKED'] };
+    const allowed: Record<string, string[]> = { PICKED: ['ASSIGNED', 'ACCEPTED'], DELIVERED: ['PICKED'] };
     if (!allowed[normalized]?.includes(order.orderStatus)) {
       throw new ValidationError(`Cannot change order from ${order.orderStatus} to ${normalized}`);
     }
@@ -440,7 +447,10 @@ export const appCompatResolvers = {
     riderOrders: async (_parent: unknown, _args: unknown, context: AuthContext) => {
       requireRole(context, ['RIDER', 'ADMIN']);
       const filter: Record<string, any> = { isActive: { $ne: false } };
-      if (context.user!.role !== 'ADMIN') filter.rider = context.user!.userId;
+      if (context.user!.role !== 'ADMIN') {
+        filter.rider = context.user!.userId;
+        filter.orderStatus = { $nin: ['AWAITING_ADMIN', 'PENDING'] };
+      }
       return Order.find(filter)
         .populate('restaurant')
         .populate('user')

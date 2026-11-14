@@ -776,16 +776,17 @@ riderLogin: async (
     await assertRiderCanTakeOrders(rider._id, 'admin');
     const previousRider = idOf(order.rider);
     order.rider = rider._id;
-    order.orderStatus = 'ASSIGNED';
+    const restaurantAccepted = order.orderStatus !== 'PENDING';
+    if (restaurantAccepted) order.orderStatus = 'ASSIGNED';
     order.riderAssignedAt = new Date();
     order.assignedAt = order.riderAssignedAt;
     await order.save();
     const updated = await publishOrderUpdate(order._id, 'assignRider');
-    await publishRiderAssignment(order._id, rider._id, 'new');
+    if (restaurantAccepted) await publishRiderAssignment(order._id, rider._id, 'new');
     // Tell the previously assigned rider to drop the order from their list.
     if (previousRider && previousRider !== idOf(rider._id)) await publishRiderAssignment(order._id, previousRider, 'remove');
     await publishZoneOrder(order._id, 'remove');
-    if (previousRider !== idOf(rider._id)) await notifyRiderAssigned(order._id, rider._id);
+    if (restaurantAccepted && previousRider !== idOf(rider._id)) await notifyRiderAssigned(order._id, rider._id);
     return updated;
   },
   abortOrder: async (_parent: unknown, { id, reason }: { id: string; reason?: string }, context: AuthContext) => abortOrder(id, reason, context),
